@@ -1,0 +1,138 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Inter-VariableFont_opsz,wght.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-VariableFont_wght.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
+}
+
+:root {
+  /* Dark is default */
+  --surface-base: #0A0C10;
+  --surface-raised: #14171F;
+  --surface-overlay: #1D2129;
+  --scrim: rgba(10, 12, 16, 0.72);
+
+  --text-primary: #F4F6FA;
+  --text-secondary: #D9DEE8;
+  --text-tertiary: #B7BECC;
+  --text-supporting: #9AA3B5;
+  --text-muted: #7D869B;
+  --text-faint: #5F6779;
+  --text-disabled: #474E5F;
+  --text-inverse: #0A0C10;
+  --text-on-accent: #06202A;
+
+  --border-subtle: #232833;
+  --border-default: #2E3440;
+  --border-strong: #454C5C;
+  --border-accent: rgba(34, 211, 238, 0.6);
+  --border-focus: #22D3EE;
+
+  --cat-focus: #4ADE80;
+  --cat-sink: #F87171;
+  --cat-games: #FBBF24;
+  --cat-other: #60A5FA;
+  --cat-unclassified: #94A3B8;
+  --cat-private: #A78BFA;
+  --accent-creature: #22D3EE;
+
+  --state-warn: #F59E0B;
+  --state-error: #F87171;
+
+  --fill-hover: rgba(255, 255, 255, 0.06);
+  --fill-pressed: rgba(255, 255, 255, 0.12);
+  --fill-selected: rgba(255, 255, 255, 0.10);
+  --fill-accent-12: rgba(34, 211, 238, 0.12);
+  --fill-accent-glow: rgba(34, 211, 238, 0.40);
+
+  --viz-heat-measured-zero: #1A1F2A;
+  --viz-heat-none: transparent;
+  --viz-bar-track: #232833;
+  --viz-bar-fill: rgba(244, 246, 250, 0.64);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --surface-base: #F7F8FA;
+    --surface-raised: #FFFFFF;
+    --surface-overlay: #FFFFFF;
+    --scrim: rgba(10, 12, 16, 0.32);
+
+    --text-primary: #131722;
+    --text-secondary: #3A4152;
+    --text-tertiary: #575E70;
+    --text-supporting: #6E7689;
+    --text-muted: #8B93A5;
+    --text-faint: #A3AAB8;
+    --text-disabled: #C3C9D4;
+    --text-inverse: #FFFFFF;
+    --text-on-accent: #FFFFFF;
+
+    --border-subtle: #E7EAEF;
+    --border-default: #D4D8E0;
+    --border-strong: #9AA1B2;
+    --border-accent: rgba(14, 116, 144, 0.6);
+    --border-focus: #0E7490;
+
+    --cat-focus: #15803D;
+    --cat-sink: #B91C1C;
+    --cat-games: #B45309;
+    --cat-other: #1D4ED8;
+    --cat-unclassified: #475569;
+    --cat-private: #6D28D9;
+    --accent-creature: #0E7490;
+
+    --state-warn: #92600A;
+    --state-error: #B91C1C;
+
+    --fill-hover: rgba(10, 12, 16, 0.04);
+    --fill-pressed: rgba(10, 12, 16, 0.08);
+    --fill-selected: rgba(10, 12, 16, 0.06);
+    --fill-accent-12: rgba(14, 116, 144, 0.12);
+    --fill-accent-glow: rgba(14, 116, 144, 0.40);
+
+    --viz-heat-measured-zero: #E7EAEF;
+    --viz-heat-none: transparent;
+    --viz-bar-track: #E7EAEF;
+    --viz-bar-fill: rgba(19, 23, 34, 0.64);
+  }
+}
+
+body {
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-ui, Inter, sans-serif);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}

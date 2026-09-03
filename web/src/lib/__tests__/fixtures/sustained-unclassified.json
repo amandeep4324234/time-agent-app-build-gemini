@@ -1,0 +1,73 @@
+{
+  "schema": "timeframe.usage_sessions/v1",
+  "exported_at": "2026-08-23T00:00:00.000Z",
+  "count": 6,
+  "sessions": [
+    {
+      "id": "c1",
+      "source": "chrome_extension",
+      "device": "computer",
+      "label": "GitHub",
+      "started_at": "2026-08-20T10:00:00.000Z",
+      "ended_at": "2026-08-20T11:00:00.000Z",
+      "seconds": 3600,
+      "minutes": 60.0,
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "u1",
+      "source": "chrome_extension",
+      "device": "computer",
+      "label": "unknown-site-1.xyz",
+      "started_at": "2026-08-20T11:00:00.000Z",
+      "ended_at": "2026-08-20T11:30:00.000Z",
+      "seconds": 1800,
+      "minutes": 30.0,
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "c2",
+      "source": "chrome_extension",
+      "device": "computer",
+      "label": "GitHub",
+      "started_at": "2026-08-21T10:00:00.000Z",
+      "ended_at": "2026-08-21T11:00:00.000Z",
+      "seconds": 3600,
+      "minutes": 60.0,
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "u2",
+      "source": "chrome_extension",
+      "device": "computer",
+      "label": "unknown-site-2.xyz",
+      "started_at": "2026-08-21T11:00:00.000Z",
+      "ended_at": "2026-08-21T11:30:00.000Z",
+      "seconds": 1800,
+      "minutes": 30.0,
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "c3",
+      "source": "chrome_extension",
+      "device": "computer",
+      "label": "GitHub",
+      "started_at": "2026-08-22T10:00:00.000Z",
+      "ended_at": "2026-08-22T11:00:00.000Z",
+      "seconds": 3600,
+      "minutes": 60.0,
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "u3",
+      "source": "chrome_extension",
+      "device": "computer",
+      "label": "unknown-site-3.xyz",
+      "started_at": "2026-08-22T11:00:00.000Z",
+      "ended_at": "2026-08-22T11:30:00.000Z",
+      "seconds": 1800,
+      "minutes": 30.0,
+      "timezone": "Asia/Kolkata"
+    }
+  ]
+}
