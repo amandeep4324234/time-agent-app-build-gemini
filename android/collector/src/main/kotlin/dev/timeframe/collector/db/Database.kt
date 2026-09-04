@@ -96,6 +96,57 @@ interface PinDao {
     suspend fun clear()
 }
 
+@Dao
+interface UsageEventDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(events: List<UsageEventEntity>)
+
+    @Query("SELECT * FROM usage_events WHERE event_time_ms >= :fromMs AND event_time_ms <= :toMs ORDER BY event_time_ms ASC")
+    suspend fun eventsBetween(fromMs: Long, toMs: Long): List<UsageEventEntity>
+
+    @Query("SELECT MAX(event_time_ms) FROM usage_events")
+    suspend fun latestEventTimeMs(): Long?
+
+    @Query("DELETE FROM usage_events WHERE event_time_ms < :pruneBeforeMs")
+    suspend fun pruneOlderThan(pruneBeforeMs: Long): Int
+
+    @Query("DELETE FROM usage_events")
+    suspend fun clear()
+}
+
+@Dao
+interface FocusBlockDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(block: FocusBlockEntity)
+
+    @Query("SELECT * FROM focus_blocks WHERE block_id = :blockId")
+    suspend fun getById(blockId: String): FocusBlockEntity?
+
+    @Query("SELECT * FROM focus_blocks WHERE state = 'active' ORDER BY started_at_ms DESC LIMIT 1")
+    suspend fun getActiveBlock(): FocusBlockEntity?
+
+    @Query("SELECT * FROM focus_blocks ORDER BY started_at_ms DESC")
+    suspend fun getAll(): List<FocusBlockEntity>
+
+    @Query("DELETE FROM focus_blocks")
+    suspend fun clear()
+}
+
+@Dao
+interface CollectorHealthDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(health: CollectorHealthEntity)
+
+    @Query("SELECT * FROM collector_health ORDER BY checked_at_ms DESC LIMIT 1")
+    suspend fun getLatest(): CollectorHealthEntity?
+
+    @Query("DELETE FROM collector_health WHERE checked_at_ms < :pruneBeforeMs")
+    suspend fun pruneOlderThan(pruneBeforeMs: Long): Int
+
+    @Query("DELETE FROM collector_health")
+    suspend fun clear()
+}
+
 @Database(
     entities = [
         UsageEventEntity::class,
@@ -110,6 +161,9 @@ interface PinDao {
 abstract class TimeframeDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
     abstract fun pinDao(): PinDao
+    abstract fun usageEventDao(): UsageEventDao
+    abstract fun focusBlockDao(): FocusBlockDao
+    abstract fun collectorHealthDao(): CollectorHealthDao
 }
 
 class RoomSessionStore(private val dao: SessionDao) : SessionStore {

@@ -42,7 +42,30 @@ export function computeDay(
 
   // 4. Mix ring & badges
   // Check if sustained unclassified (3 consecutive days > 15%)
-  const mix = computeMix(daySessions, false);
+  let isSustainedUnclassified = false;
+  const dateObj = new Date(`${logicalDate}T00:00:00Z`);
+  const prevDate1Obj = new Date(dateObj.getTime() - 24 * 60 * 60 * 1000);
+  const prevDate2Obj = new Date(dateObj.getTime() - 48 * 60 * 60 * 1000);
+  const prevDay1 = prevDate1Obj.toISOString().slice(0, 10);
+  const prevDay2 = prevDate2Obj.toISOString().slice(0, 10);
+
+  const day0Mix = computeMix(daySessions, false);
+  const day1Sessions = ledger.filter((s) => getLogicalDay(s.started_at_ms, tz) === prevDay1);
+  const day2Sessions = ledger.filter((s) => getLogicalDay(s.started_at_ms, tz) === prevDay2);
+
+  if (day1Sessions.length > 0 && day2Sessions.length > 0) {
+    const day1Mix = computeMix(day1Sessions, false);
+    const day2Mix = computeMix(day2Sessions, false);
+    if (
+      day0Mix.unclassifiedPercent > 15 &&
+      day1Mix.unclassifiedPercent > 15 &&
+      day2Mix.unclassifiedPercent > 15
+    ) {
+      isSustainedUnclassified = true;
+    }
+  }
+
+  const mix = computeMix(daySessions, isSustainedUnclassified);
 
   // 5. Top 5 sinks
   const topSinks = computeTopSinks(daySessions);

@@ -135,7 +135,7 @@ object FocusRun {
 
             var nextI = i + 1
             if (runTerminatedAt != null) {
-                while (nextI < sorted.size && sorted[nextI].ended_at_ms <= finalEnd) {
+                while (nextI < sorted.size && sorted[nextI].started_at_ms < finalEnd) {
                     nextI++
                 }
             } else {

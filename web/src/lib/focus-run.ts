@@ -137,8 +137,8 @@ export function computeFocusRuns(
     // Advance i past this run
     let nextI = i + 1;
     if (runTerminatedAt !== null) {
-      // Resume scanning at first session whose ended_at > finalEnd
-      while (nextI < sorted.length && sorted[nextI].ended_at_ms <= finalEnd) {
+      // Resume scanning at first session starting at or after finalEnd
+      while (nextI < sorted.length && sorted[nextI].started_at_ms < finalEnd) {
         nextI++;
       }
     } else {

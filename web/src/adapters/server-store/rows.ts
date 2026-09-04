@@ -49,3 +49,11 @@ export async function revokeEntitlementRow(aid: string): Promise<boolean> {
   existing.tier = "free";
   return true;
 }
+
+export async function updateEntitlementCrossDevice(aid: string, crossDevice = true): Promise<boolean> {
+  const existing = inMemoryRows.get(aid);
+  if (!existing) return false;
+  (existing as any).cross_device = crossDevice;
+  return true;
+}
+

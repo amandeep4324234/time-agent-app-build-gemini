@@ -6,6 +6,7 @@ import { getLogicalDay, isLightDay } from "../day";
 import { computeTrackedMetrics, computeUnionDurationSeconds } from "../union";
 import { computeFocusRuns } from "../focus-run";
 import { computeWeek } from "../week";
+import { computeDay } from "../metrics";
 import { computeHealth } from "../health";
 import { Envelope, Session } from "../types";
 
@@ -356,6 +357,27 @@ describe("Web Replay Harness (Tests 1–20)", () => {
     const ledger = buildLedger(envelope);
     const { totalHours } = computeWeek(ledger);
     expect(totalHours).toBeCloseTo(0.25, 1);
+  });
+
+  // Synthetic fixture sustained-unclassified.json
+  it("Synthetic fixture sustained-unclassified.json: triggers sustained unclassified on day 3 (>15% across 3 consecutive days)", () => {
+    const envelope = sustainedUnclassified as unknown as Envelope;
+    const ledger = buildLedger(envelope);
+
+    const day1 = computeDay("2026-08-20", ledger);
+    expect(day1.mix.unclassifiedPercent).toBeGreaterThan(15);
+    expect(day1.mix.isSustainedUnclassified).toBe(false);
+    expect(day1.mix.sustainedUnclassifiedAction).toBe(false);
+
+    const day2 = computeDay("2026-08-21", ledger);
+    expect(day2.mix.unclassifiedPercent).toBeGreaterThan(15);
+    expect(day2.mix.isSustainedUnclassified).toBe(false);
+    expect(day2.mix.sustainedUnclassifiedAction).toBe(false);
+
+    const day3 = computeDay("2026-08-22", ledger);
+    expect(day3.mix.unclassifiedPercent).toBeGreaterThan(15);
+    expect(day3.mix.isSustainedUnclassified).toBe(true);
+    expect(day3.mix.sustainedUnclassifiedAction).toBe(true);
   });
 
   // Test 19: Replay idempotency — ingest twice yields identical hours

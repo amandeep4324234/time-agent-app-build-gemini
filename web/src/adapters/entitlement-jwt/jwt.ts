@@ -87,3 +87,7 @@ export function verifyEntitlementJwt(token: string): JwtClaims | null {
     return null;
   }
 }
+
+export const verifyJwt = verifyEntitlementJwt;
+export const signJwt = signEntitlementJwt;
+
