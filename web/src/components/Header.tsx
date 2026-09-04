@@ -7,29 +7,30 @@ export function Header() {
   const pathname = usePathname();
 
   const navItems = [
-    { label: "Dashboard", href: "/app" },
+    { label: "Today", href: "/app" },
     { label: "Week", href: "/week" },
     { label: "Block", href: "/block" },
     { label: "Debrief", href: "/debrief" },
+    { label: "Pro", href: "/checkout" },
   ];
 
   return (
-    <header className="sticky top-0 z-40 h-16 w-full border-b border-[#222735] bg-[#12151D]/90 backdrop-blur px-6 flex items-center justify-between">
-      <div className="flex items-center gap-8">
-        <Link href="/app" className="text-lg font-semibold tracking-tight text-[#F8FAFC]">
-          Timeframe
+    <header className="sticky top-0 z-40 h-12 w-full border-b border-[#21262D] bg-[#0D1117] px-4 md:px-6 flex items-center justify-between font-mono">
+      <div className="flex items-center gap-6 md:gap-8">
+        <Link href="/app" className="text-sm font-semibold tracking-tight text-[#E6EDF3] hover:text-white transition-colors">
+          TIMEFRAME
         </Link>
-        <nav className="flex items-center gap-6" aria-label="Main navigation">
+        <nav className="flex items-center gap-4 md:gap-6" aria-label="Main navigation">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm transition-colors py-5 border-b-2 -mb-px ${
+                className={`text-xs uppercase tracking-wider transition-colors py-3.5 border-b-2 -mb-px ${
                   isActive
-                    ? "text-[#F8FAFC] font-medium border-[#22D3EE]"
-                    : "text-[#94A3B8] border-transparent hover:text-[#F8FAFC]"
+                    ? "text-[#E6EDF3] font-medium border-[#D29922]"
+                    : "text-[#8B949E] border-transparent hover:text-[#E6EDF3]"
                 }`}
               >
                 {item.label}
@@ -42,9 +43,9 @@ export function Header() {
       <div className="flex items-center gap-4">
         <Link
           href="/"
-          className="text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+          className="text-xs text-[#8B949E] hover:text-[#E6EDF3] transition-colors"
         >
-          Back to site
+          site
         </Link>
       </div>
     </header>

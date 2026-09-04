@@ -91,6 +91,9 @@ export interface FocusRun {
   endMs: number;
   durationSeconds: number;
   fillerSeconds: number;
+  ended_by?: "sink" | "hole" | "day-end" | "open";
+  killerApp?: string;
+  apps?: string[];
 }
 
 export interface TopSinkItem {

@@ -1,57 +1,46 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Button } from "@/components/ui/button";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { entitlement, setEntitlement } = useAppStore();
-
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual" | "skin">("annual");
-  const [selectedMethod, setSelectedMethod] = useState<"upi" | "card">("upi");
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const planOptions = [
-    { label: "Annual", value: "annual" as const, subLabel: "₹2,999/year" },
-    { label: "Monthly", value: "monthly" as const, subLabel: "₹499/month" },
-    { label: "Skin", value: "skin" as const, subLabel: "₹599 once" },
-  ];
+  const isAlreadyPaid = entitlement.tier === "pro";
 
-  const handleStartPayment = async () => {
+  const handleActivatePro = async () => {
     setIsProcessing(true);
     setStatusMessage(null);
 
     try {
-      // Call checkout order / grant
       const res = await fetch("/api/checkout/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: selectedPlan }),
+        body: JSON.stringify({ plan: "annual" }),
       });
 
       if (res.ok) {
-        // Upgrade to Pro in store
         setEntitlement({
           aid: "web-user-demo",
           tier: "pro",
-          plan: selectedPlan,
+          plan: "annual",
           src: "web",
-          ref: "pay_test_order",
-          skin: selectedPlan === "skin" ? "classic" : null,
+          ref: "pay_early_bird",
+          skin: null,
           valid_until: new Date(Date.now() + 365 * 86400000).toISOString(),
-          jti: "jwt_token_test",
+          jti: "jwt_token_early_bird",
         });
-        setStatusMessage("Payment complete. Pro features active.");
+        setStatusMessage("Pro active. Early-bird tier unlocked.");
         setTimeout(() => {
           router.push("/app");
-        }, 1500);
+        }, 1200);
       } else {
-        setStatusMessage("Payment simulation failed. Please try again.");
+        setStatusMessage("Simulation error. Try again.");
       }
     } catch {
       setStatusMessage("Payment needs a connection");
@@ -60,109 +49,122 @@ export default function CheckoutPage() {
     }
   };
 
-  const isAlreadyPaid = entitlement.tier === "pro";
+  const handleDeactivate = () => {
+    setEntitlement({
+      aid: null,
+      tier: "free",
+      plan: null,
+      src: null,
+      ref: null,
+      skin: null,
+      valid_until: null,
+      jti: null,
+    });
+    setStatusMessage("Reverted to free tier.");
+  };
 
   return (
-    <div className="max-w-xl mx-auto p-6 flex flex-col gap-8 pb-16">
-      <div className="flex flex-col gap-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-[#F8FAFC]">
-          Timeframe Pro
+    <div className="max-w-[560px] w-full mx-auto p-4 flex flex-col gap-6 font-mono text-xs pb-16">
+      {/* Header */}
+      <div className="flex flex-col gap-1 pb-3 border-b border-[#21262D]">
+        <h1 className="text-sm font-semibold uppercase tracking-[0.06em] text-[#E6EDF3]">
+          TIMEFRAME PRO
         </h1>
-        <p className="text-xs font-mono text-[#94A3B8]">
-          The ledger is free forever. Paid gates only creature growth, streak, and the clean card.
+        <p className="text-[11px] text-[#6E7681]">
+          The instrument panel is free forever. Pro unlocks full history, compare, and insights.
         </p>
       </div>
 
       {isAlreadyPaid ? (
-        <div className="p-8 rounded-xl border border-[#22D3EE]/30 bg-[#22D3EE]/5 flex flex-col items-center gap-4 text-center">
-          <span className="text-sm font-bold text-[#22D3EE] font-mono">
+        <div className="p-6 rounded-[4px] border border-[#D29922]/40 bg-[#161B22] flex flex-col items-center gap-4 text-center">
+          <span className="text-sm font-semibold text-[#D29922]">
             Pro Membership Active
           </span>
-          <p className="text-xs text-[#94A3B8]">
-            Your subscription ({entitlement.plan || "pro"}) is currently active.
+          <p className="text-[11px] text-[#8B949E] max-w-sm">
+            You have full history, compare/ghost mode, the creature companion, and weekly report cards.
           </p>
-          <Button variant="secondary" onClick={() => router.push("/app")}>
-            Back to the ledger
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="primary" onClick={() => router.push("/app")}>
+              Open Instrument Panel
+            </Button>
+            <Button variant="secondary" onClick={handleDeactivate}>
+              Switch to Free
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-6 bg-[#12151D] p-8 rounded-xl border border-[#222735]">
-          {/* Plan Selector */}
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-mono uppercase tracking-wider text-[#64748B]">
-              Select Plan
-            </span>
-            <SegmentedControl
-              options={planOptions}
-              value={selectedPlan}
-              onChange={setSelectedPlan}
-            />
-          </div>
-
-          {/* Payment Method Selector (UPI-First) */}
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-mono uppercase tracking-wider text-[#64748B]">
-              Payment Method
-            </span>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedMethod("upi")}
-                className={`p-3 rounded-lg border text-left text-xs font-mono transition-colors ${
-                  selectedMethod === "upi"
-                    ? "border-[#22D3EE] bg-[#22D3EE]/10 text-[#F8FAFC]"
-                    : "border-[#222735] bg-[#0A0C10] text-[#94A3B8]"
-                }`}
-              >
-                <div className="font-semibold text-sm mb-1">UPI</div>
-                <div className="text-[10px] text-[#64748B]">Google Pay, PhonePe, Paytm, QR</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedMethod("card")}
-                className={`p-3 rounded-lg border text-left text-xs font-mono transition-colors ${
-                  selectedMethod === "card"
-                    ? "border-[#22D3EE] bg-[#22D3EE]/10 text-[#F8FAFC]"
-                    : "border-[#222735] bg-[#0A0C10] text-[#94A3B8]"
-                }`}
-              >
-                <div className="font-semibold text-sm mb-1">Card / NetBanking</div>
-                <div className="text-[10px] text-[#64748B]">Visa, Mastercard, RuPay</div>
-              </button>
+        <div className="flex flex-col gap-5 p-6 rounded-[4px] border border-[#21262D] bg-[#161B22]">
+          {/* Price Frame: Locked BUSINESS.md §1 & QA.md B8 */}
+          <div className="flex flex-col gap-1 border-b border-[#21262D] pb-4">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs uppercase tracking-wider text-[#8B949E]">
+                Early Bird License
+              </span>
+              <span className="text-2xl font-bold text-[#E6EDF3] tnum">
+                $1.25<span className="text-xs text-[#8B949E] font-normal">/mo</span>
+              </span>
+            </div>
+            <div className="text-[11px] text-[#8B949E]">
+              $15/yr billed yearly. Permanent early bird price. One SKU, one decision.
             </div>
           </div>
 
-          {/* Action */}
-          <Button
-            variant="primary"
-            onClick={handleStartPayment}
-            isLoading={isProcessing}
-            loadingLabel="Paying…"
-            className="w-full mt-2"
-          >
-            {selectedMethod === "upi" ? "Pay with UPI" : "Start payment"}
-          </Button>
+          {/* Feature Matrix */}
+          <div className="flex flex-col gap-2 text-[11px]">
+            <div className="text-[10px] uppercase tracking-wider text-[#6E7681]">
+              Included in Pro
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Full history across all devices (Free has 7 days)</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Compare / ghost overlay (week-over-week timeline)</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Read-time insight engine &amp; danger-zone detection</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Goals layer, sink allowance, and run streaks</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Weekly graded report card (A–F rubric)</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Creature live block companion growth</span>
+            </div>
+            <div className="flex items-center gap-2 text-[#E6EDF3]">
+              <span className="text-[#D29922]">✓</span>
+              <span>Unlimited shareable image exports</span>
+            </div>
+          </div>
+
+          {/* Privacy Guarantee */}
+          <div className="p-3 rounded-[2px] bg-[#0D1117] border border-[#21262D] text-[10px] text-[#6E7681] leading-relaxed">
+            Timeframe measures which app is on screen and for how long. It never sees screen content, keystrokes, or anything you type. Private apps (health/finance/dating) stay off all shared cards.
+          </div>
 
           {statusMessage && (
-            <div className="text-xs font-mono text-center text-[#22D3EE]">
+            <div className="text-center text-[11px] text-[#D29922]">
               {statusMessage}
             </div>
           )}
 
-          {/* Payment Page Footer with Legal links */}
-          <div className="border-t border-[#222735] pt-4 mt-2 flex flex-col items-center gap-2 text-[11px] font-mono text-[#64748B]">
-            <div>GST included where applicable</div>
-            <div className="flex items-center gap-4">
-              <Link href="/terms" className="hover:text-[#F8FAFC] underline">
-                Terms
-              </Link>
-              <span>·</span>
-              <Link href="/privacy" className="hover:text-[#F8FAFC] underline">
-                Privacy
-              </Link>
-            </div>
-          </div>
+          {/* Action Button */}
+          <Button
+            variant="primary"
+            onClick={handleActivatePro}
+            isLoading={isProcessing}
+            loadingLabel="Activating…"
+            className="w-full"
+          >
+            Activate Pro — $15/yr ($1.25/mo)
+          </Button>
         </div>
       )}
     </div>

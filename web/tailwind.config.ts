@@ -10,6 +10,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        tf: {
+          bg: "#0D1117",
+          "surface-1": "#161B22",
+          "surface-2": "#1C2128",
+          hairline: "#21262D",
+          "fg-primary": "#E6EDF3",
+          "fg-secondary": "#8B949E",
+          "fg-muted": "#6E7681",
+          "fg-faint": "#484F58",
+          amber: "#D29922",
+          red: "#F85149",
+          "heat-0": "#161B22",
+          "heat-1": "#3E331A",
+          "heat-2": "#6F551D",
+          "heat-3": "#A1771F",
+          "heat-4": "#D29922",
+        },
         surface: {
           base: "var(--surface-base)",
           raised: "var(--surface-raised)",
@@ -52,14 +69,16 @@ const config: Config = {
         },
       },
       fontFamily: {
-        ui: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
-        mono: ["'JetBrains Mono'", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
-        display: ["'Instrument Serif'", "Georgia", "serif"],
+        sans: ["'JetBrains Mono'", "'IBM Plex Mono'", "monospace"],
+        ui: ["'JetBrains Mono'", "'IBM Plex Mono'", "monospace"],
+        mono: ["'JetBrains Mono'", "'IBM Plex Mono'", "monospace"],
+        display: ["'JetBrains Mono'", "'IBM Plex Mono'", "monospace"],
       },
       borderRadius: {
-        lg: "16px",
-        md: "12px",
-        sm: "8px",
+        DEFAULT: "4px",
+        sm: "2px",
+        md: "4px",
+        lg: "4px",
       },
     },
   },

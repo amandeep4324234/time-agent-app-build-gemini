@@ -7,6 +7,7 @@ import { computeDay } from "@/lib/metrics";
 import { Envelope } from "@/lib/types";
 import demoEnvelopeRaw from "../../../../data/demo-sessions.json";
 import { Badge } from "@/components/ui/badge";
+import { formatHoursDuration, maskFencedLabel } from "@/lib/format";
 
 const demoEnvelope = demoEnvelopeRaw as unknown as Envelope;
 
@@ -17,7 +18,6 @@ export default function DebriefPage() {
     return buildLedger(demoEnvelope, seedPins, overrides);
   }, [seedPins, overrides]);
 
-  // Use the anchor day 2026-09-02
   const anchorDay = "2026-09-02";
 
   const metrics = useMemo(() => {
@@ -33,44 +33,34 @@ export default function DebriefPage() {
   const isPaid = entitlement.tier === "pro";
 
   // Derive the 6 lines
-  // 1. Total tracked
   const totalTrackedHours = metrics.lab?.unionHours ?? 0;
-  const line1Total = `${Math.floor(totalTrackedHours)}h ${Math.round((totalTrackedHours % 1) * 60)
-    .toString()
-    .padStart(2, "0")}m`;
+  const line1Total = formatHoursDuration(totalTrackedHours);
+  const line2Focus = formatHoursDuration(metrics.focusHours);
 
-  // 2. Focus-set time
-  const line2Focus = `${Math.floor(metrics.focusHours)}h ${Math.round((metrics.focusHours % 1) * 60)
-    .toString()
-    .padStart(2, "0")}m`;
-
-  // 3. Top sink
   const topSink = metrics.topSinks[0];
-  const line3Sink = topSink
-    ? `${topSink.label} (${Math.floor(topSink.unionHours)}h ${Math.round((topSink.unionHours % 1) * 60)}m)`
+  const topSinkLabel = topSink ? maskFencedLabel(topSink.label, topSink.isPrivate) : null;
+  const line3Sink = topSink && topSinkLabel
+    ? `${topSinkLabel} (${formatHoursDuration(topSink.unionHours)})`
     : "None";
 
-  // 4. Blocks >= 15 min (+ longest)
-  const line4Blocks = `${metrics.blocksCount} blocks (longest ${metrics.longestMinutes} min)`;
+  const line4Blocks = `${metrics.blocksCount} runs >= 15 min (longest ${metrics.longestMinutes} min)`;
 
-  // 5. Writers
   const line5Writers = metrics.sources.phoneDark
     ? `phone off since ${metrics.sources.phoneOffSince || "Aug 28"} · computer on`
     : "phone on · computer on";
 
-  // 6. Named pair (alternation)
   const line6Pair = isPaid
-    ? "The day swung between Grok and GitHub"
+    ? "Day swung between Grok and GitHub"
     : "Grok ↔ GitHub · 4";
 
   return (
-    <div className="max-w-lg mx-auto flex flex-col gap-6 pb-16">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold tracking-tight text-[#F8FAFC]">
-          Evening Debrief
+    <div className="max-w-[560px] w-full mx-auto flex flex-col gap-6 pb-16 font-mono text-xs">
+      <div className="flex flex-col gap-1 pb-3 border-b border-[#21262D]">
+        <h1 className="text-sm font-semibold uppercase tracking-[0.06em] text-[#E6EDF3]">
+          EVENING DEBRIEF
         </h1>
-        <p className="text-xs text-[#94A3B8] font-mono">
-          Receipt for {anchorDay}
+        <p className="text-[11px] text-[#6E7681]">
+          Read-time daily receipt for {anchorDay}
         </p>
       </div>
 
@@ -81,41 +71,41 @@ export default function DebriefPage() {
       )}
 
       {/* 6-Line Receipt Card */}
-      <div className="p-8 rounded-xl border border-[#222735] bg-[#12151D] flex flex-col gap-5 divide-y divide-[#222735] font-mono text-xs">
+      <div className="p-6 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-4 divide-y divide-[#21262D]">
         {/* Line 1 */}
-        <div className="flex justify-between items-center pt-2">
-          <span className="text-[#94A3B8]">Total tracked</span>
-          <span className="text-[#F8FAFC] font-semibold">{line1Total}</span>
+        <div className="flex justify-between items-center pt-1">
+          <span className="text-[#8B949E]">Total tracked</span>
+          <span className="text-[#E6EDF3] font-semibold tnum">{line1Total}</span>
         </div>
 
         {/* Line 2 */}
         <div className="flex justify-between items-center pt-3">
-          <span className="text-[#94A3B8]">Focus-set time</span>
-          <span className="text-[#F8FAFC] font-semibold">{line2Focus}</span>
+          <span className="text-[#8B949E]">Focus-set time</span>
+          <span className="text-[#D29922] font-semibold tnum">{line2Focus}</span>
         </div>
 
         {/* Line 3 */}
         <div className="flex justify-between items-center pt-3">
-          <span className="text-[#94A3B8]">Top sink</span>
-          <span className="text-[#F8FAFC] font-semibold">{line3Sink}</span>
+          <span className="text-[#8B949E]">Top sink</span>
+          <span className="text-[#F85149] font-semibold tnum">{line3Sink}</span>
         </div>
 
         {/* Line 4 */}
         <div className="flex justify-between items-center pt-3">
-          <span className="text-[#94A3B8]">Blocks ≥15 min</span>
-          <span className="text-[#F8FAFC] font-semibold">{line4Blocks}</span>
+          <span className="text-[#8B949E]">Deep blocks</span>
+          <span className="text-[#E6EDF3] font-semibold tnum">{line4Blocks}</span>
         </div>
 
         {/* Line 5 */}
         <div className="flex justify-between items-center pt-3">
-          <span className="text-[#94A3B8]">Writers</span>
-          <span className="text-[#F8FAFC] font-semibold">{line5Writers}</span>
+          <span className="text-[#8B949E]">Writers</span>
+          <span className="text-[#E6EDF3] font-semibold">{line5Writers}</span>
         </div>
 
         {/* Line 6 */}
         <div className="flex justify-between items-center pt-3">
-          <span className="text-[#94A3B8]">Named pair</span>
-          <span className="text-[#22D3EE] font-semibold">{line6Pair}</span>
+          <span className="text-[#8B949E]">Alternation</span>
+          <span className="text-[#E6EDF3] font-semibold">{line6Pair}</span>
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@ export function SegmentedControl<T extends string | number>({
     <div
       role="radiogroup"
       className={cn(
-        "inline-flex p-1 rounded-full border border-[#222735] bg-[#0A0C10] max-w-full overflow-x-auto",
+        "inline-flex p-0.5 rounded-[4px] border border-[#21262D] bg-[#161B22] max-w-full overflow-x-auto font-mono",
         className
       )}
     >
@@ -41,15 +41,15 @@ export function SegmentedControl<T extends string | number>({
             aria-checked={isSelected}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "min-h-[40px] px-4 rounded-full text-xs font-medium transition-all duration-150 flex flex-col items-center justify-center min-w-[64px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE]",
+              "min-h-[28px] px-3 rounded-[2px] text-xs transition-colors duration-120 flex flex-col items-center justify-center min-w-[56px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#D29922]",
               isSelected
-                ? "bg-[#1E2538] text-[#F8FAFC] shadow-sm font-semibold"
-                : "text-[#94A3B8] hover:text-[#F8FAFC] bg-transparent"
+                ? "bg-[#21262D] text-[#E6EDF3] font-semibold"
+                : "text-[#8B949E] hover:text-[#E6EDF3] bg-transparent"
             )}
           >
             <span>{opt.label}</span>
             {opt.subLabel && (
-              <span className="text-[10px] text-[#64748B] font-mono leading-none mt-0.5">
+              <span className="text-[10px] text-[#6E7681] font-mono leading-none mt-0.5">
                 {opt.subLabel}
               </span>
             )}

@@ -1,4 +1,5 @@
 import { EnrichedSession, FocusRun } from "./types";
+import { maskFencedLabel } from "./format";
 
 /**
  * Focus-run (one rule) — verbatim implementation of Section 4.5.
@@ -32,12 +33,17 @@ export function computeFocusRuns(
     let runEnd = sorted[i].ended_at_ms;
     let fillerMs = 0;
     const contributingDevices = new Set<string>([sorted[i].device]);
+    const workApps = new Set<string>([
+      maskFencedLabel(sorted[i].canonical_app || sorted[i].label),
+    ]);
     const lastDeviceActivity: Record<string, number> = {
       [sorted[i].device]: sorted[i].ended_at_ms,
     };
 
     let j = i + 1;
     let runTerminatedAt: number | null = null;
+    let endedBy: "sink" | "hole" | "day-end" | "open" = "open";
+    let killerApp: string | undefined = undefined;
 
     while (j < sorted.length) {
       const s = sorted[j];
@@ -46,6 +52,7 @@ export function computeFocusRuns(
       const overallGapSeconds = (s.started_at_ms - runEnd) / 1000;
       if (overallGapSeconds > 60) {
         runTerminatedAt = runEnd;
+        endedBy = "hole";
         break;
       }
 
@@ -61,12 +68,14 @@ export function computeFocusRuns(
       }
       if (deviceHoleEnd !== null && deviceHoleEnd < s.started_at_ms) {
         runTerminatedAt = deviceHoleEnd;
+        endedBy = "hole";
         break;
       }
 
       contributingDevices.add(s.device);
 
       if (s.category === "work") {
+        workApps.add(maskFencedLabel(s.canonical_app || s.label));
         // Wall-clock head is monotonic — never moves backward on a contained overlap
         runEnd = Math.max(runEnd, s.ended_at_ms);
         lastDeviceActivity[s.device] = Math.max(
@@ -78,6 +87,8 @@ export function computeFocusRuns(
         if (s.seconds >= deathFloorSeconds) {
           // Rule A: sink >= floor ends the run at sink start
           runTerminatedAt = s.started_at_ms;
+          endedBy = "sink";
+          killerApp = maskFencedLabel(s.canonical_app || s.label);
           break;
         } else {
           // Sub-floor sink flicker: adds wall time, spends NO pool
@@ -93,12 +104,14 @@ export function computeFocusRuns(
         const gapMs = Math.max(0, s.started_at_ms - runEnd);
         if (gapMs > 60_000) {
           runTerminatedAt = runEnd;
+          endedBy = "hole";
           break;
         }
 
         if (s.seconds > 60) {
           // Rule B: single filler incident > 60s ends the run
           runTerminatedAt = s.started_at_ms;
+          endedBy = "hole";
           break;
         }
 
@@ -109,6 +122,7 @@ export function computeFocusRuns(
         // Rule C: candidatePool > 0.10 * (s.ended_at - runStart)
         if (candidatePoolMs > 0.1 * candidateRunLengthMs) {
           runTerminatedAt = s.started_at_ms;
+          endedBy = "hole";
           break;
         }
 
@@ -131,6 +145,9 @@ export function computeFocusRuns(
         endMs: finalEnd,
         durationSeconds,
         fillerSeconds: Math.round(fillerMs / 1000),
+        ended_by: endedBy,
+        killerApp,
+        apps: Array.from(workApps),
       });
     }
 

@@ -7,9 +7,9 @@ export default function ProductLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0A0C10] text-[#F8FAFC]">
+    <div className="min-h-screen flex flex-col bg-[#0D1117] text-[#E6EDF3] font-mono">
       <Header />
-      <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-8">
+      <main className="flex-1 w-full mx-auto px-4 py-6">
         {children}
       </main>
     </div>

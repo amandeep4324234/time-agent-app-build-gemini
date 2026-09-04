@@ -3,194 +3,202 @@ import Link from "next/link";
 
 export default function MarketingPage() {
   return (
-    <div className="min-h-screen bg-[#0A0C10] text-[#F8FAFC] flex flex-col justify-between selection:bg-[#22D3EE]/20 selection:text-[#22D3EE]">
+    <div className="min-h-screen bg-[#0D1117] text-[#E6EDF3] font-mono flex flex-col justify-between selection:bg-[#D29922]/20 selection:text-[#D29922]">
       {/* Navigation */}
-      <header className="h-20 w-full max-w-6xl mx-auto px-6 flex items-center justify-between">
-        <span className="text-xl font-bold tracking-tight text-[#F8FAFC]">
-          Timeframe
+      <header className="h-14 w-full max-w-4xl mx-auto px-4 flex items-center justify-between border-b border-[#21262D]">
+        <span className="text-sm font-semibold tracking-tight text-[#E6EDF3]">
+          TIMEFRAME
         </span>
-        <div className="flex items-center gap-6 text-sm">
-          <Link href="#pricing" className="text-[#94A3B8] hover:text-[#F8FAFC] transition-colors">
+        <div className="flex items-center gap-4 text-xs">
+          <Link href="#pricing" className="text-[#8B949E] hover:text-[#E6EDF3] transition-colors">
             Pricing
           </Link>
           <Link
             href="/app"
-            className="px-5 py-2.5 rounded-full bg-[#F8FAFC] text-[#0A0C10] font-medium hover:bg-[#E2E8F0] transition-all"
+            className="px-3 py-1 rounded-[2px] bg-[#E6EDF3] text-[#0D1117] font-medium hover:bg-white transition-colors"
           >
-            Open Ledger
+            Open Panel
           </Link>
         </div>
       </header>
 
       {/* Main Hero */}
-      <main className="max-w-4xl mx-auto px-6 py-16 flex flex-col items-center text-center gap-12">
-        <div className="flex flex-col items-center gap-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#222735] bg-[#12151D] text-xs font-mono text-[#94A3B8]">
-            <span className="w-2 h-2 rounded-full bg-[#22D3EE]" />
-            Local-first cross-device attention ledger
+      <main className="max-w-3xl mx-auto px-4 py-12 flex flex-col items-center text-center gap-10">
+        <div className="flex flex-col items-center gap-3">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-[2px] border border-[#21262D] bg-[#161B22] text-[11px] text-[#8B949E]">
+            <span className="w-1.5 h-1.5 rounded-[1px] bg-[#D29922]" />
+            Screen-time instrument panel
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-[#F8FAFC] max-w-2xl leading-tight">
-            States the number. Names its own blind spots.
+          <h1 className="text-2xl md:text-4xl font-semibold tracking-tight text-[#E6EDF3] max-w-xl leading-snug">
+            The instrument panel for people who are serious about their time.
           </h1>
 
-          <p className="text-base md:text-lg text-[#94A3B8] max-w-xl leading-relaxed">
-            A builder’s attention is spent in fragments. Timeframe computes the real interval union across phone and computer. No moralizing scores, no fake zeros, no diagnosis.
+          <p className="text-xs md:text-sm text-[#8B949E] max-w-lg leading-relaxed">
+            Measures which app is on screen and for how long, never what is on it. Read-time focus runs, union hours, and an honest day timeline.
           </p>
         </div>
 
         {/* Hero CTAs */}
-        <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link
             href="/app"
-            className="px-8 py-3.5 rounded-full bg-[#F8FAFC] text-[#0A0C10] font-semibold text-sm hover:bg-[#E2E8F0] transition-all shadow-lg min-w-[180px]"
+            className="px-5 py-2 rounded-[4px] bg-[#E6EDF3] text-[#0D1117] font-medium text-xs hover:bg-white transition-colors"
           >
-            Open the Ledger
+            Open Instrument Panel
           </Link>
           <Link
             href="/onboarding"
-            className="px-8 py-3.5 rounded-full border border-[#333D52] text-[#E2E8F0] font-semibold text-sm hover:bg-[#1E2538] transition-all min-w-[180px]"
+            className="px-5 py-2 rounded-[4px] border border-[#21262D] bg-[#161B22] text-[#E6EDF3] font-medium text-xs hover:bg-[#1C2128] transition-colors"
           >
-            Get Started
+            Configure Pins
           </Link>
         </div>
 
         {/* 3-Number Demo Strip */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D] flex flex-col gap-1 items-center">
-            <span className="text-3xl font-mono font-bold text-[#22D3EE]">39.37h</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
-              Cross-device union
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3 pt-4">
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1 items-center">
+            <span className="text-2xl font-bold text-[#D29922] tnum">4h 30m</span>
+            <span className="text-[10px] uppercase tracking-wider text-[#8B949E]">
+              Focus union hours
             </span>
           </div>
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D] flex flex-col gap-1 items-center">
-            <span className="text-3xl font-mono font-bold text-[#F8FAFC]">39.61h</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
-              Raw sum
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1 items-center">
+            <span className="text-2xl font-bold text-[#F85149] tnum">1h 12m</span>
+            <span className="text-[10px] uppercase tracking-wider text-[#8B949E]">
+              Sink time
             </span>
           </div>
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D] flex flex-col gap-1 items-center">
-            <span className="text-3xl font-mono font-bold text-[#F43F5E]">0.24h</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
-              Double-count eliminated
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1 items-center">
+            <span className="text-2xl font-bold text-[#E6EDF3] tnum">3 deep</span>
+            <span className="text-[10px] uppercase tracking-wider text-[#8B949E]">
+              Runs &gt;= 15 min
             </span>
           </div>
         </div>
 
-        {/* The Four Pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left pt-12 w-full">
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D]/60 flex flex-col gap-2">
-            <span className="text-xs font-mono text-[#22D3EE]">Pillar 1</span>
-            <h3 className="text-base font-semibold text-[#F8FAFC]">The ledger never lies</h3>
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              Interval union, not naive sum. Wall-clock run length. Blank, not zero, for missing measurement. Same input produces the exact same numbers, every time.
+        {/* The Core Principles */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left pt-6 w-full">
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1.5">
+            <span className="text-[10px] uppercase text-[#D29922]">Principle 1</span>
+            <h2 className="text-xs font-semibold text-[#E6EDF3]">Interval union, not naive sum</h2>
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              When phone and computer overlap, time is counted once in all focus unions. Raw sum vs union double-count is reported plainly.
             </p>
           </div>
 
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D]/60 flex flex-col gap-2">
-            <span className="text-xs font-mono text-[#22D3EE]">Pillar 2</span>
-            <h3 className="text-base font-semibold text-[#F8FAFC]">Confess the instrument</h3>
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              When a tracker goes dark, the banner appears and refuses to dismiss until the writer logs again. The unclassified badge states unmeasured domains plainly.
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1.5">
+            <span className="text-[10px] uppercase text-[#D29922]">Principle 2</span>
+            <h2 className="text-xs font-semibold text-[#E6EDF3]">The sacred private fence</h2>
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              Health, dating, finance, and explicit apps appear as the literal word &quot;private&quot; on every surface, before any share or insight is produced.
             </p>
           </div>
 
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D]/60 flex flex-col gap-2">
-            <span className="text-xs font-mono text-[#22D3EE]">Pillar 3</span>
-            <h3 className="text-base font-semibold text-[#F8FAFC]">Reward approach</h3>
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              Longest-run sits beside the block count so a zero-block day still reads its longest continuous work. You are never the defendant.
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1.5">
+            <span className="text-[10px] uppercase text-[#D29922]">Principle 3</span>
+            <h2 className="text-xs font-semibold text-[#E6EDF3]">Read-time math, zero stored metrics</h2>
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              All metrics compute at query time from 8 session-row fields. Sync is dumb append-only row replication.
             </p>
           </div>
 
-          <div className="p-6 rounded-xl border border-[#222735] bg-[#12151D]/60 flex flex-col gap-2">
-            <span className="text-xs font-mono text-[#22D3EE]">Pillar 4</span>
-            <h3 className="text-base font-semibold text-[#F8FAFC]">Cargo, not gate</h3>
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              Charm rides on the truth; it never carries it. The ledger, all seven numbers, the heatmap, and exports are 100% free and local-first forever.
+          <div className="p-4 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col gap-1.5">
+            <span className="text-[10px] uppercase text-[#D29922]">Principle 4</span>
+            <h2 className="text-xs font-semibold text-[#E6EDF3]">The 5-second test</h2>
+            <p className="text-[11px] text-[#8B949E] leading-relaxed">
+              Every screen answers &quot;Was today a good day, and what ruined it?&quot; in 5 seconds. One hero, one signature day timeline, no gamified guilt.
             </p>
           </div>
         </div>
 
-        {/* Pricing Section */}
-        <div id="pricing" className="w-full pt-16 flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight text-[#F8FAFC]">
-              Simple, Honest Pricing
+        {/* Pricing Section (BUSINESS.md §1 & §2) */}
+        <div id="pricing" className="w-full pt-10 border-t border-[#21262D] flex flex-col items-center gap-6">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.06em] text-[#E6EDF3]">
+              PRICING
             </h2>
-            <p className="text-xs font-mono text-[#94A3B8]">
-              No metrics or history windows are ever behind a paywall.
+            <p className="text-[11px] text-[#8B949E]">
+              Free is a complete product forever. Pro adds depth.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl text-left">
-            {/* Free */}
-            <div className="p-8 rounded-xl border border-[#222735] bg-[#12151D] flex flex-col justify-between gap-6">
-              <div className="flex flex-col gap-4">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
-                  Ledger Core
-                </span>
-                <div className="text-3xl font-mono font-bold text-[#F8FAFC]">Free</div>
-                <ul className="text-xs font-mono text-[#94A3B8] flex flex-col gap-2">
-                  <li>✓ All 7 dashboard cards</li>
-                  <li>✓ True interval union & double-count math</li>
-                  <li>✓ 24-hour heatmap & night shift accounting</li>
-                  <li>✓ Unclassified & tracker-off confessions</li>
-                  <li>✓ Basic creature companion</li>
-                  <li>✓ Local-only storage & SAF export</li>
-                </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full text-left">
+            {/* Free Tier */}
+            <div className="p-5 rounded-[4px] border border-[#21262D] bg-[#161B22] flex flex-col justify-between gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs font-semibold text-[#E6EDF3]">FREE</span>
+                  <span className="text-lg font-bold text-[#E6EDF3]">$0</span>
+                </div>
+                <p className="text-[11px] text-[#8B949E]">
+                  Free forever. Never ads, never nags.
+                </p>
+                <div className="flex flex-col gap-1 pt-2 text-[11px] text-[#8B949E]">
+                  <div>✓ Today view &amp; hero strip</div>
+                  <div>✓ Signature day timeline with scrub</div>
+                  <div>✓ Mix ring &amp; 12-week heatmap</div>
+                  <div>✓ 7-day rolling history</div>
+                  <div>✓ Free weekly shareable week card</div>
+                  <div>✓ Permanent trust features &amp; private fence</div>
+                </div>
               </div>
+
               <Link
                 href="/app"
-                className="w-full py-3 text-center rounded-full border border-[#333D52] text-xs font-mono text-[#F8FAFC] hover:bg-[#1E2538] transition-colors"
+                className="w-full py-2 text-center rounded-[2px] border border-[#21262D] text-xs font-medium text-[#E6EDF3] hover:bg-[#1C2128] transition-colors"
               >
                 Use Free
               </Link>
             </div>
 
-            {/* Pro */}
-            <div className="p-8 rounded-xl border border-[#22D3EE]/40 bg-[#12151D] flex flex-col justify-between gap-6 relative shadow-lg">
-              <div className="absolute top-4 right-4 text-[10px] font-mono text-[#22D3EE] border border-[#22D3EE]/40 px-2 py-0.5 rounded-full">
-                Supporter
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#22D3EE]">
-                  Timeframe Pro
-                </span>
-                <div className="text-3xl font-mono font-bold text-[#F8FAFC]">
-                  ₹499 <span className="text-xs text-[#94A3B8] font-normal">/ month</span>
+            {/* Pro Tier ($15/yr, $1.25/mo) */}
+            <div className="p-5 rounded-[4px] border border-[#D29922]/50 bg-[#161B22] flex flex-col justify-between gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs font-semibold text-[#D29922]">PRO (EARLY BIRD)</span>
+                  <span className="text-lg font-bold text-[#E6EDF3] tnum">
+                    $1.25<span className="text-xs font-normal text-[#8B949E]">/mo</span>
+                  </span>
                 </div>
-                <ul className="text-xs font-mono text-[#94A3B8] flex flex-col gap-2">
-                  <li>✓ Everything in Free</li>
-                  <li>✓ Full creature evolution & stages</li>
-                  <li>✓ Named killer on creature death</li>
-                  <li>✓ Day streak counter</li>
-                  <li>✓ Clean week card export (no watermark)</li>
-                  <li>✓ Warmer debrief phrasings</li>
-                </ul>
+                <p className="text-[11px] text-[#8B949E]">
+                  $15/yr billed annually. Locked early bird rate.
+                </p>
+                <div className="flex flex-col gap-1 pt-2 text-[11px] text-[#E6EDF3]">
+                  <div>✓ Full cross-device history</div>
+                  <div>✓ Compare / ghost overlay mode</div>
+                  <div>✓ Read-time insight engine</div>
+                  <div>✓ Goals, sink allowance &amp; streaks</div>
+                  <div>✓ Weekly graded report cards (A–F)</div>
+                  <div>✓ Creature companion live block</div>
+                  <div>✓ Unlimited shareable image exports</div>
+                </div>
               </div>
+
               <Link
                 href="/checkout"
-                className="w-full py-3 text-center rounded-full bg-[#22D3EE] text-[#0A0C10] text-xs font-mono font-bold hover:bg-[#06B6D4] transition-colors"
+                className="w-full py-2 text-center rounded-[2px] bg-[#E6EDF3] text-xs font-medium text-[#0D1117] hover:bg-white transition-colors"
               >
-                Upgrade to Pro
+                Get Pro ($15/yr)
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Verbatim Permission Disclosure (QA.md P9) */}
+        <div className="w-full p-4 rounded-[4px] bg-[#161B22] border border-[#21262D] text-[11px] text-[#8B949E] text-left leading-relaxed">
+          <span className="text-[#E6EDF3] font-medium">Privacy disclosure: </span>
+          Timeframe measures which app is on the screen and for how long. It never sees screen content, keystrokes, or anything you type.
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-[#222735] py-8 text-center text-xs font-mono text-[#64748B] flex flex-col gap-3">
-        <div className="flex justify-center gap-6">
-          <Link href="/terms" className="hover:text-[#F8FAFC] transition-colors">
-            Terms of Service
-          </Link>
-          <Link href="/privacy" className="hover:text-[#F8FAFC] transition-colors">
-            Privacy Policy
-          </Link>
+      <footer className="h-12 w-full max-w-4xl mx-auto px-4 flex items-center justify-between border-t border-[#21262D] text-[11px] text-[#6E7681]">
+        <span>Timeframe — Screen time, honestly instrumented</span>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy" className="hover:text-[#E6EDF3]">Privacy</Link>
+          <Link href="/terms" className="hover:text-[#E6EDF3]">Terms</Link>
         </div>
-        <div>Timeframe Labs · Bengaluru · GST 29AAAAA0000A1Z5</div>
       </footer>
     </div>
   );

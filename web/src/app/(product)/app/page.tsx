@@ -1,24 +1,28 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, Suspense } from "react";
+import React, { useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { DateTime } from "luxon";
 import { useAppStore } from "@/lib/store";
 import { buildLedger } from "@/lib/ingest";
 import { computeDay } from "@/lib/metrics";
-import { computeDayHeatmap } from "@/lib/heatmap";
 import { getLogicalDay } from "@/lib/day";
 import { Envelope } from "@/lib/types";
 import demoEnvelopeRaw from "../../../../data/demo-sessions.json";
 
-import { FocusHours } from "@/components/app/cards/FocusHours";
-import { SinkHours } from "@/components/app/cards/SinkHours";
-import { DeepBlocks } from "@/components/app/cards/DeepBlocks";
-import { MixRing } from "@/components/app/cards/MixRing";
-import { TopSinks } from "@/components/app/cards/TopSinks";
-import { SourceHours } from "@/components/app/cards/SourceHours";
-import { HeatmapCard, HeatmapDay } from "@/components/app/cards/HeatmapCard";
+import { buildTimelineModel } from "@/lib/timeline-model";
+import { generateInsightLines } from "@/lib/insight-lines";
+import { compute12WeekHeatmap } from "@/lib/heatmap";
+
+import { HeroStrip } from "@/components/hero/HeroStrip";
+import { MixRow } from "@/components/mix/MixRow";
+import { Timeline } from "@/components/timeline/Timeline";
+import { TopSinksRow } from "@/components/compact/TopSinksRow";
+import { SourceRow } from "@/components/compact/SourceRow";
+import { HeatmapCompact } from "@/components/compact/HeatmapCompact";
+import { InsightLines } from "@/components/insights/InsightLines";
 import { HabitatCard } from "@/components/creature/habitat-card";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { MetaFooter } from "@/components/footer/MetaFooter";
 
 const demoEnvelope = demoEnvelopeRaw as unknown as Envelope;
 
@@ -27,6 +31,11 @@ function DashboardContent() {
   const router = useRouter();
 
   const { settings, seedPins, overrides, entitlement } = useAppStore();
+  const isPro = entitlement.tier === "pro";
+
+  // Ghost mode state (Pro feature)
+  const [isGhostActive, setIsGhostActive] = useState(false);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
 
   // Ingest sessions with current pins/overrides
   const ledger = useMemo(() => {
@@ -44,18 +53,35 @@ function DashboardContent() {
 
   // Query parameter ?day=
   const urlDay = searchParams.get("day");
-  const defaultDay = availableDays.length > 0 ? availableDays[availableDays.length - 1] : "2026-09-02";
-  const selectedDay = urlDay && availableDays.includes(urlDay) ? urlDay : defaultDay;
+  const latestDay = availableDays.length > 0 ? availableDays[availableDays.length - 1] : "2026-09-02";
+  const selectedDay = urlDay && availableDays.includes(urlDay) ? urlDay : latestDay;
+
+  const currentIndex = availableDays.indexOf(selectedDay);
+  const isToday = selectedDay === latestDay;
 
   const handleSelectDay = (day: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("day", day);
-    window.history.replaceState(null, "", `?${params.toString()}`);
-    // Force rerender through shallow push or local state
     router.replace(`/app?${params.toString()}`);
   };
 
-  // Compute metrics for the selected day
+  const handlePrevDay = () => {
+    if (currentIndex > 0) {
+      handleSelectDay(availableDays[currentIndex - 1]);
+    }
+  };
+
+  const handleNextDay = () => {
+    if (currentIndex < availableDays.length - 1) {
+      handleSelectDay(availableDays[currentIndex + 1]);
+    }
+  };
+
+  const handleBackToToday = () => {
+    handleSelectDay(latestDay);
+  };
+
+  // Day metrics
   const dayMetrics = useMemo(() => {
     return computeDay(
       selectedDay,
@@ -66,104 +92,179 @@ function DashboardContent() {
     );
   }, [selectedDay, ledger, settings.deathFloor]);
 
-  // Compute full 7-day heatmap
-  const fullHeatmapDays: HeatmapDay[] = useMemo(() => {
-    return availableDays.map((d) => ({
-      date: d,
-      hours: computeDayHeatmap(ledger, d, "Asia/Kolkata"),
-    }));
-  }, [availableDays, ledger]);
+  // Ghost reference day: same weekday last week (7 days prior), or previous day
+  const ghostDayKey = useMemo(() => {
+    const targetDt = DateTime.fromISO(selectedDay).minus({ days: 7 }).toISODate();
+    if (targetDt && availableDays.includes(targetDt)) return targetDt;
+    if (currentIndex > 0) return availableDays[currentIndex - 1];
+    return undefined;
+  }, [selectedDay, availableDays, currentIndex]);
 
-  const isDemoPillVisible = demoEnvelope.count < 100;
+  // Timeline model
+  const timelineModel = useMemo(() => {
+    return buildTimelineModel(
+      selectedDay,
+      ledger,
+      "Asia/Kolkata",
+      settings.deathFloor,
+      isGhostActive && ghostDayKey ? ledger : undefined,
+      isGhostActive ? ghostDayKey : undefined
+    );
+  }, [selectedDay, ledger, settings.deathFloor, isGhostActive, ghostDayKey]);
 
-  const dayOptions = availableDays.map((d) => {
-    const dateObj = new Date(`${d}T00:00:00Z`);
-    const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
-    return {
-      label: dayName,
-      subLabel: d.slice(5),
-      value: d,
-    };
-  });
+  // Insight lines per UI.md §3
+  const insightLines = useMemo(() => {
+    const daySessions = ledger.filter(
+      (s) => getLogicalDay(s.started_at_ms, "Asia/Kolkata") === selectedDay
+    );
+    return generateInsightLines(
+      dayMetrics,
+      timelineModel.runs,
+      daySessions,
+      "Asia/Kolkata"
+    );
+  }, [dayMetrics, timelineModel.runs, ledger, selectedDay]);
+
+  // 12-week heatmap grid per UI.md §2.3
+  const heatmapGrid = useMemo(() => {
+    return compute12WeekHeatmap(ledger, selectedDay, "Asia/Kolkata");
+  }, [ledger, selectedDay]);
+
+  // Rank text for past days (e.g. "2nd best of 7")
+  const rankText = useMemo(() => {
+    if (isToday) return undefined;
+    const sortedByFocus = [...availableDays].sort((a, b) => {
+      const aHours = computeDay(a, ledger).focusHours;
+      const bHours = computeDay(b, ledger).focusHours;
+      return bHours - aHours;
+    });
+    const rank = sortedByFocus.indexOf(selectedDay) + 1;
+    const suffixes = ["th", "st", "nd", "rd"];
+    const v = rank % 100;
+    const suffix = suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0];
+    return `${rank}${suffix} best of ${availableDays.length}`;
+  }, [isToday, availableDays, selectedDay, ledger]);
+
+  // Day header label
+  const dayTitle = isToday
+    ? "TODAY"
+    : DateTime.fromISO(selectedDay).toFormat("ccc LLL d").toUpperCase();
+
+  // Scroll to first sink when user taps sink in MixRow or InsightLine
+  const handleScrollToSink = () => {
+    const firstSink = timelineModel.phoneSegments
+      .concat(timelineModel.computerSegments)
+      .filter((s) => s.category === "sink")
+      .sort((a, b) => a.started_at_ms - b.started_at_ms)[0];
+
+    if (firstSink) {
+      setSelectedSegmentId(firstSink.id);
+      setTimeout(() => setSelectedSegmentId(null), 1500);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
-      {/* Top Header Row */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-[#F8FAFC]">
-            Attention Ledger
-          </h1>
-          <p className="text-xs text-[#94A3B8] font-mono mt-0.5">
-            Logical day 04:00 – 04:00 Asia/Kolkata
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {isDemoPillVisible && (
-            <span className="px-3 py-1 text-xs font-mono rounded-full bg-[#22D3EE]/10 text-[#22D3EE] border border-[#22D3EE]/30">
-              Demo Placeholder Data
-            </span>
-          )}
-          {dayOptions.length > 0 && (
-            <SegmentedControl
-              options={dayOptions}
-              value={selectedDay}
-              onChange={handleSelectDay}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Creature Companion Habitat Card */}
-      <HabitatCard
-        status="idle"
-        isPaid={entitlement.tier === "pro"}
-      />
-
-      {/* The Seven Cards in Exact Spec Order */}
-
-      {/* Cards 1, 2, 3: FocusHours, SinkHours, DeepBlocks */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <FocusHours
-          hours={dayMetrics.focusHours}
-          isLightDay={dayMetrics.lightDay}
-        />
-        <SinkHours
-          hours={dayMetrics.sinkHours}
-          isLightDay={dayMetrics.lightDay}
-        />
-        <DeepBlocks
-          blocksCount={dayMetrics.blocksCount}
-          longestMinutes={dayMetrics.longestMinutes}
-        />
-      </div>
-
-      {/* Card 4: MixRing & Card 5: TopSinks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MixRing
-          shares={dayMetrics.mix.shares}
-          totalHours={dayMetrics.mix.totalHours}
-          gamesHeavyNotice={dayMetrics.mix.gamesHeavy}
-          sustainedUnclassifiedNotice={dayMetrics.mix.sustainedUnclassifiedAction}
-        />
-        <TopSinks sinks={dayMetrics.topSinks} />
-      </div>
-
-      {/* Card 6: SourceHours (+ Banner) */}
-      <SourceHours
-        phoneHours={dayMetrics.sources.phoneHours}
-        computerHours={dayMetrics.sources.computerHours}
+    <div className="max-w-[720px] w-full mx-auto flex flex-col gap-4 font-mono select-text pb-12">
+      {/* 1. Hero Strip (96dp height budget, UI.md §1.1) */}
+      <HeroStrip
+        dayTitle={dayTitle}
+        isToday={isToday}
+        rankText={rankText}
+        focusHours={dayMetrics.focusHours}
+        sinkHours={dayMetrics.sinkHours}
+        deepBlocksCount={dayMetrics.blocksCount}
+        longestMinutes={dayMetrics.longestMinutes}
+        totalTrackedHours={dayMetrics.lab?.unionHours ?? dayMetrics.mix.totalHours}
+        isLightDay={dayMetrics.lightDay}
         phoneDark={dayMetrics.sources.phoneDark}
         phoneOffSince={dayMetrics.sources.phoneOffSince}
         computerDark={dayMetrics.sources.computerDark}
         computerOffSince={dayMetrics.sources.computerOffSince}
-        phoneLastWriteAge={dayMetrics.sources.phoneLastWriteAge}
-        computerLastWriteAge={dayMetrics.sources.computerLastWriteAge}
+        isGhostActive={isGhostActive}
+        isPro={isPro}
+        onToggleGhost={() => setIsGhostActive(!isGhostActive)}
       />
 
-      {/* Card 7: Heatmap */}
-      <HeatmapCard days={fullHeatmapDays} />
+      {/* 2. Mix Row (40dp height, 36dp ring, UI.md §1.1 & §2.2) */}
+      <MixRow
+        mix={dayMetrics.mix}
+        isLightDay={dayMetrics.lightDay}
+        isNoData={timelineModel.isNoData}
+        onSinkRowClick={handleScrollToSink}
+      />
+
+      {/* 3. Day Timeline (signature instrument element, UI.md §2.1) */}
+      <div className="border-t border-[#21262D] pt-2">
+        <Timeline
+          model={timelineModel}
+          isGhostActive={isGhostActive}
+          selectedSegmentId={selectedSegmentId}
+        />
+      </div>
+
+      {/* 4. Compact Rows: Top Sinks | By Source | Heatmap 12wk (UI.md §1.1) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-[#21262D]">
+        {/* Top Sinks Compact List */}
+        <TopSinksRow
+          sinks={dayMetrics.topSinks}
+          onSelectSink={handleScrollToSink}
+        />
+
+        {/* By Source Compact List */}
+        <SourceRow
+          phoneHours={dayMetrics.sources.phoneHours}
+          computerHours={dayMetrics.sources.computerHours}
+          phoneDark={dayMetrics.sources.phoneDark}
+          phoneOffSince={dayMetrics.sources.phoneOffSince}
+          computerDark={dayMetrics.sources.computerDark}
+          computerOffSince={dayMetrics.sources.computerOffSince}
+        />
+
+        {/* Heatmap 12wk Thumbnail */}
+        <HeatmapCompact
+          grid={heatmapGrid}
+          selectedDay={selectedDay}
+          onSelectDay={handleSelectDay}
+        />
+      </div>
+
+      {/* 5. Insight Lines (UI.md §2.6 & §3 templates) */}
+      <InsightLines
+        lines={insightLines}
+        onLineClick={(item) => {
+          if (item.target === "sink") handleScrollToSink();
+        }}
+      />
+
+      {/* 6. Creature Companion (UI.md §2.4) */}
+      <HabitatCard
+        status={
+          timelineModel.isNoData
+            ? "empty"
+            : dayMetrics.sinkHours > 0 && dayMetrics.sinkHours >= 1.5
+            ? "broken"
+            : dayMetrics.focusHours > 0
+            ? "focusing"
+            : "idle"
+        }
+        killerName={dayMetrics.topSinks[0]?.label}
+        timeOfDeath="2:47pm"
+        minutesSurvived={dayMetrics.longestMinutes || 18}
+        minutesGrownToday={Math.round(dayMetrics.focusHours * 60)}
+        isLightDay={dayMetrics.lightDay}
+        isNoData={timelineModel.isNoData}
+        isPaid={isPro}
+      />
+
+      {/* 7. Meta Footer (UI.md §1.1 & §1.2) */}
+      <MetaFooter
+        isToday={isToday}
+        onPrevDay={handlePrevDay}
+        onNextDay={handleNextDay}
+        onBackToToday={handleBackToToday}
+        hasPrev={currentIndex > 0}
+        hasNext={currentIndex < availableDays.length - 1}
+      />
     </div>
   );
 }
@@ -172,8 +273,8 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-8 text-xs font-mono text-[#64748B]">
-          Loading dashboard…
+        <div className="max-w-[720px] mx-auto p-8 text-xs font-mono text-[#6E7681]">
+          Loading instrument panel…
         </div>
       }
     >
