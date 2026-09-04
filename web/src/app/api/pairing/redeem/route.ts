@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { redeemPairingCode } from "@/adapters/server-store/pairing";
 import { getEntitlementRow, updateEntitlementCrossDevice } from "@/adapters/server-store/rows";
 import { logEntitlementEvent } from "@/adapters/server-store/events";
+import { isDevEntitlement } from "@/lib/entitlement";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +32,11 @@ export async function POST(req: NextRequest) {
     }
 
     const entitlement = await getEntitlementRow(redeemResult.aid);
-    if (!entitlement || entitlement.tier !== "pro") {
+    if (
+      !entitlement ||
+      entitlement.tier !== "pro" ||
+      (process.env.NODE_ENV === "production" && isDevEntitlement(entitlement))
+    ) {
       return NextResponse.json(
         { error: "ENTITLEMENT_INACTIVE" },
         { status: 403, headers: { "Cache-Control": "no-store" } }

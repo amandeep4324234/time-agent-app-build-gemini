@@ -32,6 +32,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+*.tsbuildinfo
 
 # Raw data exports kept out of repo per spec
 timeframe-log-7d-all-*.json

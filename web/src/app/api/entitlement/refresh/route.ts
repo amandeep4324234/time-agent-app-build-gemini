@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt, signJwt } from "@/adapters/entitlement-jwt/jwt";
 import { getEntitlementRow } from "@/adapters/server-store/rows";
 import { logEntitlementEvent } from "@/adapters/server-store/events";
+import { isDevEntitlement } from "@/lib/entitlement";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,6 +19,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
     }
 
+    // Security guard: Dev entitlements cannot be refreshed in production
+    if (process.env.NODE_ENV === "production" && isDevEntitlement(claims)) {
+      return NextResponse.json(
+        { error: "DEPRECATED", message: "Dev entitlement refresh is deprecated and disabled in production." },
+        { status: 403 }
+      );
+    }
+
     // Step 2: verify now - iat <= 30 days
     const nowSec = Math.floor(Date.now() / 1000);
     const iat = claims.iat || 0;
@@ -30,6 +39,13 @@ export async function POST(req: NextRequest) {
     const row = await getEntitlementRow(claims.sub);
     if (!row || (row as any).revoked_at != null) {
       return NextResponse.json({ error: "ENTITLEMENT_INACTIVE" }, { status: 403 });
+    }
+
+    if (process.env.NODE_ENV === "production" && isDevEntitlement(row)) {
+      return NextResponse.json(
+        { error: "DEPRECATED", message: "Dev entitlement refresh is deprecated and disabled in production." },
+        { status: 403 }
+      );
     }
 
     // Step 4: valid_until present and in the past

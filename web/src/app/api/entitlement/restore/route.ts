@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEntitlementRow, getEntitlementRowByRef } from "@/adapters/server-store/rows";
 import { signEntitlementJwt } from "@/adapters/entitlement-jwt/jwt";
-import { createFreeEntitlement } from "@/lib/entitlement";
+import { createFreeEntitlement, isDevEntitlement } from "@/lib/entitlement";
 import { Entitlement } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -18,6 +18,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (row && row.tier === "pro" && !row.revoked_at) {
+      // Security guard: Dev entitlements cannot be restored in production
+      if (process.env.NODE_ENV === "production" && isDevEntitlement(row)) {
+        return NextResponse.json({
+          status: "not_found",
+          entitlement: createFreeEntitlement(),
+        });
+      }
       const entitlement: Entitlement = {
         aid: row.aid,
         tier: row.tier,

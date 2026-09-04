@@ -8,7 +8,13 @@ export interface SyncRow {
   version?: string;
 }
 
-const inMemorySyncRows = new Map<string, SyncRow>();
+const globalForSync = globalThis as unknown as {
+  inMemorySyncRows?: Map<string, SyncRow>;
+};
+
+const inMemorySyncRows =
+  globalForSync.inMemorySyncRows ??
+  (globalForSync.inMemorySyncRows = new Map<string, SyncRow>());
 
 export async function putSyncRow(row: {
   pair_id: string;

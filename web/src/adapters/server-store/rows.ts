@@ -12,8 +12,14 @@ export interface EntitlementDbRow {
   revoked_at: string | null;
 }
 
+const globalForRows = globalThis as unknown as {
+  inMemoryRows?: Map<string, EntitlementDbRow>;
+};
+
 // In-memory backing for local development and testing
-const inMemoryRows = new Map<string, EntitlementDbRow>();
+const inMemoryRows =
+  globalForRows.inMemoryRows ??
+  (globalForRows.inMemoryRows = new Map<string, EntitlementDbRow>());
 
 export async function getEntitlementRow(aid: string): Promise<EntitlementDbRow | null> {
   return inMemoryRows.get(aid) || null;

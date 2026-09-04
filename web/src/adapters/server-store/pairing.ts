@@ -9,7 +9,13 @@ interface PairingCodeRow {
   failed_attempts: number;
 }
 
-const inMemoryPairing = new Map<string, PairingCodeRow>();
+const globalForPairing = globalThis as unknown as {
+  inMemoryPairing?: Map<string, PairingCodeRow>;
+};
+
+const inMemoryPairing =
+  globalForPairing.inMemoryPairing ??
+  (globalForPairing.inMemoryPairing = new Map<string, PairingCodeRow>());
 const CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 glyphs, excludes 0, O, 1, I
 const SECRET = process.env.ENTITLEMENT_SECRET || "dev-secret-entitlement-key-must-be-32-chars-minimum";
 

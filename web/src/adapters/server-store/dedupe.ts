@@ -4,7 +4,13 @@ interface DedupeEntry {
   processedAt: string;
 }
 
-const inMemoryDedupe = new Map<string, DedupeEntry>();
+const globalForDedupe = globalThis as unknown as {
+  inMemoryDedupe?: Map<string, DedupeEntry>;
+};
+
+const inMemoryDedupe =
+  globalForDedupe.inMemoryDedupe ??
+  (globalForDedupe.inMemoryDedupe = new Map<string, DedupeEntry>());
 
 function dedupeKey(eventId: string, entityId: string): string {
   return `${eventId}:${entityId}`;

@@ -4,6 +4,7 @@ import React, { useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { DateTime } from "luxon";
 import { useAppStore } from "@/lib/store";
+import { isPaid } from "@/lib/entitlement";
 import { buildLedger } from "@/lib/ingest";
 import { computeDay } from "@/lib/metrics";
 import { getLogicalDay } from "@/lib/day";
@@ -31,7 +32,7 @@ function DashboardContent() {
   const router = useRouter();
 
   const { settings, seedPins, overrides, entitlement } = useAppStore();
-  const isPro = entitlement.tier === "pro";
+  const isPro = isPaid(entitlement);
 
   // Ghost mode state (Pro feature)
   const [isGhostActive, setIsGhostActive] = useState(false);

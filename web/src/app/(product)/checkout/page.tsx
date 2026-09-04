@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import {
+  createDevProEntitlement,
+  createFreeEntitlement,
+  isPaid,
+} from "@/lib/entitlement";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -11,7 +16,7 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const isAlreadyPaid = entitlement.tier === "pro";
+  const isAlreadyPaid = isPaid(entitlement);
 
   const handleActivatePro = async () => {
     setIsProcessing(true);
@@ -50,17 +55,27 @@ export default function CheckoutPage() {
   };
 
   const handleDeactivate = () => {
-    setEntitlement({
-      aid: null,
-      tier: "free",
-      plan: null,
-      src: null,
-      ref: null,
-      skin: null,
-      valid_until: null,
-      jti: null,
-    });
+    setEntitlement(createFreeEntitlement());
+    if (process.env.NODE_ENV !== "production") {
+      fetch("/api/dev/entitlement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "revoke" }),
+      }).catch(() => {});
+    }
     setStatusMessage("Reverted to free tier.");
+  };
+
+  const handleDevGrant = () => {
+    if (process.env.NODE_ENV !== "production") {
+      setEntitlement(createDevProEntitlement());
+      fetch("/api/dev/entitlement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "grant" }),
+      }).catch(() => {});
+      setStatusMessage("Dev Pro activated. Paid features ready for local testing.");
+    }
   };
 
   return (
@@ -74,6 +89,37 @@ export default function CheckoutPage() {
           The instrument panel is free forever. Pro unlocks full history, compare, and insights.
         </p>
       </div>
+
+      {/* Developer Pro Access Panel (Strictly deprecated and hidden in production) */}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="p-4 rounded-[4px] border border-[#D29922]/40 bg-[#161B22] flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#D29922]">
+              🛠️ Developer Pro Access (Dev Only)
+            </span>
+            <span className="text-[10px] text-[#8B949E]">
+              {isAlreadyPaid ? "Pro active" : "Free tier"}
+            </span>
+          </div>
+          <p className="text-[11px] text-[#8B949E] leading-relaxed">
+            Toggle Pro features instantly to test locked vs unlocked UI states without payment.
+            This logic is deprecated and strictly deactivated when built for production.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant={isAlreadyPaid ? "secondary" : "primary"}
+              onClick={handleDevGrant}
+            >
+              {isAlreadyPaid ? "Re-grant Dev Pro" : "Unlock Paid Features (Dev)"}
+            </Button>
+            {isAlreadyPaid && (
+              <Button variant="secondary" onClick={handleDeactivate}>
+                Switch to Free
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {isAlreadyPaid ? (
         <div className="p-6 rounded-[4px] border border-[#D29922]/40 bg-[#161B22] flex flex-col items-center gap-4 text-center">

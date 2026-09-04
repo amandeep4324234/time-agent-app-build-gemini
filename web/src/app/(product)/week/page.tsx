@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/lib/store";
+import { isPaid as checkIsPaid } from "@/lib/entitlement";
 import { buildLedger } from "@/lib/ingest";
 import { computeWeek, buildWeekCardModel } from "@/lib/week";
 import { Envelope } from "@/lib/types";
@@ -32,7 +33,7 @@ export default function WeekPage() {
   }, [ledger, deviceFilter]);
 
   const hasData = filteredLedger.length > 0;
-  const isPaid = entitlement.tier === "pro";
+  const isPaid = checkIsPaid(entitlement);
 
   const deviceSelectorLabel =
     deviceFilter === "phone"
@@ -66,6 +67,7 @@ export default function WeekPage() {
         body: JSON.stringify({
           deviceSelector: deviceSelectorLabel,
           metrics: weekMetrics,
+          isPaid,
         }),
       });
 

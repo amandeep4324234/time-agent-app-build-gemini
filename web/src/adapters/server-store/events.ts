@@ -8,7 +8,13 @@ export interface EntitlementEvent {
   payload_digest: string | null;
 }
 
-const inMemoryEvents: EntitlementEvent[] = [];
+const globalForEvents = globalThis as unknown as {
+  inMemoryEvents?: EntitlementEvent[];
+};
+
+const inMemoryEvents: EntitlementEvent[] =
+  globalForEvents.inMemoryEvents ??
+  (globalForEvents.inMemoryEvents = []);
 
 export async function logEntitlementEvent(
   type: string,

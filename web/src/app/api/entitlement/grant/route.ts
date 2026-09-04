@@ -4,6 +4,20 @@ import { Grant, Entitlement } from "@/lib/types";
 import { writeGrantRow } from "@/adapters/server-store/rows";
 
 export async function POST(req: NextRequest) {
+  // Security guard: Dev/manual grant endpoint is strictly deprecated and disabled in production.
+  if (process.env.NODE_ENV === "production") {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[SECURITY DEPRECATION] Manual /api/entitlement/grant attempted in production environment.");
+    }
+    return NextResponse.json(
+      {
+        error: "DEPRECATED",
+        message: "Dev / manual entitlement grant logic is deprecated and strictly disabled in production.",
+      },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
     const aid = body.aid || `aid-${Date.now()}`;

@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useAppStore } from "@/lib/store";
+import { isPaid as checkIsPaid } from "@/lib/entitlement";
 import { buildLedger } from "@/lib/ingest";
 import { computeDay } from "@/lib/metrics";
 import { Envelope } from "@/lib/types";
@@ -30,7 +31,7 @@ export default function DebriefPage() {
     );
   }, [anchorDay, ledger, settings.deathFloor]);
 
-  const isPaid = entitlement.tier === "pro";
+  const isPaid = checkIsPaid(entitlement);
 
   // Derive the 6 lines
   const totalTrackedHours = metrics.lab?.unionHours ?? 0;

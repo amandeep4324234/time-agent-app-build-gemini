@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DevAccessControl } from "@/components/dev/DevAccessControl";
 
 export function Header() {
   const pathname = usePathname();
@@ -41,6 +42,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-4">
+        {process.env.NODE_ENV !== "production" && <DevAccessControl />}
         <Link
           href="/"
           className="text-xs text-[#8B949E] hover:text-[#E6EDF3] transition-colors"

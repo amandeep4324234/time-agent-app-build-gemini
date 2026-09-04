@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Category, Entitlement } from "./types";
-import { createFreeEntitlement } from "./entitlement";
+import { createFreeEntitlement, isDevEntitlement } from "./entitlement";
 import { BlockState, createInitialBlockState } from "./block";
 import { SEED_WORK, SEED_KILLERS } from "./classify";
 
@@ -96,6 +96,13 @@ export const useAppStore = create<AppState>()(
           removeItem: () => {},
         };
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        // Security guard: Any dev entitlement persisted in local storage is wiped in production
+        if (process.env.NODE_ENV === "production" && isDevEntitlement(state.entitlement)) {
+          state.setEntitlement(createFreeEntitlement());
+        }
+      },
     }
   )
 );

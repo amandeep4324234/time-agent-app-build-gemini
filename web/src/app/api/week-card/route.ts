@@ -6,7 +6,12 @@ import { Resvg } from "@resvg/resvg-js";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { deviceSelector, metrics, isPaid } = body;
+    let { deviceSelector, metrics, isPaid } = body;
+
+    // Security guard: Dev bypass flags are deprecated and forbidden in production
+    if (process.env.NODE_ENV === "production" && (body.dev_pro || body.isDev)) {
+      isPaid = false;
+    }
 
     if (!metrics) {
       return NextResponse.json({ error: "Metrics payload required" }, { status: 400 });
