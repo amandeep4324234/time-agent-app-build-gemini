@@ -503,17 +503,15 @@ fun WeekScreen() {
         Button(
             onClick = {
                 val cardModel = Week.CardModel(
-                    weekStart = "2026-08-31",
                     label = selectedDevice,
                     hero = "39.37h",
                     stats = listOf(
-                        Week.StatRow("Focus-set time", "39h 22m"),
-                        Week.StatRow("Sink", "7h 02m"),
-                        Week.StatRow("Blocks ≥15 min", "10"),
-                        Week.StatRow("Longest", "50 min")
+                        Week.CardStatRow("Focus-set time", "39h 22m"),
+                        Week.CardStatRow("Sink", "7h 02m"),
+                        Week.CardStatRow("Blocks ≥15 min", "10"),
+                        Week.CardStatRow("Longest", "50 min")
                     ),
-                    footer = "Tracked 7 days · phone up 1/7 · computer up 7/7 · unclassified 19% · double-counted 0.24h",
-                    watermark = false
+                    footer = "Tracked 7 days · phone up 1/7 · computer up 7/7 · unclassified 19% · double-counted 0.24h"
                 )
                 val bitmap = WeekCardRenderer.renderWeekCard(context, cardModel, isPro = true)
                 val file = WeekCardRenderer.saveCardToFile(context, bitmap)

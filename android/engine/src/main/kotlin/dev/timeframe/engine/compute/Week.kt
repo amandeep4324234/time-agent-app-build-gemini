@@ -87,4 +87,30 @@ object Week {
             footer = footer
         )
     }
+
+    data class CardStatRow(val label: String, val value: String)
+
+    data class CardModel(
+        val label: String,
+        val hero: String,
+        val stats: List<CardStatRow>,
+        val footer: String
+    )
+
+    fun computeWeek(
+        sessions: List<EnrichedSessionRow>,
+        zoneId: ZoneId = ZoneId.of("Asia/Kolkata"),
+        deathFloorSeconds: Int = 5
+    ): Output = compute(sessions, zoneId, deathFloorSeconds)
+
+    fun buildCardModel(output: Output, label: String = "phone this week"): CardModel {
+        val heroStr = String.format(java.util.Locale.US, "%.1fh", output.focusHours)
+        val stats = listOf(
+            CardStatRow("focus time", heroStr),
+            CardStatRow("sink time", String.format(java.util.Locale.US, "%.1fh", output.sinkHours)),
+            CardStatRow("deep blocks", "${output.blocksCount}"),
+            CardStatRow("longest run", "${output.longestMinutes}m")
+        )
+        return CardModel(label = label, hero = heroStr, stats = stats, footer = output.footer)
+    }
 }

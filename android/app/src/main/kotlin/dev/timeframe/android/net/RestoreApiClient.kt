@@ -39,8 +39,10 @@ class RestoreApiClient(private val baseUrl: String = "https://timeframe.app") {
                 setRequestProperty("Accept", "application/json")
             }
 
-            val body = json.encodeToString(PairingRedeemRequest(code.trim().toUpperCase(), deviceAid))
-            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(body) }
+            val body = json.encodeToString(PairingRedeemRequest(code.trim().uppercase(), deviceAid))
+            OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { writer ->
+                writer.write(body)
+            }
 
             val responseCode = conn.responseCode
             if (responseCode == 200) {

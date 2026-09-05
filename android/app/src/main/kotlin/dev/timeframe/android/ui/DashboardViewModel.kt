@@ -82,6 +82,10 @@ class DashboardViewModel(
             e.label.contains("Discord", ignoreCase = true)
         ) "sink" else if (e.label.contains("Chrome", ignoreCase = true) && e.device == "phone") "unclassified" else "work"
 
+        val endMs = e.ended_at?.let {
+            try { java.time.Instant.parse(it).toEpochMilli() } catch (_: Exception) { e.started_at_ms + e.seconds * 1000 }
+        } ?: (e.started_at_ms + e.seconds * 1000)
+
         return EnrichedSessionRow(
             id = e.id,
             source = e.source,
@@ -91,12 +95,12 @@ class DashboardViewModel(
             ended_at = e.ended_at,
             seconds = e.seconds,
             minutes = e.minutes,
-            session_kind = e.session_kind,
             timezone = e.timezone,
-            canonical_app = e.label,
+            canonical_app = e.canonical_app ?: e.label,
             category = cat,
-            user_override = null,
-            started_at_ms = e.started_at_ms
+            session_kind = e.session_kind ?: "block",
+            started_at_ms = e.started_at_ms,
+            ended_at_ms = endMs
         )
     }
 }

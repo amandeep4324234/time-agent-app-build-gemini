@@ -19,6 +19,7 @@ val BorderSubtle = Color(0xFF232833)
 val BorderDefault = Color(0xFF2E3440)
 val BorderStrong = Color(0xFF454C5C)
 val BorderFocus = Color(0xFF22D3EE)
+val FillSelected = Color(0xFF2E3440)
 
 val CatFocus = Color(0xFF4ADE80)
 val CatSink = Color(0xFFF87171)
