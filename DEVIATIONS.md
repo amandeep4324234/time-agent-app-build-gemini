@@ -35,3 +35,15 @@ This document records deliberate adjustments from MASTER-BUILD-SPEC.md, in accor
   - *Light day threshold:* Under 45 minutes of tracked activity preserves approved numbers while suppressing behavioral insights.
   - *Run end causes:* Factual sink termination and gap/hole termination explanations provided with strict suppression if detail is unavailable or sensitive.
 
+### 5. UI Redesign & Focus Blocks v4.1 (TIMEFRAME-UI-REDESIGN.md v4.1)
+- **Authority:** `TIMEFRAME-UI-REDESIGN.md` (v4.1, 2026-09-05) replaces previous redesign specifications in full per §1.1.
+- **Explicit Authorizations & Additions:**
+  - *Midnight Studio theme:* Deep ink background (`#0B0E14`), floating cards (`#141A25`), periwinkle focus accents (`#AAA9FF`), cyan secondary accents (`#7CDCE5`), and muted rose sinks (`#EE9DAA`).
+  - *Compact Overview composition:* Pinned command area (56px header + AI reflection card), 4 metric cards (Focus, Blocks, Sink, Longest), left 8/12 large time canvas with navigator brush and zoom, right 4/12 paginated app-icon constellation with App Lens, and single workspace panel (Rhythm / Mix / Patterns).
+  - *Intentional Focus Blocks:* User-started containers with goal timer, pause/resume, review workflow, and tag support. Distinct from auto-detected deep runs.
+  - *Post-Sync Review & Corrections:* Slicing raw sessions at block intervals, category overrides, exclusions/restores, classification rules, outbox/sync idempotence, and conflict resolution without mutating append-only raw session logs.
+  - *AI Reflection & Dedicated Custom-Range Analyzer:* Pinned evidence-backed reflection with tone settings and fallback, plus a dedicated Analyzer tab in Insights for custom historical date ranges, baseline comparisons, and progression findings without moralizing.
+  - *Dedicated Searchable Logs:* Primary navigation destination at `/logs` with debounced search across apps/blocks/tags, activity/blocks/changes tabs, and deep-link integration.
+  - *Creature remains dormant:* `CREATURE_ENABLED = false` strictly enforced across all components and background tasks.
+
+

@@ -7,10 +7,10 @@ export default function ProductLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0D1117] text-[#EDF1F5]">
+    <div className="min-h-screen flex flex-col bg-[#0B0E14] text-[#F2F5FB]">
       <AppNav />
-      <div className="flex-1 lg:pl-[184px] xl:pl-[208px] w-full min-h-screen">
-        <main className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-8 py-6 pb-24 md:pb-8">
+      <div className="flex-1 lg:pl-[192px] w-full min-h-screen">
+        <main className="w-full max-w-[1480px] mx-auto px-4 sm:px-6 xl:px-8 py-4 pb-24 md:pb-8">
           {children}
         </main>
       </div>

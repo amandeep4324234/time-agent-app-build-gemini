@@ -7,17 +7,20 @@ import { useAppStore } from "@/lib/store";
 import { buildLedger } from "@/lib/ingest";
 import { getLogicalDay } from "@/lib/day";
 import { Envelope, Category } from "@/lib/types";
-import { Evidence } from "@/lib/presentation-types";
-import { buildSafeDayPresentation } from "@/lib/safe-adapter";
-import { computeFocusRuns } from "@/lib/focus-run";
-import { evaluateTodayObservations, EvaluatedInsight } from "@/lib/observations";
+import { buildEffectiveDayPresentation } from "@/lib/effective-adapter";
+import { generateReflection, ReflectionTone } from "@/lib/reflection-service";
+import { computeAppLensData } from "@/lib/app-lens";
 import demoEnvelopeRaw from "../../../../data/demo-sessions.json";
 
-import { TodayHeader } from "@/components/today/TodayHeader";
-import { SummaryStrip } from "@/components/today/SummaryStrip";
-import { TimelineWorkspace } from "@/components/today/TimelineWorkspace";
-import { CategoryAppsSection } from "@/components/today/CategoryAppsSection";
-import { ObservationsSection } from "@/components/today/ObservationsSection";
+import { PinnedCommandArea } from "@/components/overview/PinnedCommandArea";
+import { MetricCards } from "@/components/overview/MetricCards";
+import { TimeCanvas } from "@/components/timeline/TimeCanvas";
+import { AppIconGrid } from "@/components/apps/AppIconGrid";
+import { AppLensSheet } from "@/components/apps/AppLensSheet";
+import { WorkspaceTabs } from "@/components/overview/WorkspaceTabs";
+import { FocusStartSheet } from "@/components/focus/FocusStartSheet";
+import { FocusActiveView } from "@/components/focus/FocusActiveView";
+import { FocusReviewWorkspace } from "@/components/focus/FocusReviewWorkspace";
 import { CategoryEditDialog } from "@/components/today/CategoryEditDialog";
 
 const demoEnvelope = demoEnvelopeRaw as unknown as Envelope;
@@ -27,14 +30,37 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const { settings, seedPins, overrides, setOverride } = useAppStore();
+  const {
+    settings,
+    seedPins,
+    overrides,
+    setOverride,
+    focusBlocks,
+    activeBlockId,
+    startFocusBlock,
+    pauseCurrentBlock,
+    resumeCurrentBlock,
+    finishCurrentBlock,
+    updateFocusBlock,
+    commitReviewBatch,
+    correctionBatches,
+    classificationRules,
+    addClassificationRule,
+    currentRevisionId,
+    aiTone,
+    setAiTone,
+    aiEnabled,
+    setAiEnabled,
+    aiDismissedDays,
+    dismissAiDay,
+  } = useAppStore();
 
-  // Ingest sessions with user overrides
+  // Ingest raw sessions with seed pins & base overrides
   const ledger = useMemo(() => {
     return buildLedger(demoEnvelope, seedPins, overrides);
   }, [seedPins, overrides]);
 
-  // Extract available distinct logical days
+  // Extract available distinct logical days (04:00 to 04:00)
   const availableDays = useMemo(() => {
     const days = new Set<string>();
     for (const s of ledger) {
@@ -65,116 +91,221 @@ function DashboardContent() {
     return { dayStartMs: start, dayEndMs: end };
   }, [selectedDay]);
 
-  // Extract day sessions
-  const daySessions = useMemo(() => {
-    return ledger.filter(
-      (s) => getLogicalDay(s.started_at_ms, TIMEZONE) === selectedDay
-    );
-  }, [ledger, selectedDay]);
+  // Flatten applied corrections from store
+  const appliedCorrections = useMemo(() => {
+    return correctionBatches.flatMap((b) => b.operations);
+  }, [correctionBatches]);
 
-  // Build safe presentation models (§3.3, §10)
-  // Reconstruct focus runs for the day using verified engine logic
-  const dayRuns = useMemo(() => {
-    const { runs } = computeFocusRuns(daySessions, settings.deathFloor ?? 5);
-    return runs;
-  }, [daySessions, settings.deathFloor]);
-
-  const safeAdapterResult = useMemo(() => {
-    return buildSafeDayPresentation(
-      selectedDay,
-      daySessions,
-      dayRuns,
+  // Compute revision-consistent Effective Day Presentation (§3.4, §8.3, §9.2)
+  const effectiveDayResult = useMemo(() => {
+    return buildEffectiveDayPresentation({
+      date: selectedDay,
+      rawSessions: ledger,
+      corrections: appliedCorrections,
+      rules: classificationRules,
+      blocks: focusBlocks,
       dayStartMs,
       dayEndMs,
-      TIMEZONE,
-      settings.focusGoalHours ?? undefined
+      timezone: TIMEZONE,
+      focusGoalHours: settings.focusGoalHours ?? undefined,
+      deathFloorSeconds: settings.deathFloor ?? 5,
+      revisionId: currentRevisionId,
+    });
+  }, [
+    selectedDay,
+    ledger,
+    appliedCorrections,
+    classificationRules,
+    focusBlocks,
+    dayStartMs,
+    dayEndMs,
+    settings.focusGoalHours,
+    settings.deathFloor,
+    currentRevisionId,
+  ]);
+
+  // AI Reflection: Generate observation from effective day result (§4)
+  const [reflectionFactOffset, setReflectionFactOffset] = useState(0);
+  const reflection = useMemo(() => {
+    if (!aiEnabled || aiDismissedDays[selectedDay]) return null;
+    return generateReflection(
+      effectiveDayResult,
+      aiTone,
+      settings.focusGoalHours,
+      reflectionFactOffset
     );
-  }, [selectedDay, daySessions, dayRuns, dayStartMs, dayEndMs, settings.focusGoalHours]);
+  }, [
+    effectiveDayResult,
+    aiTone,
+    settings.focusGoalHours,
+    aiEnabled,
+    aiDismissedDays,
+    selectedDay,
+    reflectionFactOffset,
+  ]);
 
-  // Observations (§6.3 & §9)
-  const observations = useMemo(() => {
-    return evaluateTodayObservations(
-      selectedDay,
-      dayRuns,
-      daySessions,
-      ledger,
-      TIMEZONE
-    );
-  }, [selectedDay, dayRuns, daySessions, ledger]);
+  // Active Focus Block
+  const activeBlock = useMemo(() => {
+    return focusBlocks.find((b) => b.id === activeBlockId && (b.state === "running" || b.state === "paused")) || null;
+  }, [focusBlocks, activeBlockId]);
 
-  const topObservation = observations.length > 0 ? observations[0] : null;
+  // UI Modal & Sheet States
+  const [isStartFocusOpen, setIsStartFocusOpen] = useState(false);
+  const [isShowingActiveView, setIsShowingActiveView] = useState(false);
+  const [reviewingBlockId, setReviewingBlockId] = useState<string | null>(null);
 
-  // Interaction State: Filters and Evidence
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedApp, setSelectedApp] = useState<string | null>(null);
-  const [inspectEvidence, setInspectEvidence] = useState<Evidence | null>(null);
+  // App Lens state
+  const [selectedLensAppKey, setSelectedLensAppKey] = useState<string | null>(null);
+  const appLensData = useMemo(() => {
+    if (!selectedLensAppKey) return null;
+    return computeAppLensData(selectedLensAppKey, effectiveDayResult.effectiveSlices, focusBlocks);
+  }, [selectedLensAppKey, effectiveDayResult.effectiveSlices, focusBlocks]);
+
+  // Block selected in timeline
+  const [selectedTimelineBlockId, setSelectedTimelineBlockId] = useState<string | null>(null);
 
   // Category Edit Dialog State
   const [editAppTarget, setEditAppTarget] = useState<{ app: string; category: Category } | null>(null);
 
-  const handleOpenEvidence = (ev: Evidence) => {
-    setInspectEvidence(ev);
-  };
-
-  const handleSaveCategory = (app: string, newCategory: Category) => {
-    setOverride(app, newCategory);
-  };
+  const reviewingBlock = useMemo(() => {
+    return focusBlocks.find((b) => b.id === reviewingBlockId) || null;
+  }, [focusBlocks, reviewingBlockId]);
 
   return (
-    <div className="flex flex-col gap-6 select-text">
-      {/* 1. Today Header (§6.1) */}
-      <TodayHeader
+    <div className="flex flex-col gap-5 select-text">
+      {/* 1. Pinned Command Area (§3.1, §4) */}
+      <PinnedCommandArea
         selectedDay={selectedDay}
         latestDay={latestDay}
         availableDays={availableDays}
         timezone={TIMEZONE}
         onSelectDay={handleSelectDay}
         onBackToToday={handleBackToToday}
+        activeBlock={activeBlock}
+        onStartFocus={() => setIsStartFocusOpen(true)}
+        onOpenActiveBlock={() => setIsShowingActiveView(true)}
+        reflection={reflection}
+        onSelectAiTone={setAiTone}
+        onRefreshReflection={() => setReflectionFactOffset((prev) => prev + 1)}
+        onDismissReflection={() => dismissAiDay(selectedDay)}
+        onTurnOffAi={() => setAiEnabled(false)}
+        isAiVisible={aiEnabled && !aiDismissedDays[selectedDay]}
       />
 
-      {/* 2. Summary Strip (§6.2) */}
-      <SummaryStrip
-        focusSeconds={safeAdapterResult.metrics.focus.value}
-        sinkSeconds={safeAdapterResult.metrics.sink.value}
-        deepBlocksCount={safeAdapterResult.metrics.deepBlocks.count}
-        longestSeconds={safeAdapterResult.metrics.deepBlocks.longestSeconds}
-        topObservation={topObservation}
-        onOpenEvidence={handleOpenEvidence}
-        focusGoalHours={settings.focusGoalHours ?? undefined}
-        isNoData={safeAdapterResult.availability === "no-data"}
-        isLightDay={safeAdapterResult.availability === "light-day"}
+      {/* 2. Four Metric Cards (§3.4) */}
+      <MetricCards
+        dayResult={effectiveDayResult}
+        onOpenBlocksList={() => router.push("/focus")}
       />
 
-      {/* 3. Timeline Workspace (§7.1, §7.2, §7.3) */}
-      <TimelineWorkspace
-        adapterResult={safeAdapterResult}
-        highlightCategory={selectedCategory}
-        highlightApp={selectedApp}
-        externalEvidence={inspectEvidence}
-        onClearExternalEvidence={() => setInspectEvidence(null)}
-      />
-
-      {/* 4. Lower Grid (§5.2, §6.3): Categories/Apps at 7/12 width, Observations at 5/12 width */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-7 min-w-0">
-          <CategoryAppsSection
-            adapterResult={safeAdapterResult}
-            selectedCategory={selectedCategory}
-            selectedApp={selectedApp}
-            onSelectCategory={setSelectedCategory}
-            onSelectApp={setSelectedApp}
-            onEditCategory={(app, currentCat) => setEditAppTarget({ app, category: currentCat })}
+      {/* 3. Main Analytical Visual Grid (§3.2): Left 8/12 Time Canvas, Right 4/12 App Constellation */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
+        {/* Left 8/12: Large Zoomable Time Canvas */}
+        <div className="lg:col-span-8 min-w-0 flex flex-col">
+          <TimeCanvas
+            dayResult={effectiveDayResult}
+            selectedBlockId={selectedTimelineBlockId}
+            onSelectBlock={setSelectedTimelineBlockId}
+            onSelectSegment={(seg) => {
+              if (seg) setSelectedLensAppKey(seg.app.toLowerCase());
+            }}
+            onStartReviewForBlock={(bId) => setReviewingBlockId(bId)}
+            onCorrectActivityForSegment={(seg) => {
+              setEditAppTarget({ app: seg.app, category: seg.category });
+            }}
           />
         </div>
 
-        <div className="lg:col-span-5 min-w-0">
-          <ObservationsSection
-            observations={observations}
-            summaryInsightKey={topObservation?.insight.key}
-            onOpenEvidence={handleOpenEvidence}
+        {/* Right 4/12: App Constellation (3x3 Icon Grid) */}
+        <div className="lg:col-span-4 min-w-0 flex flex-col">
+          <AppIconGrid
+            apps={effectiveDayResult.apps}
+            selectedAppKey={selectedLensAppKey}
+            onSelectApp={(key) => setSelectedLensAppKey(key)}
           />
         </div>
       </div>
+
+      {/* 4. Extra Workspace Tabs beneath Canvas (§3.2, §6): Rhythm / Mix / Patterns */}
+      <WorkspaceTabs dayResult={effectiveDayResult} />
+
+      {/* App Lens Slide-over Sheet (§3.6) */}
+      <AppLensSheet
+        data={appLensData}
+        isOpen={selectedLensAppKey !== null}
+        onClose={() => setSelectedLensAppKey(null)}
+        onReviewCategory={(app, cat) => setEditAppTarget({ app, category: cat })}
+        onExcludeActivity={(app) => {
+          // Exclude app sessions in this day by creating a batch
+          const targetSlices = effectiveDayResult.effectiveSlices.filter(
+            (s) => s.label.toLowerCase() === app.toLowerCase()
+          );
+          const ops = targetSlices.map((sl) => ({
+            id: `quick-ex-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            targetSessionId: sl.originalSessionId,
+            intervalStartUtc: new Date(sl.sliceStartMs).toISOString(),
+            intervalEndUtc: new Date(sl.sliceEndMs).toISOString(),
+            operation: "exclude" as const,
+            baseRevisionId: currentRevisionId,
+            batchId: `batch-ex-${Date.now()}`,
+            createdAtUtc: new Date().toISOString(),
+          }));
+          commitReviewBatch("", ops, `Excluded ${app} activity`);
+        }}
+        onOpenLogsPrefiltered={(appKey) => {
+          router.push(`/logs?app=${encodeURIComponent(appKey)}`);
+        }}
+      />
+
+      {/* Start Focus Sheet Modal (§7.1) */}
+      <FocusStartSheet
+        isOpen={isStartFocusOpen}
+        onClose={() => setIsStartFocusOpen(false)}
+        onStart={({ title, plannedMinutes, tags, autoReview }) => {
+          const newBlock = startFocusBlock(title, plannedMinutes, tags, autoReview);
+          setIsShowingActiveView(true);
+        }}
+      />
+
+      {/* Fullscreen Focus Active Surface (§7.2) */}
+      {isShowingActiveView && activeBlock && (
+        <div className="fixed inset-0 z-50 bg-[#0B0E14] overflow-y-auto">
+          <FocusActiveView
+            block={activeBlock}
+            onPause={pauseCurrentBlock}
+            onResume={resumeCurrentBlock}
+            onFinish={() => {
+              const finished = finishCurrentBlock();
+              setIsShowingActiveView(false);
+              if (finished) setReviewingBlockId(finished.id);
+            }}
+            onReturnToOverview={() => setIsShowingActiveView(false)}
+            onSaveForLater={() => setIsShowingActiveView(false)}
+            onStartAnother={() => {
+              setIsShowingActiveView(false);
+              setIsStartFocusOpen(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* End-of-Block Review & Custom Corrections Workspace (§8) */}
+      {reviewingBlock && (
+        <FocusReviewWorkspace
+          block={reviewingBlock}
+          sessions={ledger}
+          existingCorrections={appliedCorrections}
+          existingRules={classificationRules}
+          isOpen={true}
+          onClose={() => setReviewingBlockId(null)}
+          onSaveBatch={(ops, updated) => {
+            commitReviewBatch(updated.id, ops);
+            updateFocusBlock(updated.id, updated);
+            setReviewingBlockId(null);
+          }}
+          onAddRule={addClassificationRule}
+        />
+      )}
 
       {/* Category Reclassification Modal Dialog */}
       {editAppTarget && (
@@ -183,7 +314,10 @@ function DashboardContent() {
           currentCategory={editAppTarget.category}
           isOpen={true}
           onClose={() => setEditAppTarget(null)}
-          onSave={handleSaveCategory}
+          onSave={(app, newCat) => {
+            setOverride(app, newCat);
+            setEditAppTarget(null);
+          }}
         />
       )}
     </div>
@@ -194,8 +328,8 @@ export default function TodayPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-8 text-sm text-[#94A1B2]">
-          Loading instrument panel…
+        <div className="p-8 text-sm text-[#96A5BD]">
+          Loading Timeframe observatory…
         </div>
       }
     >

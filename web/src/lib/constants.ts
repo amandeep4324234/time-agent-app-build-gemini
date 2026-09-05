@@ -33,6 +33,37 @@ export const TOKENS = {
   ease: "cubic-bezier(0.2, 0, 0, 1)",
 } as const;
 
+// Midnight Studio Design Tokens (TIMEFRAME-UI-REDESIGN.md v4.1 §2.1)
+export const MIDNIGHT_TOKENS = {
+  background: "#0B0E14",
+  sidebar: "#0E121B",
+  card: "#141A25",
+  cardRaised: "#1A2230",
+  cardHover: "#1F2939",
+  border: "#2B374B",
+  borderStrong: "#53637D",
+  text: "#F2F5FB",
+  textSecondary: "#B8C4D8",
+  textMuted: "#96A5BD",
+  focus: "#AAA9FF",
+  focusEdge: "#D0CEFF",
+  focusSecondary: "#7CDCE5",
+  sink: "#EE9DAA",
+  games: "#D9BE87",
+  other: "#92A6C1",
+  unclassified: "#64748B",
+  selection: "#E3EAFF",
+  success: "#90D2BC",
+  radiusCard: "18px",
+  radiusControl: "10px",
+  radiusSegment: "6px",
+  shadowCard: "0 10px 28px rgba(0,0,0,.16)",
+  motionFast: "120ms",
+  motionNormal: "180ms",
+  motionLayout: "240ms",
+  ease: "cubic-bezier(.2,.8,.2,1)",
+} as const;
+
 // Heatmap neutral intensity steps (§12)
 export const HEATMAP_STEPS = {
   under1h: "#48576B",

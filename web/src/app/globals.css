@@ -28,26 +28,30 @@
 
 :root {
   color-scheme: dark;
-  /* Design Tokens per TIMEFRAME-UI-REDESIGN.md §4.1 */
-  --bg: #0D1117;
-  --surface: #141A22;
-  --surface-hover: #1D2530;
-  --surface-overlay: #202A36;
-  --border: #303B49;
-  --text: #EDF1F5;
-  --text-secondary: #B0BBC9;
-  --text-muted: #94A1B2;
-  --focus: #E4B45F;
-  --focus-tint: #30291D;
-  --sink: #F28D87;
-  --sink-tint: #342224;
-  --games: #B3BBC7;
-  --other: #8795A8;
-  --unclassified: #627086;
-  --selection: #E7EEF7;
-  --radius-panel: 10px;
-  --radius-control: 6px;
-  --radius-chart: 3px;
+  /* Midnight Studio Tokens per TIMEFRAME-UI-REDESIGN.md v4.1 §2.1 */
+  --background: #0B0E14;
+  --sidebar: #0E121B;
+  --card: #141A25;
+  --card-raised: #1A2230;
+  --card-hover: #1F2939;
+  --border: #2B374B;
+  --border-strong: #53637D;
+  --text: #F2F5FB;
+  --text-secondary: #B8C4D8;
+  --text-muted: #96A5BD;
+  --focus: #AAA9FF;
+  --focus-edge: #D0CEFF;
+  --focus-secondary: #7CDCE5;
+  --sink: #EE9DAA;
+  --games: #D9BE87;
+  --other: #92A6C1;
+  --unclassified: #64748B;
+  --selection: #E3EAFF;
+  --success: #90D2BC;
+  --radius-card: 18px;
+  --radius-control: 10px;
+  --radius-segment: 6px;
+  --shadow-card: 0 10px 28px rgba(0,0,0,.16);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -55,10 +59,23 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
-  --duration-fast: 120ms;
-  --duration-normal: 160ms;
-  --duration-layout: 200ms;
-  --ease: cubic-bezier(.2, 0, 0, 1);
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+  --motion-layout: 240ms;
+  --ease: cubic-bezier(.2,.8,.2,1);
+
+  /* Legacy & semantic mapping */
+  --bg: var(--background);
+  --surface: var(--card);
+  --surface-hover: var(--card-hover);
+  --surface-overlay: var(--card-raised);
+  --focus-tint: rgba(170, 169, 255, 0.14);
+  --sink-tint: rgba(238, 157, 170, 0.14);
+  --radius-panel: var(--radius-card);
+  --radius-chart: var(--radius-segment);
+  --duration-fast: var(--motion-fast);
+  --duration-normal: var(--motion-normal);
+  --duration-layout: var(--motion-layout);
 
   /* Legacy aliases for backwards compatibility */
   --tf-bg: var(--bg);
@@ -109,8 +126,8 @@
 }
 
 body {
-  background-color: #0D1117;
-  color: #EDF1F5;
+  background-color: var(--background);
+  color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
   padding: 0;
@@ -118,9 +135,46 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Midnight Studio Focus Ribbon & Cards (§2.1) */
+.card-midnight {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.focus-ribbon {
+  background: rgba(170, 169, 255, 0.14);
+  border: 1px solid rgba(170, 169, 255, 0.55);
+  border-top: 2px solid var(--focus-edge);
+  box-shadow: 0 0 12px rgba(170, 169, 255, 0.14);
+}
+
+@media (forced-colors: active) {
+  .focus-ribbon {
+    box-shadow: none;
+    border: 2px solid CanvasText;
+  }
+}
+
+.ai-card-glow {
+  position: relative;
+}
+.ai-card-glow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 140px;
+  height: 100%;
+  background: radial-gradient(circle at top right, rgba(170, 169, 255, 0.08), transparent 70%);
+  pointer-events: none;
+  border-top-right-radius: var(--radius-card);
+}
+
 *:focus-visible {
   outline: 2px solid var(--selection);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .tnum, [data-tnum], .font-mono-nums {

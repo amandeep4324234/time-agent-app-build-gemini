@@ -23,6 +23,12 @@ export function formatDuration(seconds: number): string {
   return `${s}s`;
 }
 
+export const formatDurationSeconds = formatDuration;
+
+export function formatMinutes(minutes: number): string {
+  return formatDuration(minutes * 60);
+}
+
 /**
  * Format duration from minutes:
  * e.g. 4.5 -> "4h 30m"
