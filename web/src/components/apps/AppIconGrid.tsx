@@ -67,22 +67,22 @@ export function AppIconGrid({ apps, onSelectApp, selectedAppKey }: AppIconGridPr
 
   return (
     <div
-      className="card-midnight p-4 sm:p-5 flex flex-col justify-between h-full bg-[#141A25] border border-[#2B374B]"
+      className="card-midnight p-4 sm:p-5 flex flex-col justify-between h-full bg-[#202122] border border-[#3A3D3E] rounded-[10px]"
       role="region"
       aria-label="App constellation"
     >
       {/* Header & Controls */}
-      <div className="flex items-center justify-between border-b border-[#2B374B] pb-3 mb-3">
+      <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-3 mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-[#F2F5FB]">Apps</h3>
-          <span className="text-xs text-[#96A5BD]">({sortedApps.length})</span>
+          <h3 className="text-sm font-semibold text-[#ECECE7]">Apps</h3>
+          <span className="text-xs text-[#A1A9A5]">({sortedApps.length})</span>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Sort Control */}
           <button
             onClick={() => setSortBy(sortBy === "time" ? "name" : "time")}
-            className="flex items-center gap-1 text-[11px] text-[#B8C4D8] hover:text-[#F2F5FB] px-2 py-1 rounded-[6px] bg-[#1A2230] border border-[#2B374B] transition-colors"
+            className="flex items-center gap-1 text-[11px] text-[#C1C5C1] hover:text-[#ECECE7] px-2 py-1 rounded-[6px] bg-[#171819] border border-[#3A3D3E] transition-colors"
             title="Toggle sort by Time or Name"
           >
             <ArrowUpDown className="w-3 h-3" />
@@ -94,18 +94,18 @@ export function AppIconGrid({ apps, onSelectApp, selectedAppKey }: AppIconGridPr
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
-              className="p-1 rounded-[6px] text-[#B8C4D8] hover:text-[#F2F5FB] disabled:opacity-30 transition-colors"
+              className="p-1 rounded-[6px] text-[#C1C5C1] hover:text-[#ECECE7] disabled:opacity-30 transition-colors"
               aria-label="Previous app page"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-[11px] text-[#96A5BD] min-w-[32px] text-center font-mono">
+            <span className="text-[11px] text-[#A1A9A5] min-w-[32px] text-center font-mono">
               {currentPage + 1}/{totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage >= totalPages - 1}
-              className="p-1 rounded-[6px] text-[#B8C4D8] hover:text-[#F2F5FB] disabled:opacity-30 transition-colors"
+              className="p-1 rounded-[6px] text-[#C1C5C1] hover:text-[#ECECE7] disabled:opacity-30 transition-colors"
               aria-label="Next app page"
             >
               <ChevronRight className="w-4 h-4" />
@@ -127,31 +127,31 @@ export function AppIconGrid({ apps, onSelectApp, selectedAppKey }: AppIconGridPr
             <button
               key={app.key}
               onClick={() => onSelectApp(app.key)}
-              className={`flex flex-col items-center justify-between p-2 rounded-[12px] border transition-all text-center h-[96px] w-full ${
+              className={`flex flex-col items-center justify-between p-2 rounded-[10px] border transition-all text-center h-[96px] w-full ${
                 isSelected
-                  ? "bg-[#1F2939] border-[#AAA9FF] shadow-[0_0_12px_rgba(170,169,255,0.2)]"
-                  : "bg-[#1A2230]/70 border-[#2B374B] hover:bg-[#1F2939] hover:border-[#53637D]"
+                  ? "bg-[#282A2C] border-[#DDB66D] shadow-[0_0_12px_rgba(221,182,109,0.25)]"
+                  : "bg-[#171819] border-[#3A3D3E] hover:bg-[#282A2C] hover:border-[#737978]"
               } ${app.isExcluded ? "opacity-40" : ""}`}
               title={`${friendlyName} · ${formattedDuration} · Click to open App lens`}
             >
-              {/* 48px Icon Well with Initials and Category Dot */}
-              <div className="relative w-11 h-11 rounded-[10px] bg-[#0B0E14] border border-[#2B374B] flex items-center justify-center text-xs font-bold tracking-wider text-[#F2F5FB] shrink-0">
+              {/* 44px Icon Well with Initials and Category Dot */}
+              <div className="relative w-11 h-11 rounded-[8px] bg-[#202122] border border-[#3A3D3E] flex items-center justify-center text-xs font-bold tracking-wider text-[#ECECE7] shrink-0">
                 {initials}
                 {/* Small category indicator */}
                 <span
-                  className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-[#141A25]"
+                  className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-[#202122]"
                   style={{ backgroundColor: catColor }}
                   title={`Category: ${app.category}`}
                 />
               </div>
 
               {/* Friendly Name */}
-              <span className="text-[11px] font-medium text-[#F2F5FB] truncate w-full px-1">
+              <span className="text-[11px] font-medium text-[#ECECE7] truncate w-full px-1">
                 {friendlyName}
               </span>
 
               {/* Duration */}
-              <span className="text-[10px] font-mono text-[#96A5BD]">
+              <span className="text-[10px] font-mono text-[#A1A9A5]">
                 {formattedDuration}
               </span>
             </button>

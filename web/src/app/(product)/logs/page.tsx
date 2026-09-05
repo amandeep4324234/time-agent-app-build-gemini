@@ -61,13 +61,21 @@ function LogsContent() {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("7d");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
-  // Tab Filter States (§12.2)
+  // Tab Filter States (§12.2, update.md §3.6)
+  const initialThreshold = searchParams.get("threshold") ? parseInt(searchParams.get("threshold")!, 10) : null;
+  const initialAppraisal = searchParams.get("appraisal") || "all";
+
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedDevice, setSelectedDevice] = useState<string>("all");
   const [selectedInclusion, setSelectedInclusion] = useState<string>("all");
+  const [selectedAppraisal, setSelectedAppraisal] = useState<string>(initialAppraisal);
+  const [selectedThreshold, setSelectedThreshold] = useState<number | null>(initialThreshold);
   const [selectedBlockStatus, setSelectedBlockStatus] = useState<string>("all");
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [selectedBatchStatus, setSelectedBatchStatus] = useState<string>("all");
+
+  // Row expansion state (§3.6)
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   // Review modal state
   const [reviewingBlockId, setReviewingBlockId] = useState<string | null>(null);
@@ -166,6 +174,15 @@ function LogsContent() {
         if (selectedInclusion === "excluded" && !sl.isExcluded) {
           return false;
         }
+        // Appraisal filter (§3.6)
+        if (selectedAppraisal !== "all") {
+          const appVal = sl.appraisal || "unreviewed";
+          if (appVal !== selectedAppraisal) return false;
+        }
+        // Threshold duration filter (§3.3, §3.6)
+        if (selectedThreshold !== null && selectedThreshold > 0) {
+          if (sl.sliceSeconds <= selectedThreshold) return false;
+        }
         // Search query filter (friendly name, domain, tags)
         if (debouncedQuery) {
           const friendly = getFriendlyAppName(sl.label).toLowerCase();
@@ -176,7 +193,18 @@ function LogsContent() {
         return true;
       })
       .sort((a, b) => (sortOrder === "newest" ? b.sliceStartMs - a.sliceStartMs : a.sliceStartMs - b.sliceStartMs));
-  }, [effectiveSlices, rangeStartMs, rangeEndMs, selectedCategory, selectedDevice, selectedInclusion, debouncedQuery, sortOrder]);
+  }, [
+    effectiveSlices,
+    rangeStartMs,
+    rangeEndMs,
+    selectedCategory,
+    selectedDevice,
+    selectedInclusion,
+    selectedAppraisal,
+    selectedThreshold,
+    debouncedQuery,
+    sortOrder,
+  ]);
 
   // Group activity by logical date (§12.2)
   const activityByDate = useMemo(() => {
@@ -252,13 +280,15 @@ function LogsContent() {
     return focusBlocks.find((b) => b.id === reviewingBlockId) || null;
   }, [focusBlocks, reviewingBlockId]);
 
-  // Active filter count and clear logic (§12.2)
+  // Active filter count and clear logic (§12.2, update.md §3.6)
   const hasActiveFilters = useMemo(() => {
     return (
       debouncedQuery !== "" ||
       selectedCategory !== "all" ||
       selectedDevice !== "all" ||
       selectedInclusion !== "all" ||
+      selectedAppraisal !== "all" ||
+      selectedThreshold !== null ||
       selectedBlockStatus !== "all" ||
       selectedTag !== "all" ||
       selectedBatchStatus !== "all"
@@ -268,6 +298,8 @@ function LogsContent() {
     selectedCategory,
     selectedDevice,
     selectedInclusion,
+    selectedAppraisal,
+    selectedThreshold,
     selectedBlockStatus,
     selectedTag,
     selectedBatchStatus,
@@ -279,6 +311,8 @@ function LogsContent() {
     setSelectedCategory("all");
     setSelectedDevice("all");
     setSelectedInclusion("all");
+    setSelectedAppraisal("all");
+    setSelectedThreshold(null);
     setSelectedBlockStatus("all");
     setSelectedTag("all");
     setSelectedBatchStatus("all");
@@ -287,19 +321,19 @@ function LogsContent() {
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto select-text">
       {/* 1. Header & Pinned Search Bar (§12.1) */}
-      <div className="flex flex-col gap-4 border-b border-[#2B374B] pb-4">
+      <div className="flex flex-col gap-4 border-b border-[#3A3D3E] pb-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#F2F5FB] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#ECECE7] tracking-tight">
               Searchable Logs
             </h1>
-            <p className="text-xs text-[#96A5BD] mt-1">
+            <p className="text-xs text-[#A1A9A5] mt-1">
               Source-of-truth inspection for recorded events, focus blocks, and corrections.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-[#AAA9FF]">
+            <span className="text-xs font-mono text-[#DDB66D]">
               {activeTab === "activity" && `${filteredActivity.length} events`}
               {activeTab === "blocks" && `${filteredBlocks.length} blocks`}
               {activeTab === "changes" && `${filteredBatches.length} revision batches`}
@@ -311,7 +345,7 @@ function LogsContent() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {/* Search input with immediate Enter commit */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 w-4 h-4 text-[#96A5BD]" />
+            <Search className="absolute left-3.5 top-3 w-4 h-4 text-[#A1A9A5]" />
             <input
               type="text"
               value={searchQuery}
@@ -325,7 +359,7 @@ function LogsContent() {
                 }
               }}
               placeholder="Search apps, blocks or tags..."
-              className="w-full pl-10 pr-14 py-2.5 rounded-[10px] bg-[#141A25] border border-[#2B374B] text-sm text-[#F2F5FB] placeholder-[#96A5BD] focus:outline-none focus:border-[#AAA9FF] transition-colors"
+              className="w-full pl-10 pr-14 py-2.5 rounded-[10px] bg-[#202122] border border-[#3A3D3E] text-sm text-[#ECECE7] placeholder-[#A1A9A5] focus:outline-none focus:border-[#DDB66D] transition-colors"
             />
             {searchQuery && (
               <button
@@ -333,7 +367,7 @@ function LogsContent() {
                   setSearchQuery("");
                   setDebouncedQuery("");
                 }}
-                className="absolute right-3 top-2.5 text-xs text-[#96A5BD] hover:text-[#F2F5FB] p-1"
+                className="absolute right-3 top-2.5 text-xs text-[#A1A9A5] hover:text-[#ECECE7] p-1"
               >
                 Clear
               </button>
@@ -341,19 +375,19 @@ function LogsContent() {
           </div>
 
           {/* Date range presets & display (§12.1) */}
-          <div className="flex items-center gap-2 bg-[#141A25] p-1 rounded-[10px] border border-[#2B374B] shrink-0">
-            <span className="text-[11px] font-mono text-[#AAA9FF] px-2 hidden md:inline">
+          <div className="flex items-center gap-2 bg-[#202122] p-1 rounded-[10px] border border-[#3A3D3E] shrink-0">
+            <span className="text-[11px] font-mono text-[#DDB66D] px-2 hidden md:inline">
               {dateRangeLabel}
             </span>
-            <div className="flex items-center bg-[#0B0E14] p-0.5 rounded-[6px] border border-[#2B374B]/60 text-xs">
+            <div className="flex items-center bg-[#171819] p-0.5 rounded-[6px] border border-[#3A3D3E]/60 text-xs">
               {(["7d", "14d", "30d", "all"] as const).map((r) => (
                 <button
                   key={r}
                   onClick={() => setDateRange(r)}
                   className={`px-2.5 py-1 rounded-[4px] font-medium transition-colors ${
                     dateRange === r
-                      ? "bg-[#AAA9FF] text-[#0B0E14] font-semibold"
-                      : "text-[#B8C4D8] hover:text-[#F2F5FB]"
+                      ? "bg-[#DDB66D] text-[#171819] font-semibold"
+                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
                   }`}
                 >
                   {r === "7d" ? "7d" : r === "14d" ? "14d" : r === "30d" ? "30d" : "All"}
@@ -365,15 +399,15 @@ function LogsContent() {
 
         {/* Navigation Tabs (Activity / Focus Blocks / Changes) & Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex bg-[#141A25] p-1 rounded-[8px] border border-[#2B374B] text-xs">
+          <div className="flex bg-[#202122] p-1 rounded-[8px] border border-[#3A3D3E] text-xs">
             {(["activity", "blocks", "changes"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-1.5 rounded-[6px] font-semibold capitalize transition-colors ${
                   activeTab === tab
-                    ? "bg-[#AAA9FF] text-[#0B0E14]"
-                    : "text-[#B8C4D8] hover:text-[#F2F5FB]"
+                    ? "bg-[#DDB66D] text-[#171819]"
+                    : "text-[#C1C5C1] hover:text-[#ECECE7]"
                 }`}
               >
                 {tab === "blocks" ? "Focus blocks" : tab}
@@ -388,7 +422,7 @@ function LogsContent() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#F2F5FB] focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
                 >
                   <option value="all">All Categories</option>
                   <option value="work">Work</option>
@@ -401,7 +435,7 @@ function LogsContent() {
                 <select
                   value={selectedDevice}
                   onChange={(e) => setSelectedDevice(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#F2F5FB] focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
                 >
                   <option value="all">All Devices</option>
                   <option value="computer">Computer</option>
@@ -411,11 +445,39 @@ function LogsContent() {
                 <select
                   value={selectedInclusion}
                   onChange={(e) => setSelectedInclusion(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#F2F5FB] focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
                 >
                   <option value="all">All Records</option>
                   <option value="included">Included only</option>
                   <option value="excluded">Excluded only</option>
+                </select>
+
+                {/* Appraisal Filter (§3.6) */}
+                <select
+                  value={selectedAppraisal}
+                  onChange={(e) => setSelectedAppraisal(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
+                >
+                  <option value="all">All Appraisals</option>
+                  <option value="intentional">Intentional</option>
+                  <option value="unwanted">Unwanted</option>
+                  <option value="unsure">Unsure</option>
+                  <option value="unreviewed">Unreviewed</option>
+                </select>
+
+                {/* Threshold Duration Filter (§3.3, §3.6) */}
+                <select
+                  value={selectedThreshold !== null ? String(selectedThreshold) : "all"}
+                  onChange={(e) =>
+                    setSelectedThreshold(e.target.value === "all" ? null : parseInt(e.target.value, 10))
+                  }
+                  className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
+                >
+                  <option value="all">All Durations</option>
+                  <option value="30">Over 30s</option>
+                  <option value="60">Over 1m</option>
+                  <option value="300">Over 5m</option>
+                  <option value="600">Over 10m</option>
                 </select>
               </>
             )}
@@ -425,7 +487,7 @@ function LogsContent() {
                 <select
                   value={selectedBlockStatus}
                   onChange={(e) => setSelectedBlockStatus(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#F2F5FB] focus:outline-none"
+                  className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
                 >
                   <option value="all">All Status</option>
                   <option value="reviewed">Reviewed</option>
@@ -436,7 +498,7 @@ function LogsContent() {
                   <select
                     value={selectedTag}
                     onChange={(e) => setSelectedTag(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#F2F5FB] focus:outline-none"
+                    className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
                   >
                     <option value="all">All Tags</option>
                     {allUniqueTags.map((tag) => (
@@ -453,7 +515,7 @@ function LogsContent() {
               <select
                 value={selectedBatchStatus}
                 onChange={(e) => setSelectedBatchStatus(e.target.value)}
-                className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#F2F5FB] focus:outline-none"
+                className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none"
               >
                 <option value="all">All Status</option>
                 <option value="committed">Committed</option>
@@ -464,7 +526,7 @@ function LogsContent() {
             {/* Sort Order Toggle */}
             <button
               onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-              className="px-2.5 py-1.5 rounded-[6px] bg-[#141A25] border border-[#2B374B] text-[#B8C4D8] hover:text-[#F2F5FB] flex items-center gap-1 font-medium transition-colors"
+              className="px-2.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#3A3D3E] text-[#C1C5C1] hover:text-[#ECECE7] flex items-center gap-1 font-medium transition-colors"
               title="Toggle sort order"
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
@@ -473,12 +535,12 @@ function LogsContent() {
           </div>
         </div>
 
-        {/* Applied Filter Chips & Clear All (§12.2) */}
+        {/* Applied Filter Chips & Clear All (§12.2, update.md §3.6) */}
         {hasActiveFilters && (
           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-            <span className="text-[#96A5BD] text-[11px] mr-1">Active filters:</span>
+            <span className="text-[#A1A9A5] text-[11px] mr-1">Active filters:</span>
             {debouncedQuery && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#AAA9FF]/15 text-[#AAA9FF] border border-[#AAA9FF]/30">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#DDB66D]/15 text-[#DDB66D] border border-[#DDB66D]/30">
                 <span>Query: &ldquo;{debouncedQuery}&rdquo;</span>
                 <button
                   onClick={() => {
@@ -492,7 +554,7 @@ function LogsContent() {
               </span>
             )}
             {selectedCategory !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#1A2230] text-[#F2F5FB] border border-[#2B374B]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#282A2C] text-[#ECECE7] border border-[#3A3D3E]">
                 <span className="capitalize">Category: {selectedCategory}</span>
                 <button onClick={() => setSelectedCategory("all")} className="hover:text-white">
                   <X className="w-3 h-3" />
@@ -500,7 +562,7 @@ function LogsContent() {
               </span>
             )}
             {selectedDevice !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#1A2230] text-[#F2F5FB] border border-[#2B374B]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#282A2C] text-[#ECECE7] border border-[#3A3D3E]">
                 <span className="capitalize">Device: {selectedDevice}</span>
                 <button onClick={() => setSelectedDevice("all")} className="hover:text-white">
                   <X className="w-3 h-3" />
@@ -508,15 +570,31 @@ function LogsContent() {
               </span>
             )}
             {selectedInclusion !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#1A2230] text-[#F2F5FB] border border-[#2B374B]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#282A2C] text-[#ECECE7] border border-[#3A3D3E]">
                 <span>{selectedInclusion === "included" ? "Included only" : "Excluded only"}</span>
                 <button onClick={() => setSelectedInclusion("all")} className="hover:text-white">
                   <X className="w-3 h-3" />
                 </button>
               </span>
             )}
+            {selectedAppraisal !== "all" && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#DDB66D]/15 text-[#DDB66D] border border-[#DDB66D]/30">
+                <span className="capitalize">Appraisal: {selectedAppraisal}</span>
+                <button onClick={() => setSelectedAppraisal("all")} className="hover:text-white">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {selectedThreshold !== null && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#DDB66D]/15 text-[#DDB66D] border border-[#DDB66D]/30">
+                <span>Duration: &gt; {formatDurationSeconds(selectedThreshold)}</span>
+                <button onClick={() => setSelectedThreshold(null)} className="hover:text-white">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
             {selectedBlockStatus !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#1A2230] text-[#F2F5FB] border border-[#2B374B]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#282A2C] text-[#ECECE7] border border-[#3A3D3E]">
                 <span>Status: {selectedBlockStatus}</span>
                 <button onClick={() => setSelectedBlockStatus("all")} className="hover:text-white">
                   <X className="w-3 h-3" />
@@ -524,7 +602,7 @@ function LogsContent() {
               </span>
             )}
             {selectedTag !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#1A2230] text-[#F2F5FB] border border-[#2B374B]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#282A2C] text-[#ECECE7] border border-[#3A3D3E]">
                 <span>Tag: #{selectedTag}</span>
                 <button onClick={() => setSelectedTag("all")} className="hover:text-white">
                   <X className="w-3 h-3" />
@@ -532,7 +610,7 @@ function LogsContent() {
               </span>
             )}
             {selectedBatchStatus !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#1A2230] text-[#F2F5FB] border border-[#2B374B]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[#282A2C] text-[#ECECE7] border border-[#3A3D3E]">
                 <span>Batch: {selectedBatchStatus}</span>
                 <button onClick={() => setSelectedBatchStatus("all")} className="hover:text-white">
                   <X className="w-3 h-3" />
@@ -542,7 +620,7 @@ function LogsContent() {
 
             <button
               onClick={handleClearAllFilters}
-              className="ml-auto text-[11px] text-[#AAA9FF] hover:text-[#D0CEFF] hover:underline"
+              className="ml-auto text-[11px] text-[#DDB66D] hover:text-[#E8C888] hover:underline"
             >
               Clear all filters
             </button>
@@ -556,9 +634,9 @@ function LogsContent() {
           {activityByDate.map(([dateStr, daySlices]) => (
             <div key={dateStr} className="flex flex-col gap-2">
               {/* Sticky Date Group Heading (§12.2) */}
-              <div className="sticky top-14 z-10 py-1 px-3 rounded-[6px] bg-[#1A2230] border border-[#2B374B] flex items-center justify-between text-xs font-semibold text-[#F2F5FB]">
+              <div className="sticky top-14 z-10 py-1 px-3 rounded-[6px] bg-[#282A2C] border border-[#3A3D3E] flex items-center justify-between text-xs font-semibold text-[#ECECE7]">
                 <span>{dateStr} (04:00&ndash;04:00)</span>
-                <span className="font-mono text-[#96A5BD]">{daySlices.length} slices</span>
+                <span className="font-mono text-[#A1A9A5]">{daySlices.length} slices</span>
               </div>
 
               {/* Rows */}
@@ -566,57 +644,189 @@ function LogsContent() {
                 {daySlices.slice(0, 50).map((sl) => {
                   const friendly = getFriendlyAppName(sl.label);
                   const initials = getAppInitials(friendly);
+                  const isExpanded = expandedRowId === sl.id;
 
                   return (
                     <div
                       key={sl.id}
-                      className={`p-3 rounded-[10px] bg-[#141A25] border border-[#2B374B] hover:border-[#53637D] transition-colors flex items-center justify-between text-xs ${
+                      className={`p-3 rounded-[10px] bg-[#202122] border border-[#3A3D3E] hover:border-[#737978] transition-colors flex flex-col text-xs cursor-pointer ${
                         sl.isExcluded ? "opacity-40" : ""
                       }`}
+                      onClick={() => setExpandedRowId(isExpanded ? null : sl.id)}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] flex items-center justify-center font-bold text-[#F2F5FB] text-[11px] shrink-0">
-                          {initials}
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <button
+                            type="button"
+                            className="text-[#A1A9A5] hover:text-[#ECECE7] p-0.5"
+                            aria-label={isExpanded ? "Collapse row details" : "Expand row details"}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-3.5 h-3.5 text-[#DDB66D]" />
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          <div className="w-8 h-8 rounded-[8px] bg-[#171819] border border-[#3A3D3E] flex items-center justify-center font-bold text-[#ECECE7] text-[11px] shrink-0">
+                            {initials}
+                          </div>
+
+                          <div className="truncate">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[#ECECE7] truncate">
+                                {friendly}
+                              </span>
+                              <span className="capitalize text-[10px] px-1.5 py-0.2 rounded bg-[#282A2C] text-[#DDB66D]">
+                                {sl.effectiveCategory}
+                              </span>
+                              <span className="text-[10px] uppercase font-mono text-[#A1A9A5]">
+                                {sl.device}
+                              </span>
+                              {sl.isAdjusted && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#DDB66D]/10 text-[#DDB66D]">
+                                  Adjusted
+                                </span>
+                              )}
+                              {sl.appraisal && sl.appraisal !== "unreviewed" && (
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.2 rounded capitalize ${
+                                    sl.appraisal === "unwanted"
+                                      ? "bg-[#DFA095]/15 text-[#DFA095] border border-[#DFA095]/30"
+                                      : sl.appraisal === "intentional"
+                                      ? "bg-[#DDB66D]/15 text-[#DDB66D] border border-[#DDB66D]/30"
+                                      : "bg-[#282A2C] text-[#C1C5C1] border border-[#3A3D3E]"
+                                  }`}
+                                >
+                                  {sl.appraisal}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="text-[11px] font-mono text-[#A1A9A5] mt-0.5 truncate">
+                              {new Date(sl.sliceStartMs).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}{" "}
+                              &ndash;{" "}
+                              {new Date(sl.sliceEndMs).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}{" "}
+                              &bull; {sl.label}
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="truncate">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-[#F2F5FB] truncate">
-                              {friendly}
+                        <div className="text-right font-mono shrink-0 pl-3">
+                          <span className="text-sm font-semibold text-[#ECECE7]">
+                            {formatDurationSeconds(sl.sliceSeconds)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Expanded Row Detail Groups (§3.6) */}
+                      {isExpanded && (
+                        <div
+                          className="mt-3 pt-3 border-t border-[#3A3D3E] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[11px] bg-[#171819] p-3 rounded-[8px]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* 1. Captured Interval */}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-[#DDB66D] uppercase tracking-wider text-[10px]">
+                              1. Captured Interval
                             </span>
-                            <span className="capitalize text-[10px] px-1.5 py-0.2 rounded bg-[#1A2230] text-[#AAA9FF]">
-                              {sl.effectiveCategory}
-                            </span>
-                            <span className="text-[10px] uppercase font-mono text-[#96A5BD]">
-                              {sl.device}
-                            </span>
-                            {sl.isAdjusted && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#7CDCE5]/10 text-[#7CDCE5]">
-                                Adjusted
+                            <div className="text-[#A1A9A5] font-mono text-[10px]">
+                              UTC: {new Date(sl.sliceStartMs).toISOString()}
+                            </div>
+                            <div className="text-[#C1C5C1]">
+                              Raw Duration:{" "}
+                              <span className="font-mono text-[#ECECE7]">
+                                {sl.sliceSeconds}s ({formatDurationSeconds(sl.sliceSeconds)})
                               </span>
+                            </div>
+                            <div className="text-[#C1C5C1]">
+                              Device: <span className="text-[#ECECE7] capitalize">{sl.device}</span>
+                            </div>
+                            <div className="text-[#A1A9A5] truncate" title={sl.originalSessionId}>
+                              ID: <span className="font-mono text-[10px]">{sl.originalSessionId.slice(0, 14)}…</span>
+                            </div>
+                          </div>
+
+                          {/* 2. Effective Corrections */}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-[#DDB66D] uppercase tracking-wider text-[10px]">
+                              2. Effective Corrections
+                            </span>
+                            <div className="text-[#C1C5C1]">
+                              Category:{" "}
+                              <span className="text-[#ECECE7] capitalize">
+                                {sl.originalCategory} &rarr;{" "}
+                                <strong className="text-[#DDB66D]">{sl.effectiveCategory}</strong>
+                              </span>
+                            </div>
+                            <div className="text-[#C1C5C1]">
+                              Analysis:{" "}
+                              <span className={sl.isExcluded ? "text-[#DFA095] font-medium" : "text-[#90D2BC]"}>
+                                {sl.isExcluded ? "Excluded from analysis" : "Included in analysis"}
+                              </span>
+                            </div>
+                            <div className="text-[#C1C5C1]">
+                              Adjusted:{" "}
+                              <span className="text-[#ECECE7]">
+                                {sl.isAdjusted ? "Yes (Correction applied)" : "No"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 3. User Appraisal */}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-[#DDB66D] uppercase tracking-wider text-[10px]">
+                              3. User Appraisal
+                            </span>
+                            <div className="text-[#C1C5C1]">
+                              Appraisal:{" "}
+                              <span className="font-semibold capitalize text-[#ECECE7]">
+                                {sl.appraisal && sl.appraisal !== "unreviewed" ? sl.appraisal : "Unreviewed"}
+                              </span>
+                            </div>
+                            {sl.appraisalReason ? (
+                              <div className="text-[#C1C5C1] italic bg-[#202122] p-1.5 rounded border border-[#3A3D3E]">
+                                &ldquo;{sl.appraisalReason}&rdquo;
+                              </div>
+                            ) : (
+                              <div className="text-[#A1A9A5] italic">No reason provided</div>
                             )}
                           </div>
 
-                          <div className="text-[11px] font-mono text-[#96A5BD] mt-0.5 truncate">
-                            {new Date(sl.sliceStartMs).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}{" "}
-                            &ndash;{" "}
-                            {new Date(sl.sliceEndMs).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}{" "}
-                            &bull; {sl.label}
+                          {/* 4. Revision History */}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-[#DDB66D] uppercase tracking-wider text-[10px]">
+                              4. Revision History
+                            </span>
+                            <div className="text-[#C1C5C1]">
+                              Status:{" "}
+                              <span className="text-[#ECECE7]">
+                                {sl.isReviewed ? "Reviewed" : "Awaiting review"}
+                              </span>
+                            </div>
+                            <div className="text-[#C1C5C1]">
+                              Corrections:{" "}
+                              <span className="font-mono text-[10px] text-[#ECECE7]">
+                                {sl.appliedCorrectionIds.length > 0 ? sl.appliedCorrectionIds.join(", ") : "None"}
+                              </span>
+                            </div>
+                            {sl.associatedBlockId && (
+                              <div className="text-[#A1A9A5] truncate">
+                                Block:{" "}
+                                <span className="font-mono text-[10px]">
+                                  {sl.associatedBlockId.slice(0, 12)}…
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-
-                      <div className="text-right font-mono shrink-0 pl-3">
-                        <span className="text-sm font-semibold text-[#F2F5FB]">
-                          {formatDurationSeconds(sl.sliceSeconds)}
-                        </span>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -625,7 +835,7 @@ function LogsContent() {
           ))}
 
           {activityByDate.length === 0 && (
-            <div className="p-8 text-center text-sm text-[#96A5BD] rounded-[12px] bg-[#141A25] border border-[#2B374B]">
+            <div className="p-8 text-center text-sm text-[#A1A9A5] rounded-[12px] bg-[#202122] border border-[#3A3D3E]">
               No activity matching search criteria.
             </div>
           )}
@@ -642,25 +852,25 @@ function LogsContent() {
             return (
               <div
                 key={b.id}
-                className="p-4 rounded-[12px] bg-[#141A25] border border-[#2B374B] flex items-center justify-between text-xs"
+                className="p-4 rounded-[12px] bg-[#202122] border border-[#3A3D3E] flex items-center justify-between text-xs"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#F2F5FB] text-sm">{b.title}</span>
+                    <span className="font-bold text-[#ECECE7] text-sm">{b.title}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                         isReviewed
                           ? "bg-[#90D2BC]/10 text-[#90D2BC]"
-                          : "bg-[#AAA9FF]/10 text-[#AAA9FF]"
+                          : "bg-[#DDB66D]/10 text-[#DDB66D]"
                       }`}
                     >
                       {isReviewed ? "Reviewed" : "Awaiting review"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-[#96A5BD] mt-1">
+                  <div className="flex items-center gap-2 text-[11px] text-[#A1A9A5] mt-1">
                     <span>{new Date(b.createdAtUtc).toLocaleDateString()}</span>
                     <span>&bull;</span>
-                    <span className="font-mono text-[#AAA9FF]">
+                    <span className="font-mono text-[#DDB66D]">
                       {formatDurationSeconds(elapsed)} elapsed
                     </span>
                     <span>&bull;</span>
@@ -670,7 +880,7 @@ function LogsContent() {
 
                 <button
                   onClick={() => setReviewingBlockId(b.id)}
-                  className="px-3.5 py-1.5 rounded-[8px] bg-[#1A2230] hover:bg-[#1F2939] text-[#F2F5FB] border border-[#2B374B] font-semibold"
+                  className="px-3.5 py-1.5 rounded-[8px] bg-[#282A2C] hover:bg-[#2F3133] text-[#ECECE7] border border-[#3A3D3E] font-semibold"
                 >
                   {isReviewed ? "Edit Review" : "Open Review"}
                 </button>
@@ -687,26 +897,26 @@ function LogsContent() {
             filteredBatches.map((b) => (
               <div
                 key={b.id}
-                className="p-4 rounded-[12px] bg-[#141A25] border border-[#2B374B] flex items-center justify-between text-xs"
+                className="p-4 rounded-[12px] bg-[#202122] border border-[#3A3D3E] flex items-center justify-between text-xs"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-semibold text-[#F2F5FB]">{b.id}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#7CDCE5]/10 text-[#7CDCE5]">
+                    <span className="font-mono font-semibold text-[#ECECE7]">{b.id}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#DDB66D]/10 text-[#DDB66D]">
                       {b.status}
                     </span>
                   </div>
-                  <div className="text-[11px] text-[#B8C4D8] mt-1">
+                  <div className="text-[11px] text-[#C1C5C1] mt-1">
                     {b.summary || `${b.operations.length} operations committed`}
                   </div>
-                  <div className="text-[10px] text-[#96A5BD] mt-0.5">
+                  <div className="text-[10px] text-[#A1A9A5] mt-0.5">
                     {new Date(b.appliedAtUtc).toLocaleString()}
                   </div>
                 </div>
 
                 <button
                   onClick={() => undoRevisionBatch(b.id)}
-                  className="px-3 py-1.5 rounded-[6px] bg-[#1A2230] hover:bg-[#EE9DAA]/10 text-[#EE9DAA] border border-[#2B374B] font-semibold flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-[6px] bg-[#282A2C] hover:bg-[#DFA095]/10 text-[#DFA095] border border-[#3A3D3E] font-semibold flex items-center gap-1"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Undo</span>
@@ -714,7 +924,7 @@ function LogsContent() {
               </div>
             ))
           ) : (
-            <div className="p-8 text-center text-sm text-[#96A5BD] rounded-[12px] bg-[#141A25] border border-[#2B374B]">
+            <div className="p-8 text-center text-sm text-[#A1A9A5] rounded-[12px] bg-[#202122] border border-[#3A3D3E]">
               No revision batches recorded yet. Reviewing a block creates atomic revision history here.
             </div>
           )}
@@ -744,7 +954,7 @@ function LogsContent() {
 
 export default function LogsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-[#96A5BD]">Loading searchable logs…</div>}>
+    <Suspense fallback={<div className="p-8 text-sm text-[#A1A9A5]">Loading searchable logs…</div>}>
       <LogsContent />
     </Suspense>
   );

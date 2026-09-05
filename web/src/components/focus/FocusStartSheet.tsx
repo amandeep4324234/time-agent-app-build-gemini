@@ -64,20 +64,20 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
       onClick={onClose}
     >
       <div
-        className="card-midnight w-full max-w-lg p-6 bg-[#141A25] border border-[#53637D] shadow-2xl flex flex-col gap-5 text-left"
+        className="card-midnight w-full max-w-lg p-6 bg-[#202122] border border-[#737978] shadow-2xl flex flex-col gap-5 text-left"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#2B374B] pb-3">
+        <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-[8px] bg-[#AAA9FF]/15 border border-[#AAA9FF]/30 flex items-center justify-center">
-              <Play className="w-4 h-4 fill-[#AAA9FF] text-[#AAA9FF]" />
+            <div className="w-7 h-7 rounded-[8px] bg-[#DDB66D]/15 border border-[#DDB66D]/30 flex items-center justify-center">
+              <Play className="w-4 h-4 fill-[#DDB66D] text-[#DDB66D]" />
             </div>
-            <h2 className="text-base font-bold text-[#F2F5FB]">Start Focus Block</h2>
+            <h2 className="text-base font-bold text-[#ECECE7]">Start Focus Block</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-[6px] text-[#96A5BD] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+            className="p-1 rounded-[6px] text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -86,7 +86,7 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
         <form onSubmit={handleStartSubmit} className="flex flex-col gap-4">
           {/* 1. Title Input (max 80 chars, §7.1) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-[#B8C4D8]">
+            <label className="text-xs font-semibold text-[#C1C5C1]">
               What are you working on?
             </label>
             <input
@@ -94,17 +94,17 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
               value={title}
               onChange={(e) => setTitle(e.target.value.slice(0, 80))}
               placeholder="e.g. Architecture refactor, Writing spec"
-              className="px-3.5 py-2.5 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] text-sm text-[#F2F5FB] placeholder-[#96A5BD] focus:outline-none focus:border-[#AAA9FF]"
+              className="px-3.5 py-2.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-sm text-[#ECECE7] placeholder-[#A1A9A5] focus:outline-none focus:border-[#DDB66D]"
               autoFocus
             />
-            <div className="flex justify-end text-[11px] text-[#96A5BD]">
+            <div className="flex justify-end text-[11px] text-[#A1A9A5]">
               {title.length}/80
             </div>
           </div>
 
           {/* 2. Duration Presets (§7.1) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-[#B8C4D8]">Duration</label>
+            <label className="text-xs font-semibold text-[#C1C5C1]">Duration</label>
             <div className="grid grid-cols-4 gap-2">
               {PRESET_DURATIONS.map((preset) => (
                 <button
@@ -116,8 +116,8 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
                   }}
                   className={`py-2 rounded-[8px] text-xs font-semibold border transition-all ${
                     durationMode === "preset" && selectedPreset === preset
-                      ? "bg-[#AAA9FF] text-[#0B0E14] border-[#AAA9FF] shadow-sm"
-                      : "bg-[#1A2230] text-[#B8C4D8] border-[#2B374B] hover:bg-[#1F2939]"
+                      ? "bg-[#DDB66D] text-[#171819] border-[#DDB66D] shadow-sm"
+                      : "bg-[#282A2C] text-[#C1C5C1] border-[#3A3D3E] hover:bg-[#2F3133]"
                   }`}
                 >
                   {preset}m
@@ -132,8 +132,8 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
                 onClick={() => setDurationMode("custom")}
                 className={`py-2 rounded-[8px] text-xs font-semibold border transition-all ${
                   durationMode === "custom"
-                    ? "bg-[#AAA9FF] text-[#0B0E14] border-[#AAA9FF]"
-                    : "bg-[#1A2230] text-[#B8C4D8] border-[#2B374B] hover:bg-[#1F2939]"
+                    ? "bg-[#DDB66D] text-[#171819] border-[#DDB66D]"
+                    : "bg-[#282A2C] text-[#C1C5C1] border-[#3A3D3E] hover:bg-[#2F3133]"
                 }`}
               >
                 Custom (1–240m)
@@ -143,8 +143,8 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
                 onClick={() => setDurationMode("open")}
                 className={`py-2 rounded-[8px] text-xs font-semibold border transition-all ${
                   durationMode === "open"
-                    ? "bg-[#AAA9FF] text-[#0B0E14] border-[#AAA9FF]"
-                    : "bg-[#1A2230] text-[#B8C4D8] border-[#2B374B] hover:bg-[#1F2939]"
+                    ? "bg-[#DDB66D] text-[#171819] border-[#DDB66D]"
+                    : "bg-[#282A2C] text-[#C1C5C1] border-[#3A3D3E] hover:bg-[#2F3133]"
                 }`}
               >
                 Open-ended
@@ -159,29 +159,29 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
                   max={240}
                   value={customMinutes}
                   onChange={(e) => setCustomMinutes(Number(e.target.value))}
-                  className="w-24 px-3 py-1.5 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] text-sm text-[#F2F5FB] font-mono"
+                  className="w-24 px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-sm text-[#ECECE7] font-mono"
                 />
-                <span className="text-xs text-[#96A5BD]">minutes target</span>
+                <span className="text-xs text-[#A1A9A5]">minutes target</span>
               </div>
             )}
           </div>
 
           {/* 3. Tags (up to 8 tags, max 32 chars, §7.1) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-[#B8C4D8]">
+            <label className="text-xs font-semibold text-[#C1C5C1]">
               Tags (Optional, max 8)
             </label>
-            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-[8px] bg-[#0B0E14] border border-[#2B374B]">
+            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-[8px] bg-[#171819] border border-[#3A3D3E]">
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#1A2230] border border-[#2B374B] text-xs text-[#F2F5FB]"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#282A2C] border border-[#3A3D3E] text-xs text-[#ECECE7]"
                 >
                   <span>{t}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(t)}
-                    className="text-[#96A5BD] hover:text-[#EE9DAA]"
+                    className="text-[#A1A9A5] hover:text-[#DFA095]"
                   >
                     &times;
                   </button>
@@ -194,7 +194,7 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
                   placeholder={tags.length === 0 ? "Type tag & press Enter..." : "Add tag..."}
-                  className="bg-transparent text-xs text-[#F2F5FB] placeholder-[#96A5BD] focus:outline-none flex-1 min-w-[100px]"
+                  className="bg-transparent text-xs text-[#ECECE7] placeholder-[#A1A9A5] focus:outline-none flex-1 min-w-[100px]"
                 />
               )}
             </div>
@@ -206,25 +206,25 @@ export function FocusStartSheet({ isOpen, onClose, onStart }: FocusStartSheetPro
               type="checkbox"
               checked={autoReview}
               onChange={(e) => setAutoReview(e.target.checked)}
-              className="w-4 h-4 rounded border-[#2B374B] text-[#AAA9FF] focus:ring-0 focus:ring-offset-0 bg-[#0B0E14]"
+              className="w-4 h-4 rounded border-[#3A3D3E] text-[#DDB66D] focus:ring-0 focus:ring-offset-0 bg-[#171819]"
             />
-            <span className="text-xs text-[#B8C4D8]">
+            <span className="text-xs text-[#C1C5C1]">
               Review activity when I finish (recommended)
             </span>
           </label>
 
           {/* 5. Submit & Cancel (§7.1) */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2B374B]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#3A3D3E]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-[8px] text-xs font-semibold text-[#96A5BD] hover:text-[#F2F5FB] hover:bg-[#1A2230] transition-colors"
+              className="px-4 py-2 rounded-[8px] text-xs font-semibold text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#282A2C] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-[8px] bg-[#AAA9FF] text-[#0B0E14] hover:bg-[#D0CEFF] text-xs font-bold transition-colors shadow-sm"
+              className="px-5 py-2 rounded-[8px] bg-[#DDB66D] text-[#171819] hover:bg-[#E8C888] text-xs font-bold transition-colors shadow-sm"
             >
               Start block
             </button>

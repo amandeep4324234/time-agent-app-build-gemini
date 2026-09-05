@@ -62,6 +62,7 @@ export function TimeCanvas({
 
   const [density, setDensity] = useState<Density>("comfortable");
   const [isAccessibleListOpen, setIsAccessibleListOpen] = useState(false);
+  const [showUnwantedOutline, setShowUnwantedOutline] = useState(false);
 
   // Inspector states
   const [inspectedBlock, setInspectedBlock] = useState<SafeBlockTimelineSegment | null>(null);
@@ -361,16 +362,16 @@ export function TimeCanvas({
 
   return (
     <div
-      className="card-midnight p-4 sm:p-5 flex flex-col gap-4 bg-[#141A25] border border-[#2B374B] select-text"
+      className="card-midnight p-4 sm:p-5 flex flex-col gap-4 bg-[#202122] border border-[#3A3D3E] select-text"
       role="region"
       aria-label="Interactive time canvas"
     >
       {/* Header & Controls Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2B374B] pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#3A3D3E] pb-3">
         <div>
-          <h2 className="text-base font-semibold text-[#F2F5FB] flex items-center gap-2">
+          <h2 className="text-base font-semibold text-[#ECECE7] flex items-center gap-2">
             <span>Your time, mapped</span>
-            <span className="text-xs font-normal text-[#96A5BD]">
+            <span className="text-xs font-normal text-[#A1A9A5]">
               &bull; 04:00–04:00 ({timezone.replace("_", " ")})
             </span>
           </h2>
@@ -379,46 +380,46 @@ export function TimeCanvas({
         {/* Toolbar Controls (§5.1) */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           {/* Zoom Presets (§5.1, §5.3) */}
-          <div className="flex items-center bg-[#1A2230] rounded-[6px] p-0.5 border border-[#2B374B]">
+          <div className="flex items-center bg-[#282A2C] rounded-[6px] p-0.5 border border-[#3A3D3E]">
             <button
               onClick={() => applyPresetHours(24)}
-              className="px-2 py-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
             >
               Full day
             </button>
             <button
               onClick={() => applyPresetHours(12)}
-              className="px-2 py-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
             >
               12h
             </button>
             <button
               onClick={() => applyPresetHours(6)}
-              className="px-2 py-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
             >
               6h
             </button>
             <button
               onClick={() => applyPresetHours(3)}
-              className="px-2 py-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
             >
               3h
             </button>
             <button
               onClick={() => applyPresetHours(1)}
-              className="px-2 py-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
             >
               1h
             </button>
             <button
               onClick={() => applyPresetHours(0.25)}
-              className="px-2 py-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939] transition-colors"
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
             >
               15m
             </button>
             <button
               onClick={handleFitSelection}
-              className="px-2 py-1 rounded-[4px] text-[#AAA9FF] hover:text-[#D0CEFF] hover:bg-[#1F2939] transition-colors font-medium border-l border-[#2B374B]/50 ml-0.5"
+              className="px-2 py-1 rounded-[4px] text-[#DDB66D] hover:text-[#E8C888] hover:bg-[#2F3133] transition-colors font-medium border-l border-[#3A3D3E]/50 ml-0.5"
               title="Fit zoom to selected or latest block"
             >
               Fit
@@ -426,24 +427,24 @@ export function TimeCanvas({
           </div>
 
           {/* Plus / Minus Zoom */}
-          <div className="flex items-center bg-[#1A2230] rounded-[6px] p-0.5 border border-[#2B374B]">
+          <div className="flex items-center bg-[#282A2C] rounded-[6px] p-0.5 border border-[#3A3D3E]">
             <button
               onClick={() => handleZoomStep(1.25)}
-              className="p-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939]"
+              className="p-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133]"
               title="Zoom out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleZoomStep(0.75)}
-              className="p-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939]"
+              className="p-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133]"
               title="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setViewWindow({ start: 0, end: 100 })}
-              className="p-1 rounded-[4px] text-[#B8C4D8] hover:text-[#F2F5FB] hover:bg-[#1F2939]"
+              className="p-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133]"
               title="Reset zoom"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -451,15 +452,15 @@ export function TimeCanvas({
           </div>
 
           {/* Density Control (Compact / Comfortable / Expanded) */}
-          <div className="hidden sm:flex items-center bg-[#1A2230] rounded-[6px] p-0.5 border border-[#2B374B]">
+          <div className="hidden sm:flex items-center bg-[#282A2C] rounded-[6px] p-0.5 border border-[#3A3D3E]">
             {(["compact", "comfortable", "expanded"] as Density[]).map((d) => (
               <button
                 key={d}
                 onClick={() => setDensity(d)}
                 className={`px-2 py-1 rounded-[4px] capitalize transition-colors ${
                   density === d
-                    ? "bg-[#AAA9FF] text-[#0B0E14] font-semibold"
-                    : "text-[#B8C4D8] hover:text-[#F2F5FB]"
+                    ? "bg-[#DDB66D] text-[#171819] font-semibold"
+                    : "text-[#C1C5C1] hover:text-[#ECECE7]"
                 }`}
               >
                 {d.slice(0, 4)}
@@ -467,10 +468,23 @@ export function TimeCanvas({
             ))}
           </div>
 
+          {/* Show Unwanted Activity Outline (§3.4) */}
+          <button
+            onClick={() => setShowUnwantedOutline(!showUnwantedOutline)}
+            className={`px-2.5 py-1 rounded-[6px] border text-xs font-medium transition-colors ${
+              showUnwantedOutline
+                ? "bg-[#DFA095]/20 text-[#DFA095] border-[#DFA095]/60 font-semibold"
+                : "bg-[#282A2C] text-[#C1C5C1] border-[#3A3D3E] hover:text-[#ECECE7]"
+            }`}
+            title="Toggle outline on safe segments marked unwanted"
+          >
+            {showUnwantedOutline ? "Hide unwanted outline" : "Show unwanted activity"}
+          </button>
+
           {/* Non-graphical Accessible List Toggle (§5.3) */}
           <button
             onClick={() => setIsAccessibleListOpen(!isAccessibleListOpen)}
-            className="p-1.5 rounded-[6px] bg-[#1A2230] border border-[#2B374B] text-[#B8C4D8] hover:text-[#F2F5FB]"
+            className="p-1.5 rounded-[6px] bg-[#282A2C] border border-[#3A3D3E] text-[#C1C5C1] hover:text-[#ECECE7]"
             title="Accessible events list"
           >
             <List className="w-3.5 h-3.5" />
@@ -490,7 +504,7 @@ export function TimeCanvas({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className="relative bg-[#0B0E14] border border-[#2B374B] rounded-[12px] overflow-hidden select-none cursor-grab active:cursor-grabbing focus:outline-none focus:ring-1 focus:ring-[#AAA9FF]/50"
+        className="relative bg-[#171819] border border-[#3A3D3E] rounded-[12px] overflow-hidden select-none cursor-grab active:cursor-grabbing focus:outline-none focus:ring-1 focus:ring-[#DDB66D]/50"
         style={{ minHeight: "280px" }}
       >
         {/* Faint Vertical Washes behind device lanes for Focus Blocks active intervals only (§5.2) */}
@@ -503,7 +517,7 @@ export function TimeCanvas({
             return (
               <div
                 key={`wash-${b.id}-${i}`}
-                className="absolute top-0 bottom-0 pointer-events-none bg-[#AAA9FF]/[0.06] border-x border-[#AAA9FF]/20"
+                className="absolute top-0 bottom-0 pointer-events-none bg-[#DDB66D]/[0.06] border-x border-[#DDB66D]/20"
                 style={{
                   left: `${leftV}%`,
                   width: `${widthV}%`,
@@ -521,13 +535,13 @@ export function TimeCanvas({
             return (
               <div
                 key={tick.hour}
-                className="absolute top-0 bottom-0 border-l border-[#2B374B]/40 flex flex-col justify-between"
+                className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 flex flex-col justify-between"
                 style={{ left: `${posV}%` }}
               >
-                <span className="text-[10px] font-mono text-[#96A5BD]/70 pl-1 pt-1">
+                <span className="text-[10px] font-mono text-[#A1A9A5]/70 pl-1 pt-1">
                   {tick.label}
                 </span>
-                <span className="text-[9px] font-mono text-[#96A5BD]/40 pl-1 pb-1">
+                <span className="text-[9px] font-mono text-[#A1A9A5]/40 pl-1 pb-1">
                   {tick.label}
                 </span>
               </div>
@@ -539,12 +553,12 @@ export function TimeCanvas({
         <div className="relative z-10 flex flex-col gap-2 p-3">
           {/* LANE 1: Intentional Focus Blocks (§5.2) */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[11px] font-medium text-[#AAA9FF] px-1">
+            <div className="flex items-center justify-between text-[11px] font-medium text-[#DDB66D] px-1">
               <span>Focus Blocks (Intentional)</span>
               <span>{segments.focusBlocks.length} recorded</span>
             </div>
             <div
-              className="relative w-full rounded-[8px] bg-[#141A25]/80 border border-[#2B374B]/60 overflow-hidden"
+              className="relative w-full rounded-[8px] bg-[#202122]/80 border border-[#3A3D3E]/60 overflow-hidden"
               style={{ height: `${laneHeights.blocks}px` }}
             >
               {blockSubrows.map((row, rowIndex) =>
@@ -566,8 +580,8 @@ export function TimeCanvas({
                         onSelectBlock?.(b.id);
                       }}
                       className={`focus-ribbon absolute rounded-[8px] flex items-center justify-between px-2.5 cursor-pointer transition-all ${
-                        isSelected ? "border-[#D0CEFF] shadow-[0_0_16px_rgba(170,169,255,0.4)]" : ""
-                      } ${b.state === "running" ? "border-r-2 border-r-[#7CDCE5]" : ""}`}
+                        isSelected ? "border-[#E8C888] shadow-[0_0_16px_rgba(170,169,255,0.4)]" : ""
+                      } ${b.state === "running" ? "border-r-2 border-r-[#DDB66D]" : ""}`}
                       style={{
                         top: `${topPx}px`,
                         height: `${heightPx}px`,
@@ -579,15 +593,15 @@ export function TimeCanvas({
                         {b.isReviewed ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#90D2BC] shrink-0" />
                         ) : (
-                          <div className="w-2 h-2 rounded-full border border-[#AAA9FF] shrink-0" />
+                          <div className="w-2 h-2 rounded-full border border-[#DDB66D] shrink-0" />
                         )}
-                        <span className="text-xs font-semibold text-[#F2F5FB] truncate">
+                        <span className="text-xs font-semibold text-[#ECECE7] truncate">
                           {b.title}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] font-mono text-[#D0CEFF]">
+                        <span className="text-[11px] font-mono text-[#E8C888]">
                           {formatDurationSeconds(b.elapsedSeconds)}
                         </span>
                         {!b.isReviewed && (
@@ -596,7 +610,7 @@ export function TimeCanvas({
                               e.stopPropagation();
                               onStartReviewForBlock?.(b.id);
                             }}
-                            className="px-2 py-0.5 rounded-[4px] bg-[#AAA9FF] text-[#0B0E14] text-[10px] font-semibold hover:bg-[#D0CEFF] transition-colors"
+                            className="px-2 py-0.5 rounded-[4px] bg-[#DDB66D] text-[#171819] text-[10px] font-semibold hover:bg-[#E8C888] transition-colors"
                           >
                             Review
                           </button>
@@ -611,12 +625,12 @@ export function TimeCanvas({
 
           {/* LANE 2: Automatically Detected Deep Blocks (§5.2) */}
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[11px] font-medium text-[#B8C4D8] px-1">
+            <div className="flex items-center justify-between text-[11px] font-medium text-[#C1C5C1] px-1">
               <span>Auto-Detected Deep Runs</span>
               <span>{segments.focusRuns.length} qualified runs</span>
             </div>
             <div
-              className="relative w-full rounded-[6px] bg-[#141A25]/60 border border-[#2B374B]/40"
+              className="relative w-full rounded-[6px] bg-[#202122]/60 border border-[#3A3D3E]/40"
               style={{ height: `${laneHeights.runs}px` }}
             >
               {segments.focusRuns.map((r) => {
@@ -627,7 +641,7 @@ export function TimeCanvas({
                 return (
                   <div
                     key={r.id}
-                    className="absolute top-1 bottom-1 rounded-[4px] bg-[#AAA9FF]/60 border-l-2 border-[#F2F5FB] flex items-center px-1.5 text-[10px] font-mono text-[#0B0E14] font-medium truncate"
+                    className="absolute top-1 bottom-1 rounded-[4px] bg-[#DDB66D]/60 border-l-2 border-[#ECECE7] flex items-center px-1.5 text-[10px] font-mono text-[#171819] font-medium truncate"
                     style={{
                       left: `${leftV}%`,
                       width: `${Math.max(1, widthV)}%`,
@@ -643,9 +657,9 @@ export function TimeCanvas({
 
           {/* LANE 3: Computer Activity */}
           <div className="flex flex-col gap-1">
-            <div className="text-[11px] font-medium text-[#96A5BD] px-1">Computer Activity</div>
+            <div className="text-[11px] font-medium text-[#A1A9A5] px-1">Computer Activity</div>
             <div
-              className="relative w-full rounded-[6px] bg-[#141A25]/40 border border-[#2B374B]/30 overflow-hidden"
+              className="relative w-full rounded-[6px] bg-[#202122]/40 border border-[#3A3D3E]/30 overflow-hidden"
               style={{ height: `${laneHeights.computer}px` }}
             >
               {segments.computer.map((seg) => {
@@ -654,6 +668,8 @@ export function TimeCanvas({
                 if (leftV + widthV < 0 || leftV > 100) return null;
 
                 const bg = CATEGORY_COLORS[seg.category] || "var(--other)";
+                const isUnwanted = seg.appraisal === "unwanted";
+                const unwantedOutline = showUnwantedOutline && isUnwanted ? "ring-2 ring-[#DFA095] z-10" : "";
 
                 return (
                   <div
@@ -664,14 +680,16 @@ export function TimeCanvas({
                       onSelectSegment?.(seg);
                     }}
                     className={`absolute top-1 bottom-1 rounded-[3px] cursor-pointer hover:brightness-125 transition-all ${
-                      seg.isExcluded ? "opacity-30 border border-dashed border-[#EE9DAA]" : ""
-                    } ${seg.isAdjusted ? "border-t border-[#7CDCE5]" : ""}`}
+                      seg.isExcluded ? "opacity-30 border border-dashed border-[#DFA095]" : ""
+                    } ${seg.isAdjusted ? "border-t border-[#DDB66D]" : ""} ${unwantedOutline}`}
                     style={{
                       left: `${leftV}%`,
                       width: `${Math.max(0.2, widthV)}%`,
                       backgroundColor: bg,
                     }}
-                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}`}
+                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}${
+                      seg.appraisal && seg.appraisal !== "unreviewed" ? ` · ${seg.appraisal}` : ""
+                    }`}
                   />
                 );
               })}
@@ -680,9 +698,9 @@ export function TimeCanvas({
 
           {/* LANE 4: Phone Activity */}
           <div className="flex flex-col gap-1">
-            <div className="text-[11px] font-medium text-[#96A5BD] px-1">Phone Activity</div>
+            <div className="text-[11px] font-medium text-[#A1A9A5] px-1">Phone Activity</div>
             <div
-              className="relative w-full rounded-[6px] bg-[#141A25]/40 border border-[#2B374B]/30 overflow-hidden"
+              className="relative w-full rounded-[6px] bg-[#202122]/40 border border-[#3A3D3E]/30 overflow-hidden"
               style={{ height: `${laneHeights.phone}px` }}
             >
               {segments.phone.map((seg) => {
@@ -691,6 +709,8 @@ export function TimeCanvas({
                 if (leftV + widthV < 0 || leftV > 100) return null;
 
                 const bg = CATEGORY_COLORS[seg.category] || "var(--other)";
+                const isUnwanted = seg.appraisal === "unwanted";
+                const unwantedOutline = showUnwantedOutline && isUnwanted ? "ring-2 ring-[#DFA095] z-10" : "";
 
                 return (
                   <div
@@ -701,14 +721,16 @@ export function TimeCanvas({
                       onSelectSegment?.(seg);
                     }}
                     className={`absolute top-1 bottom-1 rounded-[3px] cursor-pointer hover:brightness-125 transition-all ${
-                      seg.isExcluded ? "opacity-30 border border-dashed border-[#EE9DAA]" : ""
-                    }`}
+                      seg.isExcluded ? "opacity-30 border border-dashed border-[#DFA095]" : ""
+                    } ${unwantedOutline}`}
                     style={{
                       left: `${leftV}%`,
                       width: `${Math.max(0.2, widthV)}%`,
                       backgroundColor: bg,
                     }}
-                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}`}
+                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}${
+                      seg.appraisal && seg.appraisal !== "unreviewed" ? ` · ${seg.appraisal}` : ""
+                    }`}
                   />
                 );
               })}
@@ -719,20 +741,20 @@ export function TimeCanvas({
 
       {/* Full-Day Navigator Brush below Canvas (§5.1) */}
       <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-[11px] text-[#96A5BD]">
+        <div className="flex justify-between text-[11px] text-[#A1A9A5]">
           <span>Full Day Navigator</span>
           <span>Drag window or handles to explore timeline</span>
         </div>
         <div
           ref={navTrackRef}
           onClick={handleNavTrackClick}
-          className="relative h-6 w-full rounded-[6px] bg-[#0B0E14] border border-[#2B374B] overflow-hidden cursor-pointer"
+          className="relative h-6 w-full rounded-[6px] bg-[#171819] border border-[#3A3D3E] overflow-hidden cursor-pointer"
         >
           {/* Background mini bars across day */}
           {segments.focusBlocks.map((b) => (
             <div
               key={`nav-b-${b.id}`}
-              className="absolute top-0 bottom-0 bg-[#AAA9FF]/30 pointer-events-none"
+              className="absolute top-0 bottom-0 bg-[#DDB66D]/30 pointer-events-none"
               style={{
                 left: `${b.overallLeftPercent}%`,
                 width: `${Math.max(0.5, b.overallWidthPercent)}%`,
@@ -742,7 +764,7 @@ export function TimeCanvas({
 
           {/* Viewport Brush Window */}
           <div
-            className="absolute top-0 bottom-0 border-2 border-[#AAA9FF] bg-[#AAA9FF]/15 rounded-[4px] cursor-grab active:cursor-grabbing"
+            className="absolute top-0 bottom-0 border-2 border-[#DDB66D] bg-[#DDB66D]/15 rounded-[4px] cursor-grab active:cursor-grabbing"
             style={{
               left: `${viewWindow.start}%`,
               width: `${Math.max(2, viewWindow.end - viewWindow.start)}%`,
@@ -752,14 +774,14 @@ export function TimeCanvas({
           >
             {/* Left handle */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-2 bg-[#AAA9FF] cursor-ew-resize opacity-70 hover:opacity-100"
+              className="absolute left-0 top-0 bottom-0 w-2 bg-[#DDB66D] cursor-ew-resize opacity-70 hover:opacity-100"
               onMouseDown={(e) => handleNavMouseDown("left", e)}
               onTouchStart={(e) => handleNavTouchStart("left", e)}
               aria-label="Drag left handle to adjust start time"
             />
             {/* Right handle */}
             <div
-              className="absolute right-0 top-0 bottom-0 w-2 bg-[#AAA9FF] cursor-ew-resize opacity-70 hover:opacity-100"
+              className="absolute right-0 top-0 bottom-0 w-2 bg-[#DDB66D] cursor-ew-resize opacity-70 hover:opacity-100"
               onMouseDown={(e) => handleNavMouseDown("right", e)}
               onTouchStart={(e) => handleNavTouchStart("right", e)}
               aria-label="Drag right handle to adjust end time"
@@ -775,51 +797,89 @@ export function TimeCanvas({
           onClick={() => setInspectedBlock(null)}
         >
           <div
-            className="card-midnight w-full max-w-md p-5 bg-[#141A25] border border-[#53637D] shadow-2xl flex flex-col gap-4 text-left"
+            className="card-midnight w-full max-w-md p-5 bg-[#202122] border border-[#737978] shadow-2xl flex flex-col gap-4 text-left"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#2B374B] pb-3">
-              <h3 className="text-sm font-semibold text-[#F2F5FB]">{inspectedBlock.title}</h3>
+            <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-3">
+              <h3 className="text-sm font-semibold text-[#ECECE7]">{inspectedBlock.title}</h3>
               <button
                 onClick={() => setInspectedBlock(null)}
-                className="text-xs text-[#96A5BD] hover:text-[#F2F5FB]"
+                className="text-xs text-[#A1A9A5] hover:text-[#ECECE7]"
               >
                 Close
               </button>
             </div>
 
-            <div className="flex flex-col gap-2.5 text-xs text-[#B8C4D8]">
-              <div className="flex justify-between">
+            <div className="flex flex-col gap-2.5 text-xs text-[#C1C5C1]">
+              <div className="flex justify-between items-center">
                 <span>Status:</span>
-                <span className="capitalize font-medium text-[#AAA9FF]">
-                  {inspectedBlock.state.replace("_", " ")}
+                <div className="flex items-center gap-1.5">
+                  <span className="capitalize font-medium text-[#DDB66D]">
+                    {inspectedBlock.state.replace("_", " ")}
+                  </span>
+                  {inspectedBlock.isAdjusted && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#DDB66D]/10 text-[#DDB66D] border border-[#DDB66D]/30">
+                      Adjusted
+                    </span>
+                  )}
+                  {inspectedBlock.isReviewed && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#90D2BC]/10 text-[#90D2BC] border border-[#90D2BC]/30">
+                      Reviewed
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span>Planned Duration:</span>
+                <span className="font-mono text-[#ECECE7]">
+                  {inspectedBlock.plannedSeconds ? formatDurationSeconds(inspectedBlock.plannedSeconds) : "Not set"}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Elapsed Active Time:</span>
-                <span className="font-mono text-[#F2F5FB]">
+                <span>Active Elapsed:</span>
+                <span className="font-mono text-[#ECECE7]">
                   {formatDurationSeconds(inspectedBlock.elapsedSeconds)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Work Recorded:</span>
-                <span className="font-mono text-[#AAA9FF]">
+                <span>Recorded Work Overlap:</span>
+                <span className="font-mono text-[#DDB66D]">
                   {formatDurationSeconds(inspectedBlock.workSeconds)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Sink Overlap:</span>
-                <span className="font-mono text-[#EE9DAA]">
+                <span className="font-mono text-[#DFA095]">
                   {formatDurationSeconds(inspectedBlock.sinkSeconds)}
                 </span>
               </div>
+              <div className="flex justify-between items-center">
+                <span>User Appraisal:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono capitalize text-[#DDB66D]">
+                    {inspectedBlock.appraisal && inspectedBlock.appraisal !== "unreviewed"
+                      ? inspectedBlock.appraisal
+                      : "Unreviewed"}
+                  </span>
+                  {(inspectedBlock.unwantedSeconds || 0) > 0 && (
+                    <span className="text-[10px] text-[#DFA095]">
+                      ({formatDurationSeconds(inspectedBlock.unwantedSeconds || 0)} unwanted)
+                    </span>
+                  )}
+                </div>
+              </div>
+              {inspectedBlock.appraisalReason && (
+                <div className="text-[11px] text-[#A1A9A5] italic bg-[#171819] p-2 rounded-[6px] border border-[#3A3D3E]">
+                  &ldquo;{inspectedBlock.appraisalReason}&rdquo;
+                </div>
+              )}
               {inspectedBlock.tags.length > 0 && (
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="text-[#96A5BD]">Tags:</span>
+                  <span className="text-[#A1A9A5]">Tags:</span>
                   {inspectedBlock.tags.map((t) => (
                     <span
                       key={t}
-                      className="px-1.5 py-0.5 rounded-[4px] bg-[#1A2230] text-[10px] text-[#F2F5FB]"
+                      className="px-1.5 py-0.5 rounded-[4px] bg-[#282A2C] text-[10px] text-[#ECECE7]"
                     >
                       {t}
                     </span>
@@ -828,13 +888,13 @@ export function TimeCanvas({
               )}
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-[#2B374B]">
+            <div className="flex gap-2 pt-2 border-t border-[#3A3D3E]">
               <button
                 onClick={() => {
                   onStartReviewForBlock?.(inspectedBlock.id);
                   setInspectedBlock(null);
                 }}
-                className="flex-1 py-2 px-3 rounded-[8px] bg-[#AAA9FF] text-[#0B0E14] text-xs font-semibold hover:bg-[#D0CEFF] transition-colors"
+                className="flex-1 py-2 px-3 rounded-[8px] bg-[#DDB66D] text-[#171819] text-xs font-semibold hover:bg-[#E8C888] transition-colors"
               >
                 Review / Correct Block Activity
               </button>
@@ -850,50 +910,70 @@ export function TimeCanvas({
           onClick={() => setInspectedSegment(null)}
         >
           <div
-            className="card-midnight w-full max-w-md p-5 bg-[#141A25] border border-[#53637D] shadow-2xl flex flex-col gap-4 text-left"
+            className="card-midnight w-full max-w-md p-5 bg-[#202122] border border-[#737978] shadow-2xl flex flex-col gap-4 text-left"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#2B374B] pb-3">
-              <h3 className="text-sm font-semibold text-[#F2F5FB]">{inspectedSegment.app}</h3>
+            <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-3">
+              <h3 className="text-sm font-semibold text-[#ECECE7]">{inspectedSegment.app}</h3>
               <button
                 onClick={() => setInspectedSegment(null)}
-                className="text-xs text-[#96A5BD] hover:text-[#F2F5FB]"
+                className="text-xs text-[#A1A9A5] hover:text-[#ECECE7]"
               >
                 Close
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 text-xs text-[#B8C4D8]">
-              <div className="flex justify-between">
+            <div className="flex flex-col gap-2 text-xs text-[#C1C5C1]">
+              <div className="flex justify-between items-center">
                 <span>Category:</span>
-                <span className="capitalize font-medium text-[#AAA9FF]">
-                  {inspectedSegment.category}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="capitalize font-medium text-[#DDB66D]">
+                    {inspectedSegment.category}
+                  </span>
+                  {inspectedSegment.isAdjusted && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#DDB66D]/10 text-[#DDB66D] border border-[#DDB66D]/30">
+                      Adjusted
+                    </span>
+                  )}
+                  {inspectedSegment.isReviewed && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#90D2BC]/10 text-[#90D2BC] border border-[#90D2BC]/30">
+                      Reviewed
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex justify-between">
                 <span>Duration:</span>
-                <span className="font-mono text-[#F2F5FB]">
+                <span className="font-mono text-[#ECECE7]">
                   {formatDurationSeconds(inspectedSegment.durationSeconds)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Device:</span>
-                <span className="capitalize text-[#F2F5FB]">{inspectedSegment.device}</span>
+                <span className="capitalize text-[#ECECE7]">{inspectedSegment.device}</span>
               </div>
-              {inspectedSegment.isAdjusted && (
-                <div className="p-2 rounded-[6px] bg-[#7CDCE5]/10 border border-[#7CDCE5]/30 text-[#7CDCE5] text-[11px]">
-                  Reviewed adjustment applied to this interval.
+              <div className="flex justify-between items-center">
+                <span>User Appraisal:</span>
+                <span className="font-mono capitalize text-[#DDB66D]">
+                  {inspectedSegment.appraisal && inspectedSegment.appraisal !== "unreviewed"
+                    ? inspectedSegment.appraisal
+                    : "Unreviewed"}
+                </span>
+              </div>
+              {inspectedSegment.appraisalReason && (
+                <div className="text-[11px] text-[#A1A9A5] italic bg-[#171819] p-2 rounded-[6px] border border-[#3A3D3E]">
+                  &ldquo;{inspectedSegment.appraisalReason}&rdquo;
                 </div>
               )}
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-[#2B374B]">
+            <div className="flex gap-2 pt-2 border-t border-[#3A3D3E]">
               <button
                 onClick={() => {
                   onCorrectActivityForSegment?.(inspectedSegment);
                   setInspectedSegment(null);
                 }}
-                className="flex-1 py-2 px-3 rounded-[8px] bg-[#1F2939] text-[#F2F5FB] border border-[#2B374B] text-xs font-semibold hover:bg-[#2B374B] transition-colors"
+                className="flex-1 py-2 px-3 rounded-[8px] bg-[#2F3133] text-[#ECECE7] border border-[#3A3D3E] text-xs font-semibold hover:bg-[#3A3D3E] transition-colors"
               >
                 Correct activity interval
               </button>
@@ -904,12 +984,12 @@ export function TimeCanvas({
 
       {/* Accessible Non-Graphical List Alternative (§5.3) */}
       {isAccessibleListOpen && (
-        <div className="p-4 rounded-[10px] bg-[#0E121B] border border-[#2B374B] flex flex-col gap-3 text-xs">
-          <div className="flex justify-between items-center border-b border-[#2B374B] pb-2">
-            <span className="font-semibold text-[#F2F5FB]">Accessible Event List</span>
+        <div className="p-4 rounded-[10px] bg-[#171819] border border-[#3A3D3E] flex flex-col gap-3 text-xs">
+          <div className="flex justify-between items-center border-b border-[#3A3D3E] pb-2">
+            <span className="font-semibold text-[#ECECE7]">Accessible Event List</span>
             <button
               onClick={() => setIsAccessibleListOpen(false)}
-              className="text-[#96A5BD] hover:text-[#F2F5FB]"
+              className="text-[#A1A9A5] hover:text-[#ECECE7]"
             >
               Hide
             </button>
@@ -918,13 +998,13 @@ export function TimeCanvas({
             {segments.computer.concat(segments.phone).map((s) => (
               <div
                 key={s.id}
-                className="flex justify-between p-2 rounded bg-[#141A25] border border-[#2B374B]"
+                className="flex justify-between p-2 rounded bg-[#202122] border border-[#3A3D3E]"
               >
                 <div>
-                  <span className="font-medium text-[#F2F5FB]">{s.app}</span>
-                  <span className="text-[#96A5BD] ml-2">({s.category}, {s.device})</span>
+                  <span className="font-medium text-[#ECECE7]">{s.app}</span>
+                  <span className="text-[#A1A9A5] ml-2">({s.category}, {s.device})</span>
                 </div>
-                <span className="font-mono text-[#AAA9FF]">
+                <span className="font-mono text-[#DDB66D]">
                   {formatDurationSeconds(s.durationSeconds)}
                 </span>
               </div>

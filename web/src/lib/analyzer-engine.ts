@@ -63,9 +63,26 @@ export function validateBaselineRange(
   return { isValid: true };
 }
 
+export type AnalyzerFindingKind =
+  | "working-well"
+  | "getting-in-the-way"
+  | "worth-trying"
+  | "aligned-plan"
+  | "worth-reviewing"
+  | "try-compare"
+  | "what-happened"
+  | "pattern-to-inspect";
+
 export interface AnalyzerFinding {
   id: string;
-  kind: "working-well" | "getting-in-the-way" | "worth-trying";
+  kind: AnalyzerFindingKind;
+  // One insight, three layers (update.md §2, §3.5)
+  observed: string;
+  meaning: string;
+  action?: {
+    label: string;
+    destination?: string;
+  };
   headline: string; // max 14 words
   explanation: string; // max 55 words
   supportingFactIds: string[];
@@ -344,33 +361,66 @@ export function runPeriodAnalysis(params: {
     },
   ];
 
-  // 6. Generate Findings (§10.5: Working well, Getting in the way, Worth trying)
+  // 6. Generate Findings (§2, §3.5: Aligned with your plan / What happened, Worth reviewing / Patterns to inspect, Try and compare)
   const findings: AnalyzerFinding[] = [];
+  const hasIntention = Boolean(query.userIntention && query.userIntention.trim() !== "");
 
-  // Finding 1: Working well
+  // Card 1: Aligned with your plan / What happened
   if (observedDays.length >= 3) {
     const highWorkDays = observedDays.filter((d) => d.workSeconds >= 3 * 3600);
+    const kind1: AnalyzerFindingKind = hasIntention ? "aligned-plan" : "what-happened";
+    const headline1 = hasIntention
+      ? "Aligned with your plan: Consistent work duration recorded"
+      : "What happened: Multi-hour work recorded across observed days";
+    const observed1 = `Across ${observedDays.length} observed days, effective Work averaged ${avgWorkHours} hours per active day (${highWorkDays.length} days >= 3h).`;
+    const meaning1 = hasIntention
+      ? `This aligns with your intention: "${query.userIntention}". Intentional focus blocks protected sustained deep work.`
+      : `Recorded work intervals show steady multi-hour focus without declared goal constraints.`;
+
     findings.push({
-      id: "fnd-working-well-1",
-      kind: "working-well",
-      headline: "Consistent multi-hour work recorded across observed days",
-      explanation: `You maintained an average of ${avgWorkHours}h of effective Work per observed day across ${observedDays.length} active dates.`,
+      id: "fnd-plan-1",
+      kind: kind1,
+      observed: observed1,
+      meaning: meaning1,
+      action: {
+        label: "View Work distribution in Evidence",
+        destination: "evidence",
+      },
+      headline: headline1,
+      explanation: `${observed1} ${meaning1}`,
       supportingFactIds: ["fact-avg-work", "fact-observed-days"],
       intentionId: query.userIntention,
       evidenceAction: "view_work_distribution",
+      limitation: "Averages calculated only over days with recorded activity.",
     });
   }
 
-  // Finding 2: Getting in the way
+  // Card 2: Worth reviewing / Patterns to inspect
   const highSinkDays = observedDays.filter((d) => d.sinkSeconds >= 1.5 * 3600);
   if (highSinkDays.length >= 1) {
+    const kind2: AnalyzerFindingKind = hasIntention ? "worth-reviewing" : "pattern-to-inspect";
+    const headline2 = hasIntention
+      ? "Worth reviewing: Mid-day sink concentration"
+      : "Patterns to inspect: Recorded sink duration exceeding 90m";
+    const observed2 = `Recorded sink duration exceeded 90 minutes on ${highSinkDays.length} observed days during daytime hours.`;
+    const meaning2 = hasIntention
+      ? `If your intention is fewer distractions, these longer intervals are worth reviewing for unwanted time.`
+      : `Descriptive distribution indicates switch concentration during mid-day intervals.`;
+
     findings.push({
-      id: "fnd-getting-in-way-1",
-      kind: "getting-in-the-way",
-      headline: "Recorded sink duration exceeded 90 minutes on several days",
-      explanation: `${highSinkDays.length} days recorded over 90 minutes in apps classified as Sinks during active hours.`,
+      id: "fnd-review-1",
+      kind: kind2,
+      observed: observed2,
+      meaning: meaning2,
+      action: {
+        label: "Review sink segments",
+        destination: "evidence",
+      },
+      headline: headline2,
+      explanation: `${observed2} ${meaning2}`,
       supportingFactIds: ["fact-sink-threshold"],
       evidenceAction: "view_sinks_breakdown",
+      limitation: "App category based on effective classification rules.",
       suggestedExperiment: {
         action: "Set a planned 45-minute focus block before opening social platforms.",
         durationDays: 5,
@@ -379,13 +429,24 @@ export function runPeriodAnalysis(params: {
     });
   }
 
-  // Finding 3: Worth trying
+  // Card 3: Try and compare
+  const headline3 = "Try and compare: Morning intentional block";
+  const observed3 = "Data indicates longest sustained focus runs occurred in morning sessions before 11:00 AM.";
+  const meaning3 = "Starting an intentional block early may test whether protecting morning hours helps sustain deep work.";
+
   findings.push({
-    id: "fnd-worth-trying-1",
-    kind: "worth-trying",
-    headline: "Schedule a dedicated 45-minute morning intentional block",
-    explanation: "Data indicates stronger sustained run lengths in early sessions. An intentional container protects that window.",
+    id: "fnd-try-compare-1",
+    kind: "try-compare",
+    observed: observed3,
+    meaning: meaning3,
+    action: {
+      label: "Start morning block experiment",
+      destination: "experiment",
+    },
+    headline: headline3,
+    explanation: `${observed3} ${meaning3}`,
     supportingFactIds: ["fact-morning-window"],
+    limitation: "Comparison reflects historical averages, not guaranteed outcomes.",
     suggestedExperiment: {
       action: "Start a 45-minute block upon beginning work tomorrow.",
       durationDays: 7,

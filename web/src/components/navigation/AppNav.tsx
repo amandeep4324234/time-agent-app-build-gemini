@@ -38,7 +38,7 @@ export function AppNav() {
     <>
       {/* 1. Desktop 192px Navigation Rail (>= 1024px, §3) */}
       <aside
-        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[192px] bg-[#0E121B] border-r border-[#2B374B] flex-col justify-between p-4 z-30 select-none"
+        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[192px] bg-[#171819] border-r border-[#3A3D3E] flex-col justify-between p-4 z-30 select-none"
         aria-label="Desktop primary rail"
       >
         {/* Top: Wordmark + Primary Destinations */}
@@ -46,12 +46,12 @@ export function AppNav() {
           <div className="px-2 pt-1 flex items-center justify-between">
             <Link
               href="/app"
-              className="text-sm font-semibold tracking-wider text-[#F2F5FB] hover:text-white transition-colors"
+              className="text-sm font-semibold tracking-wider text-[#ECECE7] hover:text-white transition-colors"
             >
               TIMEFRAME
             </Link>
             {isPro && (
-              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-[4px] bg-[#AAA9FF]/20 text-[#AAA9FF] border border-[#AAA9FF]/30">
+              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-[4px] bg-[#DDB66D]/20 text-[#DDB66D] border border-[#DDB66D]/30">
                 Pro
               </span>
             )}
@@ -69,11 +69,11 @@ export function AppNav() {
                   href={dest.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-xs font-semibold transition-colors duration-fast ${
                     isActive
-                      ? "bg-[#141A25] text-[#F2F5FB] border border-[#2B374B] shadow-sm text-[#AAA9FF]"
-                      : "text-[#B8C4D8] hover:bg-[#141A25]/60 hover:text-[#F2F5FB]"
+                      ? "bg-[#202122] text-[#ECECE7] border border-[#3A3D3E] shadow-sm text-[#DDB66D]"
+                      : "text-[#C1C5C1] hover:bg-[#202122]/60 hover:text-[#ECECE7]"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-[#AAA9FF]" : "text-[#96A5BD]"}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? "text-[#DDB66D]" : "text-[#A1A9A5]"}`} />
                   <span>{dest.label}</span>
                 </Link>
               );
@@ -82,7 +82,7 @@ export function AppNav() {
         </div>
 
         {/* Bottom: Secondary Settings & Pro Status */}
-        <div className="flex flex-col gap-2 pt-4 border-t border-[#2B374B]">
+        <div className="flex flex-col gap-2 pt-4 border-t border-[#3A3D3E]">
           <nav className="flex flex-col gap-0.5" aria-label="Secondary navigation">
             {secondaryDestinations.map((dest) => {
               const isActive = pathname.startsWith(dest.href.split("?")[0]);
@@ -93,8 +93,8 @@ export function AppNav() {
                   href={dest.href}
                   className={`flex items-center gap-3 px-3 py-2 rounded-[6px] text-xs transition-colors duration-fast ${
                     isActive
-                      ? "bg-[#141A25] text-[#F2F5FB] font-medium"
-                      : "text-[#96A5BD] hover:text-[#F2F5FB] hover:bg-[#141A25]/40"
+                      ? "bg-[#202122] text-[#ECECE7] font-medium"
+                      : "text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#202122]/40"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -104,12 +104,12 @@ export function AppNav() {
             })}
           </nav>
 
-          <div className="flex items-center justify-between px-3 pt-2 text-[11px] text-[#96A5BD]">
+          <div className="flex items-center justify-between px-3 pt-2 text-[11px] text-[#A1A9A5]">
             <Link
               href="/checkout"
-              className="hover:text-[#F2F5FB] transition-colors flex items-center gap-1.5"
+              className="hover:text-[#ECECE7] transition-colors flex items-center gap-1.5"
             >
-              <Sparkles className="w-3 h-3 text-[#AAA9FF]" />
+              <Sparkles className="w-3 h-3 text-[#DDB66D]" />
               <span>{isPro ? "Entitlement" : "Pro Details"}</span>
             </Link>
             {process.env.NODE_ENV !== "production" && <DevAccessControl />}
@@ -118,9 +118,9 @@ export function AppNav() {
       </aside>
 
       {/* 2. Tablet Top Bar (768px - 1023px, §3) */}
-      <header className="hidden md:flex lg:hidden sticky top-0 z-40 h-14 w-full border-b border-[#2B374B] bg-[#0E121B] px-6 items-center justify-between">
+      <header className="hidden md:flex lg:hidden sticky top-0 z-40 h-14 w-full border-b border-[#3A3D3E] bg-[#171819] px-6 items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/app" className="text-sm font-semibold tracking-wider text-[#F2F5FB]">
+          <Link href="/app" className="text-sm font-semibold tracking-wider text-[#ECECE7]">
             TIMEFRAME
           </Link>
           <nav className="flex items-center gap-2" aria-label="Tablet primary navigation">
@@ -132,8 +132,8 @@ export function AppNav() {
                   href={dest.href}
                   className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-colors ${
                     isActive
-                      ? "bg-[#141A25] text-[#AAA9FF] border border-[#2B374B]"
-                      : "text-[#B8C4D8] hover:text-[#F2F5FB]"
+                      ? "bg-[#202122] text-[#DDB66D] border border-[#3A3D3E]"
+                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
                   }`}
                 >
                   {dest.label}
@@ -146,13 +146,13 @@ export function AppNav() {
         <div className="flex items-center gap-4">
           <Link
             href="/settings"
-            className="text-xs text-[#B8C4D8] hover:text-[#F2F5FB] transition-colors"
+            className="text-xs text-[#C1C5C1] hover:text-[#ECECE7] transition-colors"
           >
             Settings
           </Link>
           <Link
             href="/checkout"
-            className="text-xs text-[#AAA9FF] hover:underline"
+            className="text-xs text-[#DDB66D] hover:underline"
           >
             Pro
           </Link>
@@ -161,8 +161,8 @@ export function AppNav() {
       </header>
 
       {/* 3. Mobile Header (< 768px, §3) */}
-      <header className="flex md:hidden sticky top-0 z-40 h-12 w-full border-b border-[#2B374B] bg-[#0E121B] px-4 items-center justify-between">
-        <Link href="/app" className="text-sm font-semibold tracking-wider text-[#F2F5FB]">
+      <header className="flex md:hidden sticky top-0 z-40 h-12 w-full border-b border-[#3A3D3E] bg-[#171819] px-4 items-center justify-between">
+        <Link href="/app" className="text-sm font-semibold tracking-wider text-[#ECECE7]">
           TIMEFRAME
         </Link>
         <div className="flex items-center gap-3">
@@ -170,7 +170,7 @@ export function AppNav() {
           <Link
             href="/settings"
             aria-label="Settings"
-            className="p-2 text-[#B8C4D8] hover:text-[#F2F5FB] transition-colors"
+            className="p-2 text-[#C1C5C1] hover:text-[#ECECE7] transition-colors"
           >
             <Settings className="w-4 h-4" />
           </Link>
@@ -179,7 +179,7 @@ export function AppNav() {
 
       {/* 4. Mobile Bottom Navigation (4 items, < 768px, §3) */}
       <nav
-        className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#0E121B] border-t border-[#2B374B] items-center justify-around px-2 pb-[max(env(safe-area-inset-bottom),4px)]"
+        className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#171819] border-t border-[#3A3D3E] items-center justify-around px-2 pb-[max(env(safe-area-inset-bottom),4px)]"
         aria-label="Mobile bottom navigation"
       >
         {primaryDestinations.map((dest) => {
@@ -190,7 +190,7 @@ export function AppNav() {
               key={dest.href}
               href={dest.href}
               className={`flex flex-col items-center justify-center flex-1 min-h-[48px] py-1 transition-colors ${
-                isActive ? "text-[#AAA9FF]" : "text-[#96A5BD] hover:text-[#F2F5FB]"
+                isActive ? "text-[#DDB66D]" : "text-[#A1A9A5] hover:text-[#ECECE7]"
               }`}
             >
               <Icon className="w-5 h-5" />

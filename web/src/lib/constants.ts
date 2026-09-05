@@ -73,3 +73,18 @@ export const HEATMAP_STEPS = {
   zero: "#1D2530",
   noData: "transparent",
 } as const;
+
+// Approved Timeframe UI Tokens (update.md §4.2)
+export const TIMEFRAME_UI_TOKENS = {
+  background: "#171819",
+  card: "#202122",
+  text: "#ECECE7",
+  textSecondary: "#C1C5C1",
+  muted: "#A1A9A5",
+  amberFocus: "#DDB66D",
+  coralSink: "#DFA095",
+  border: "#3A3D3E",
+  outlineStrong: "#737978",
+  radiusCard: "10px",
+  radiusControl: "6px",
+} as const;

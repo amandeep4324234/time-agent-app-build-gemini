@@ -28,30 +28,30 @@
 
 :root {
   color-scheme: dark;
-  /* Midnight Studio Tokens per TIMEFRAME-UI-REDESIGN.md v4.1 §2.1 */
-  --background: #0B0E14;
-  --sidebar: #0E121B;
-  --card: #141A25;
-  --card-raised: #1A2230;
-  --card-hover: #1F2939;
-  --border: #2B374B;
-  --border-strong: #53637D;
-  --text: #F2F5FB;
-  --text-secondary: #B8C4D8;
-  --text-muted: #96A5BD;
-  --focus: #AAA9FF;
-  --focus-edge: #D0CEFF;
-  --focus-secondary: #7CDCE5;
-  --sink: #EE9DAA;
-  --games: #D9BE87;
-  --other: #92A6C1;
+  /* Timeframe UI Graphite-and-Amber Tokens per update.md §4.2 */
+  --background: #171819;
+  --sidebar: #171819;
+  --card: #202122;
+  --card-raised: #282A2C;
+  --card-hover: #2F3133;
+  --border: #3A3D3E;
+  --border-strong: #737978;
+  --text: #ECECE7;
+  --text-secondary: #C1C5C1;
+  --text-muted: #A1A9A5;
+  --focus: #DDB66D;
+  --focus-edge: #E8C888;
+  --focus-secondary: #DDB66D;
+  --sink: #DFA095;
+  --games: #B3BBC7;
+  --other: #8795A8;
   --unclassified: #64748B;
-  --selection: #E3EAFF;
+  --selection: #ECECE7;
   --success: #90D2BC;
-  --radius-card: 18px;
-  --radius-control: 10px;
-  --radius-segment: 6px;
-  --shadow-card: 0 10px 28px rgba(0,0,0,.16);
+  --radius-card: 10px;
+  --radius-control: 6px;
+  --radius-segment: 4px;
+  --shadow-card: 0 4px 12px rgba(0,0,0,.24);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -69,8 +69,8 @@
   --surface: var(--card);
   --surface-hover: var(--card-hover);
   --surface-overlay: var(--card-raised);
-  --focus-tint: rgba(170, 169, 255, 0.14);
-  --sink-tint: rgba(238, 157, 170, 0.14);
+  --focus-tint: rgba(221, 182, 109, 0.14);
+  --sink-tint: rgba(223, 160, 149, 0.14);
   --radius-panel: var(--radius-card);
   --radius-chart: var(--radius-segment);
   --duration-fast: var(--motion-fast);

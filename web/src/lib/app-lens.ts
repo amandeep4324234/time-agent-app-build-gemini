@@ -1,15 +1,29 @@
 /**
  * App Lens & Constellation Engine
- * Authority: TIMEFRAME-UI-REDESIGN.md v4.1 §3.5, §3.6
+ * Authority: TIMEFRAME-UI-REDESIGN.md v4.1 §3.5, §3.6 · update.md §1.1, §3.3, §6.2, §6.3, §7
  * 
- * Friendly name resolution, local icons, session duration histograms,
- * and nerdy analytical patterns with plain-English conclusions and exact arithmetic.
+ * Friendly name resolution, local icons, exact empirical duration distributions,
+ * threshold exploration, and clear distinction between visits and recorded segments.
  */
 
 import { EnrichedSession, Category } from "./types";
-import { formatMinutes, formatDurationSeconds } from "./format";
-import { EffectiveSessionSlice } from "./corrections";
+import { formatDurationSeconds } from "./format";
+import {
+  EffectiveSessionSlice,
+  computeUnwantedUnionSeconds,
+  computeAppraisalSummary,
+  AppraisalSummary,
+} from "./corrections";
 import { FocusBlock } from "./focus-blocks";
+import {
+  calculateMedianSeconds,
+  calculateNearestRankPercentile,
+  computeHistogramBins,
+  computeThresholdPartition,
+  HistogramBinsResult,
+  ThresholdPartitionResult,
+  measureUnionSeconds,
+} from "./stat-utils";
 
 // Conservative explicit mapping for friendly display labels (§3.5)
 export const KNOWN_APP_NAMES: Record<string, string> = {
@@ -100,12 +114,23 @@ export interface AppLensData {
   category: Category;
   totalDurationSeconds: number;
   totalDurationFormatted: string;
+  totalDurationUnionSeconds: number;
+  totalDurationSumSeconds: number;
   sessionCount: number;
+  segmentCount: number; // Labeled "Recorded segments" per §1.1, §3.3
   medianSessionSeconds: number;
   medianSessionFormatted: string;
+  medianSegmentSeconds: number | null;
+  medianSegmentFormatted: string;
+  p80SegmentSeconds: number | null;
+  p90SegmentSeconds: number | null;
   longestSessionSeconds: number;
   longestSessionFormatted: string;
   histogram: SessionHistogramBin[];
+  convenienceBins: HistogramBinsResult;
+  thresholdPartition: ThresholdPartitionResult;
+  unwantedDurationSeconds: number;
+  appraisalSummary: AppraisalSummary;
   patterns: NerdyInsight[];
   recentSessions: Array<{
     id: string;
@@ -116,20 +141,100 @@ export interface AppLensData {
     category: Category;
     isExcluded: boolean;
     isAdjusted: boolean;
+    isReviewed?: boolean;
+    appraisal?: string;
+    appraisalReason?: string;
+  }>;
+  allSegments?: Array<{
+    id?: string;
+    startMs: number;
+    endMs: number;
+    sliceStartMs: number;
+    sliceEndMs: number;
+    sliceSeconds: number;
+    seconds: number;
+    isExcluded: boolean;
+    label?: string;
+    device?: string;
+    category?: Category;
   }>;
 }
 
 /**
- * Build complete nerdy App Lens data for an app across effective session slices (§3.6).
+ * Recompute threshold partition for an app's active slices given a threshold in seconds (§3.3).
+ */
+export function getAppLensThresholdPartition(
+  slices: Array<{
+    sliceStartMs?: number;
+    startMs?: number;
+    sliceEndMs?: number;
+    endMs?: number;
+    sliceSeconds?: number;
+    seconds?: number;
+    durationSeconds?: number;
+    isExcluded?: boolean;
+    id?: string;
+    label?: string;
+    device?: string;
+  }>,
+  thresholdSeconds: number
+): ThresholdPartitionResult {
+  const activeSlices = slices.filter((s) => !s.isExcluded);
+  const segments = activeSlices.map((s) => {
+    const startMs = s.sliceStartMs ?? s.startMs ?? 0;
+    const durSec =
+      s.sliceSeconds ??
+      s.seconds ??
+      s.durationSeconds ??
+      (s.sliceEndMs && s.sliceStartMs ? Math.round((s.sliceEndMs - s.sliceStartMs) / 1000) : 0);
+    const endMs = s.sliceEndMs ?? s.endMs ?? startMs + durSec * 1000;
+    return {
+      startMs,
+      endMs,
+      seconds: durSec,
+      id: s.id,
+      label: s.label,
+      device: s.device,
+    };
+  });
+  return computeThresholdPartition(segments, thresholdSeconds);
+}
+
+/**
+ * Build complete App Lens data for an app across effective session slices.
+ * Implements TIMEFRAME-UI-REDESIGN §3.6 and update.md §3.3, §6.2, §6.3, §7.
  */
 export function computeAppLensData(
   appKey: string,
-  slices: EffectiveSessionSlice[],
+  slices: Array<EffectiveSessionSlice | EnrichedSession | any>,
   blocks: FocusBlock[] = []
 ): AppLensData {
-  const matchingSlices = slices.filter(
-    (s) => s.label.toLowerCase() === appKey.toLowerCase()
-  );
+  const matchingSlices: EffectiveSessionSlice[] = slices
+    .filter((s) => s.label && s.label.toLowerCase() === appKey.toLowerCase())
+    .map((s) => {
+      const startMs = s.sliceStartMs ?? s.started_at_ms ?? (s.started_at ? Date.parse(s.started_at) : 0);
+      const endMs = s.sliceEndMs ?? s.ended_at_ms ?? (s.ended_at ? Date.parse(s.ended_at) : 0);
+      const durSec = s.sliceSeconds ?? s.duration_seconds ?? s.seconds ?? Math.max(0, Math.round((endMs - startMs) / 1000));
+      return {
+        ...s,
+        id: s.id,
+        originalSessionId: s.originalSessionId ?? s.id,
+        sliceStartMs: startMs,
+        sliceEndMs: endMs,
+        started_at_ms: startMs,
+        ended_at_ms: endMs,
+        sliceSeconds: durSec,
+        seconds: durSec,
+        label: s.label,
+        effectiveCategory: s.effectiveCategory ?? s.category ?? "other-known",
+        originalCategory: s.originalCategory ?? s.category ?? "other-known",
+        device: s.device ?? "computer",
+        source: s.source ?? "unknown",
+        isExcluded: s.isExcluded ?? s.is_fenced ?? false,
+        isAdjusted: s.isAdjusted ?? false,
+        isReviewed: s.isReviewed ?? false,
+      } as EffectiveSessionSlice;
+    });
 
   const rawLabel = matchingSlices.length > 0 ? matchingSlices[0].label : appKey;
   const friendlyName = getFriendlyAppName(rawLabel);
@@ -137,23 +242,41 @@ export function computeAppLensData(
 
   // Active (non-excluded) sessions for duration metrics
   const activeSlices = matchingSlices.filter((s) => !s.isExcluded);
-  const totalSeconds = activeSlices.reduce((acc, s) => acc + s.sliceSeconds, 0);
+  const totalSumSeconds = activeSlices.reduce((acc, s) => acc + s.sliceSeconds, 0);
 
-  // Durations array for medians & percentiles
+  // Union duration
+  const activeIntervals = activeSlices.map((s) => ({
+    startMs: s.sliceStartMs,
+    endMs: s.sliceEndMs,
+  }));
+  const totalUnionSeconds = measureUnionSeconds(activeIntervals);
+
+  // Exact durations array for medians & percentiles
   const durations = activeSlices.map((s) => s.sliceSeconds).sort((a, b) => a - b);
-  const medianSec = durations.length > 0
-    ? durations[Math.floor(durations.length / 2)]
-    : 0;
+  const medianSec = calculateMedianSeconds(durations);
+  const medianFormatted = medianSec !== null ? formatDurationSeconds(medianSec) : "0m";
+  const p80Sec = calculateNearestRankPercentile(durations, 0.8);
+  const p90Sec = calculateNearestRankPercentile(durations, 0.9);
   const longestSec = durations.length > 0 ? durations[durations.length - 1] : 0;
 
-  // Session length histogram bins: <1m, 1-5m, 5-15m, >15m
+  // Exact convenience histogram bins per §6.2: [0, 60), [60, 300], (300, inf)
+  const convenienceBins = computeHistogramBins(durations);
+
+  // Default threshold starts at 300s (5m display preset) per §3.3
+  const thresholdPartition = getAppLensThresholdPartition(matchingSlices, 300);
+
+  // User appraisal summary per §7
+  const unwantedDurationSeconds = computeUnwantedUnionSeconds(matchingSlices);
+  const appraisalSummary = computeAppraisalSummary(matchingSlices);
+
+  // Legacy 4-bin histogram for compatibility
   const binUnder1m = activeSlices.filter((s) => s.sliceSeconds < 60);
   const bin1to5m = activeSlices.filter((s) => s.sliceSeconds >= 60 && s.sliceSeconds < 300);
   const bin5to15m = activeSlices.filter((s) => s.sliceSeconds >= 300 && s.sliceSeconds < 900);
   const binOver15m = activeSlices.filter((s) => s.sliceSeconds >= 900);
 
   const totalCount = Math.max(1, activeSlices.length);
-  const histogram: SessionHistogramBin[] = [
+  const legacyHistogram: SessionHistogramBin[] = [
     {
       label: "<1 min",
       range: "0–59s",
@@ -184,61 +307,62 @@ export function computeAppLensData(
     },
   ];
 
-  // Compute up to 3 nerdy patterns per §3.6 table
+  // Patterns per §3.3 & update.md §1.1 (plain factual wording, no heuristics-as-science)
   const patterns: NerdyInsight[] = [];
 
-  // Pattern 1: Quick checks vs long visits (requires >= 10 sessions)
   if (durations.length >= 10) {
-    const quickShare = binUnder1m.length / totalCount;
-    const longTimeSec = bin5to15m.reduce((a, s) => a + s.sliceSeconds, 0) + binOver15m.reduce((a, s) => a + s.sliceSeconds, 0);
-    const longTimeShare = totalSeconds > 0 ? longTimeSec / totalSeconds : 0;
-
-    let headline = "Even mix between quick glances and longer stays.";
-    if (quickShare >= 0.5 && longTimeShare >= 0.5) {
-      headline = "Most sessions were short; most time came from longer visits.";
-    } else if (quickShare >= 0.6) {
-      headline = "Predominantly used for quick checks under 60 seconds.";
-    }
+    // Empirical duration distribution finding
+    const over300Count = convenienceBins.over5m.count;
+    const over300Sum = convenienceBins.over5m.sumSeconds;
+    const shareOver = totalSumSeconds > 0 ? (over300Sum / totalSumSeconds) * 100 : 0;
 
     patterns.push({
       id: "quick-checks-vs-long",
-      headline,
-      detail: `${binUnder1m.length} of ${durations.length} sessions were under 1m (${Math.round(quickShare * 100)}%), while visits over 5m accounted for ${Math.round(longTimeShare * 100)}% of total time.`,
-      metricValue: `${Math.round(quickShare * 100)}% quick checks`,
+      headline: `Segments over 5m contained ${shareOver.toFixed(1)}% of recorded time.`,
+      detail: `${convenienceBins.under1m.count} of ${durations.length} recorded segments were under 1m (${convenienceBins.under1m.percent}%). Segments over 5m accounted for ${formatDurationSeconds(over300Sum)} (${shareOver.toFixed(2)}%).`,
+      metricValue: `${shareOver.toFixed(1)}% over 5m`,
       eligible: true,
       sampleCount: durations.length,
     });
-  }
 
-  // Pattern 2: Typical session (median and p80, requires >= 10 sessions)
-  if (durations.length >= 10) {
-    const p80Index = Math.min(durations.length - 1, Math.floor(durations.length * 0.8));
-    const p80Sec = durations[p80Index];
-    const medFmt = formatDurationSeconds(medianSec);
-    const p80Fmt = formatDurationSeconds(p80Sec);
-
+    // Median & percentile finding
+    const medFmt = formatDurationSeconds(medianSec ?? 0);
+    const p80Fmt = formatDurationSeconds(p80Sec ?? 0);
     patterns.push({
       id: "typical-session",
-      headline: `Median visit ${medFmt}; 80% ended within ${p80Fmt}.`,
-      detail: `Calculated from ${durations.length} recorded sessions. Nearest-rank 80th percentile duration: ${p80Fmt}.`,
+      headline: `Median recorded segment: ${medFmt}; 80% at or below ${p80Fmt}.`,
+      detail: `Empirical median of ${durations.length} recorded segments. Nearest-rank 80th percentile: ${p80Fmt}.`,
       metricValue: `Median ${medFmt}`,
       eligible: true,
       sampleCount: durations.length,
     });
   }
 
-  // Pattern 3: Inside focus blocks
+  // Focus block intersection finding
   const blockIntersectingSlices = activeSlices.filter((s) => !!s.associatedBlockId);
   const blockSeconds = blockIntersectingSlices.reduce((a, s) => a + s.sliceSeconds, 0);
   if (blocks.length >= 1 && blockSeconds > 0) {
     const blockFmt = formatDurationSeconds(blockSeconds);
     patterns.push({
       id: "inside-focus-blocks",
-      headline: `${blockFmt} appeared inside your planned focus blocks.`,
-      detail: `Union duration of ${friendlyName} activity intersecting active intervals across ${blocks.length} focus blocks. Overlap indicates recorded presence, not proof of distraction.`,
+      headline: `${blockFmt} recorded during focus block active intervals.`,
+      detail: `Intersected recorded duration of ${friendlyName} across ${blocks.length} focus blocks. Overlap indicates recorded presence, not proof of distraction.`,
       metricValue: blockFmt,
       eligible: true,
       sampleCount: blockIntersectingSlices.length,
+    });
+  }
+
+  // Unwanted appraisal finding if user marked activity
+  if (unwantedDurationSeconds > 0) {
+    const unwFmt = formatDurationSeconds(unwantedDurationSeconds);
+    patterns.push({
+      id: "marked-unwanted",
+      headline: `${unwFmt} marked unwanted by you.`,
+      detail: `Based on explicit user appraisals. Unreviewed activity is not automatically unwanted.`,
+      metricValue: unwFmt,
+      eligible: true,
+      sampleCount: matchingSlices.filter((s) => s.appraisal === "unwanted").length,
     });
   }
 
@@ -246,9 +370,9 @@ export function computeAppLensData(
   if (patterns.length === 0) {
     patterns.push({
       id: "sparse-notice",
-      headline: "More recorded sessions needed for pattern detection.",
-      detail: `Pattern analysis requires at least 10 valid sessions. Currently recorded: ${durations.length} sessions.`,
-      metricValue: `${durations.length} sessions`,
+      headline: "Sample context: fewer than 10 recorded segments.",
+      detail: `Generalization withheld until broader empirical records exist. Currently recorded: ${durations.length} segments.`,
+      metricValue: `${durations.length} segments`,
       eligible: false,
       sampleCount: durations.length,
     });
@@ -267,6 +391,25 @@ export function computeAppLensData(
     category: s.effectiveCategory,
     isExcluded: s.isExcluded,
     isAdjusted: s.isAdjusted,
+    isReviewed: s.isReviewed,
+    appraisal: s.appraisal,
+    appraisalReason: s.appraisalReason,
+  }));
+
+  // All chronological segments with exact interval coordinates for dynamic threshold partitioning
+  const allSegments = matchingSlices.map((s) => ({
+    id: s.id,
+    startMs: s.sliceStartMs,
+    endMs: s.sliceEndMs,
+    sliceStartMs: s.sliceStartMs,
+    sliceEndMs: s.sliceEndMs,
+    sliceSeconds: s.sliceSeconds,
+    seconds: s.sliceSeconds,
+    durationSeconds: s.sliceSeconds,
+    isExcluded: s.isExcluded,
+    label: s.label,
+    device: s.device,
+    category: s.effectiveCategory,
   }));
 
   return {
@@ -274,15 +417,27 @@ export function computeAppLensData(
     friendlyName,
     rawLabel,
     category,
-    totalDurationSeconds: totalSeconds,
-    totalDurationFormatted: formatDurationSeconds(totalSeconds),
+    totalDurationSeconds: totalSumSeconds,
+    totalDurationFormatted: formatDurationSeconds(totalSumSeconds),
+    totalDurationUnionSeconds: totalUnionSeconds,
+    totalDurationSumSeconds: totalSumSeconds,
     sessionCount: activeSlices.length,
-    medianSessionSeconds: medianSec,
-    medianSessionFormatted: formatDurationSeconds(medianSec),
+    segmentCount: activeSlices.length,
+    medianSessionSeconds: medianSec ?? 0,
+    medianSessionFormatted: medianFormatted,
+    medianSegmentSeconds: medianSec,
+    medianSegmentFormatted: medianFormatted,
+    p80SegmentSeconds: p80Sec,
+    p90SegmentSeconds: p90Sec,
     longestSessionSeconds: longestSec,
     longestSessionFormatted: formatDurationSeconds(longestSec),
-    histogram,
+    histogram: legacyHistogram,
+    convenienceBins,
+    thresholdPartition,
+    unwantedDurationSeconds,
+    appraisalSummary,
     patterns: patterns.slice(0, 3),
     recentSessions,
+    allSegments,
   };
 }

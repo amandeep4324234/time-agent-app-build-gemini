@@ -1,32 +1,43 @@
 /**
- * Post-Sync Corrections & Effective Activity Model
- * Authority: TIMEFRAME-UI-REDESIGN.md v4.1 §8, §9
+ * Post-Sync Corrections, User Appraisal & Effective Activity Model
+ * Authority: TIMEFRAME-UI-REDESIGN.md v4.1 §8, §9 · update.md §1.1, §3.4, §7
  * 
  * Rules:
  * - Append-only raw sessions remain unchanged.
  * - Interval splitting at correction/block boundaries.
  * - Precedence: Immutable Privacy Fence > Explicit Interval Correction > User Classification Rule > Default.
- * - Exclusions are reversible and act as continuity barriers.
+ * - Exclusions are reversible and act as continuity barriers; distinct from user appraisal.
+ * - User appraisal: intentional | unwanted | unsure | unreviewed. Does NOT silently change category or delete data.
+ * - Adjusted: category/exclusion correction affecting calculation.
+ * - Reviewed: user supplied intention/appraisal.
+ * - Unwanted duration: union of effective, included intervals explicitly marked unwanted.
+ * - Overlapping cross-device conflicting appraisals marked mixed in combined summaries.
  * - Atomic revision batches, idempotent sync replay, and conflict detection.
  */
 
 import { EnrichedSession, Category } from "./types";
-import { isFencedSession, FENCED_DOMAINS } from "./safe-adapter";
+import { isFencedSession } from "./safe-adapter";
 import { FocusBlock } from "./focus-blocks";
+import { measureUnionSeconds, TimeInterval } from "./stat-utils";
+import { classifySession } from "./classify";
 
-export type CorrectionOperation = "category" | "exclude" | "restore";
+export type CorrectionOperation = "category" | "exclude" | "restore" | "appraisal";
+
+export type UserAppraisal = "intentional" | "unwanted" | "unsure" | "unreviewed";
 
 export interface CorrectionEvent {
   id: string;
   ownerId?: string;
   targetSessionId: string;
-  intervalStartUtc: string;
-  intervalEndUtc: string;
+  intervalStartUtc?: string;
+  intervalEndUtc?: string;
   operation: CorrectionOperation;
   category?: Category;
+  appraisal?: UserAppraisal;
+  appraisalReason?: string; // user-authored private context max 160 chars
   scopeBlockId?: string;
-  baseRevisionId: string;
-  batchId: string;
+  baseRevisionId?: string;
+  batchId?: string;
   createdAtUtc: string;
   originDeviceId?: string;
 }
@@ -57,6 +68,9 @@ export interface EffectiveSessionSlice extends EnrichedSession {
   effectiveCategory: Category;
   isExcluded: boolean;
   isAdjusted: boolean;
+  isReviewed: boolean;
+  appraisal: UserAppraisal;
+  appraisalReason?: string;
   appliedCorrectionIds: string[];
   associatedBlockId?: string;
   sliceStartMs: number;
@@ -67,8 +81,8 @@ export interface EffectiveSessionSlice extends EnrichedSession {
 export interface ConflictRecord {
   id: string;
   targetSessionId: string;
-  intervalStartUtc: string;
-  intervalEndUtc: string;
+  intervalStartUtc?: string;
+  intervalEndUtc?: string;
   localEvent: CorrectionEvent;
   remoteEvent: CorrectionEvent;
   detectedAtUtc: string;
@@ -77,8 +91,8 @@ export interface ConflictRecord {
 }
 
 /**
- * Split a single session into effective slices based on active corrections and block intervals.
- * Implements §8.3 (e.g. 10:15–10:30 correction within a 10:00–10:40 session modifies only 15m intersection).
+ * Split a single session into effective slices based on active corrections, appraisals, and block intervals.
+ * Implements §8.3 and update.md §3.4, §7.
  */
 export function sliceSessionWithCorrections(
   session: EnrichedSession,
@@ -86,8 +100,14 @@ export function sliceSessionWithCorrections(
   rules: ClassificationRule[],
   blocks: FocusBlock[]
 ): EffectiveSessionSlice[] {
-  const sessionStartMs = session.started_at_ms;
-  const sessionEndMs = session.ended_at_ms;
+  const sessionStartMs =
+    session.started_at_ms ??
+    (session.started_at ? Date.parse(session.started_at) : 0);
+  const sessionEndMs =
+    session.ended_at_ms ??
+    (session.ended_at
+      ? Date.parse(session.ended_at)
+      : sessionStartMs + (session.seconds ?? 0) * 1000);
   const sessionDurationMs = sessionEndMs - sessionStartMs;
 
   if (sessionDurationMs <= 0) return [];
@@ -113,13 +133,17 @@ export function sliceSessionWithCorrections(
   const cutSet = new Set<number>([sessionStartMs, sessionEndMs]);
 
   for (const c of relevantCorrections) {
-    const cStart = Date.parse(c.intervalStartUtc);
-    const cEnd = Date.parse(c.intervalEndUtc);
-    if (!isNaN(cStart) && cStart > sessionStartMs && cStart < sessionEndMs) {
-      cutSet.add(cStart);
+    if (c.intervalStartUtc) {
+      const cStart = Date.parse(c.intervalStartUtc);
+      if (!isNaN(cStart) && cStart > sessionStartMs && cStart < sessionEndMs) {
+        cutSet.add(cStart);
+      }
     }
-    if (!isNaN(cEnd) && cEnd > sessionStartMs && cEnd < sessionEndMs) {
-      cutSet.add(cEnd);
+    if (c.intervalEndUtc) {
+      const cEnd = Date.parse(c.intervalEndUtc);
+      if (!isNaN(cEnd) && cEnd > sessionStartMs && cEnd < sessionEndMs) {
+        cutSet.add(cEnd);
+      }
     }
   }
 
@@ -152,10 +176,15 @@ export function sliceSessionWithCorrections(
       })
     );
 
-    // Default base category from session
-    let effectiveCategory: Category = session.category;
+    // Default base category from session (fallback to automatic classification if absent)
+    const initialCategory: Category =
+      session.category ?? classifySession(session as any);
+    let effectiveCategory: Category = initialCategory;
     let isExcluded = false;
+    let appraisal: UserAppraisal = "unreviewed";
+    let appraisalReason: string | undefined = undefined;
     const appliedIds: string[] = [];
+    let hasCategoryOrExclusionCorrection = false;
 
     if (isFenced) {
       // Privacy fence outranks all user overrides (§9.2)
@@ -182,8 +211,10 @@ export function sliceSessionWithCorrections(
 
       // Check interval corrections covering this slice (latest wins)
       const coveringCorrections = relevantCorrections.filter((c) => {
-        const cStart = Date.parse(c.intervalStartUtc);
-        const cEnd = Date.parse(c.intervalEndUtc);
+        const parsedStart = c.intervalStartUtc ? Date.parse(c.intervalStartUtc) : NaN;
+        const parsedEnd = c.intervalEndUtc ? Date.parse(c.intervalEndUtc) : NaN;
+        const cStart = isNaN(parsedStart) ? sessionStartMs : parsedStart;
+        const cEnd = isNaN(parsedEnd) ? sessionEndMs : parsedEnd;
         return midPoint >= cStart && midPoint <= cEnd;
       });
 
@@ -196,20 +227,31 @@ export function sliceSessionWithCorrections(
         appliedIds.push(c.id);
         if (c.operation === "exclude") {
           isExcluded = true;
+          hasCategoryOrExclusionCorrection = true;
         } else if (c.operation === "restore") {
           isExcluded = false;
           if (c.category) effectiveCategory = c.category;
+          hasCategoryOrExclusionCorrection = true;
         } else if (c.operation === "category" && c.category) {
           isExcluded = false;
           effectiveCategory = c.category;
+          hasCategoryOrExclusionCorrection = true;
+        } else if (c.operation === "appraisal") {
+          // User appraisal: does NOT change category or delete data (§7)
+          if (c.appraisal) {
+            appraisal = c.appraisal;
+            appraisalReason = c.appraisalReason?.slice(0, 160);
+          }
         }
       }
     }
 
     const isAdjusted =
       isExcluded ||
-      effectiveCategory !== session.category ||
-      appliedIds.length > 0;
+      effectiveCategory !== initialCategory ||
+      hasCategoryOrExclusionCorrection;
+
+    const isReviewed = appraisal !== "unreviewed";
 
     slices.push({
       ...session,
@@ -221,10 +263,13 @@ export function sliceSessionWithCorrections(
       ended_at: new Date(sEnd).toISOString(),
       seconds: durationSec,
       minutes: Math.round(durationSec / 60),
-      originalCategory: session.category,
+      originalCategory: initialCategory,
       effectiveCategory,
       isExcluded,
       isAdjusted,
+      isReviewed,
+      appraisal,
+      appraisalReason,
       appliedCorrectionIds: appliedIds,
       associatedBlockId: matchedBlock?.id,
       sliceStartMs: sStart,
@@ -251,6 +296,105 @@ export function computeEffectiveSessions(
     allSlices.push(...slices);
   }
   return allSlices;
+}
+
+/**
+ * Compute user-confirmed unwanted duration:
+ * Union of effective, included intervals explicitly marked Unwanted (§7).
+ */
+export function computeUnwantedUnionSeconds(slices: EffectiveSessionSlice[]): number {
+  const unwantedIntervals: TimeInterval[] = slices
+    .filter((s) => !s.isExcluded && s.appraisal === "unwanted")
+    .map((s) => ({ startMs: s.sliceStartMs, endMs: s.sliceEndMs }));
+
+  return measureUnionSeconds(unwantedIntervals);
+}
+
+export interface AppraisalSummary {
+  intentionalSeconds: number;
+  unwantedSeconds: number;
+  unsureSeconds: number;
+  unreviewedSeconds: number;
+  reviewedTotalSeconds: number;
+  totalEligibleSeconds: number;
+  unreviewedCoveragePercent: number;
+  hasMixedCrossDeviceOverlap: boolean;
+}
+
+/**
+ * Compute appraisal breakdown across slices with cross-device conflicting appraisal detection (§7).
+ */
+export function computeAppraisalSummary(slices: EffectiveSessionSlice[]): AppraisalSummary {
+  const eligibleSlices = slices.filter((s) => !s.isExcluded && s.category !== "private");
+
+  const intentionalIntervals: TimeInterval[] = [];
+  const unwantedIntervals: TimeInterval[] = [];
+  const unsureIntervals: TimeInterval[] = [];
+  const allIntervals: TimeInterval[] = [];
+
+  const phoneIntentional: TimeInterval[] = [];
+  const phoneUnwanted: TimeInterval[] = [];
+  const compIntentional: TimeInterval[] = [];
+  const compUnwanted: TimeInterval[] = [];
+
+  for (const s of eligibleSlices) {
+    const inv = { startMs: s.sliceStartMs, endMs: s.sliceEndMs };
+    allIntervals.push(inv);
+
+    if (s.appraisal === "intentional") {
+      intentionalIntervals.push(inv);
+      if (s.device === "phone") phoneIntentional.push(inv);
+      else compIntentional.push(inv);
+    } else if (s.appraisal === "unwanted") {
+      unwantedIntervals.push(inv);
+      if (s.device === "phone") phoneUnwanted.push(inv);
+      else compUnwanted.push(inv);
+    } else if (s.appraisal === "unsure") {
+      unsureIntervals.push(inv);
+    }
+  }
+
+  const totalEligibleSeconds = measureUnionSeconds(allIntervals);
+  const intentionalSeconds = measureUnionSeconds(intentionalIntervals);
+  const unwantedSeconds = measureUnionSeconds(unwantedIntervals);
+  const unsureSeconds = measureUnionSeconds(unsureIntervals);
+
+  // Check cross-device conflicting overlap:
+  // e.g. Phone intentional overlaps with Computer unwanted, or vice versa
+  const checkCrossOverlap = (list1: TimeInterval[], list2: TimeInterval[]) => {
+    for (const a of list1) {
+      for (const b of list2) {
+        if (a.startMs < b.endMs && a.endMs > b.startMs) return true;
+      }
+    }
+    return false;
+  };
+
+  const hasMixedCrossDeviceOverlap =
+    checkCrossOverlap(phoneIntentional, compUnwanted) ||
+    checkCrossOverlap(compIntentional, phoneUnwanted);
+
+  const reviewedUnion = measureUnionSeconds([
+    ...intentionalIntervals,
+    ...unwantedIntervals,
+    ...unsureIntervals,
+  ]);
+  const unreviewedSeconds = Math.max(0, totalEligibleSeconds - reviewedUnion);
+  const unreviewedCoveragePercent =
+    totalEligibleSeconds > 0
+      ? Math.round((unreviewedSeconds / totalEligibleSeconds) * 1000) / 10
+      : 100;
+
+  return {
+    intentionalSeconds,
+    unwantedSeconds,
+    unsureSeconds,
+    unreviewedSeconds,
+    reviewedTotalSeconds: reviewedUnion,
+    totalEligibleSeconds,
+    unreviewedCoveragePercent,
+    hasMixedCrossDeviceOverlap,
+  };
 }
 
 /**
@@ -295,13 +439,18 @@ export class CorrectionStoreManager {
           applied.targetSessionId === incoming.targetSessionId &&
           applied.batchId !== incoming.batchId
         ) {
-          const inStart = Date.parse(incoming.intervalStartUtc);
-          const inEnd = Date.parse(incoming.intervalEndUtc);
-          const apStart = Date.parse(applied.intervalStartUtc);
-          const apEnd = Date.parse(applied.intervalEndUtc);
+          const inStart = incoming.intervalStartUtc ? Date.parse(incoming.intervalStartUtc) : 0;
+          const inEnd = incoming.intervalEndUtc ? Date.parse(incoming.intervalEndUtc) : Infinity;
+          const apStart = applied.intervalStartUtc ? Date.parse(applied.intervalStartUtc) : 0;
+          const apEnd = applied.intervalEndUtc ? Date.parse(applied.intervalEndUtc) : Infinity;
 
-          const overlaps = inStart < apEnd && inEnd > apStart;
-          if (overlaps && (incoming.operation !== applied.operation || incoming.category !== applied.category)) {
+          const overlaps = (isNaN(inStart) || isNaN(apEnd) || inStart < apEnd) && (isNaN(inEnd) || isNaN(apStart) || inEnd > apStart);
+          if (
+            overlaps &&
+            (incoming.operation !== applied.operation ||
+              incoming.category !== applied.category ||
+              incoming.appraisal !== applied.appraisal)
+          ) {
             const conflict: ConflictRecord = {
               id: `conflict-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               targetSessionId: incoming.targetSessionId,

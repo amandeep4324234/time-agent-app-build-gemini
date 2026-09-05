@@ -14,14 +14,15 @@ import demoEnvelopeRaw from "../../../../data/demo-sessions.json";
 
 import { PinnedCommandArea } from "@/components/overview/PinnedCommandArea";
 import { MetricCards } from "@/components/overview/MetricCards";
+import { TimeMixStrip } from "@/components/overview/TimeMixStrip";
 import { TimeCanvas } from "@/components/timeline/TimeCanvas";
 import { AppIconGrid } from "@/components/apps/AppIconGrid";
 import { AppLensSheet } from "@/components/apps/AppLensSheet";
-import { WorkspaceTabs } from "@/components/overview/WorkspaceTabs";
 import { FocusStartSheet } from "@/components/focus/FocusStartSheet";
 import { FocusActiveView } from "@/components/focus/FocusActiveView";
 import { FocusReviewWorkspace } from "@/components/focus/FocusReviewWorkspace";
 import { CategoryEditDialog } from "@/components/today/CategoryEditDialog";
+import { EvidenceSheet, EvidenceModel } from "@/components/ui/EvidenceSheet";
 
 const demoEnvelope = demoEnvelopeRaw as unknown as Envelope;
 const TIMEZONE = "Asia/Kolkata";
@@ -149,6 +150,9 @@ function DashboardContent() {
     return focusBlocks.find((b) => b.id === activeBlockId && (b.state === "running" || b.state === "paused")) || null;
   }, [focusBlocks, activeBlockId]);
 
+  // Shared Detail Surface Navigation (§3.0)
+  const [activeEvidenceModel, setActiveEvidenceModel] = useState<EvidenceModel | null>(null);
+
   // UI Modal & Sheet States
   const [isStartFocusOpen, setIsStartFocusOpen] = useState(false);
   const [isShowingActiveView, setIsShowingActiveView] = useState(false);
@@ -172,7 +176,7 @@ function DashboardContent() {
   }, [focusBlocks, reviewingBlockId]);
 
   return (
-    <div className="flex flex-col gap-5 select-text">
+    <div className="flex flex-col gap-4 sm:gap-5 select-text">
       {/* 1. Pinned Command Area (§3.1, §4) */}
       <PinnedCommandArea
         selectedDay={selectedDay}
@@ -190,15 +194,26 @@ function DashboardContent() {
         onDismissReflection={() => dismissAiDay(selectedDay)}
         onTurnOffAi={() => setAiEnabled(false)}
         isAiVisible={aiEnabled && !aiDismissedDays[selectedDay]}
+        onOpenEvidence={setActiveEvidenceModel}
       />
 
-      {/* 2. Four Metric Cards (§3.4) */}
+      {/* 2. Four Metric Cards with Integrated Rhythm (§3.2, §3.4, §4.1) */}
       <MetricCards
         dayResult={effectiveDayResult}
         onOpenBlocksList={() => router.push("/focus")}
+        onOpenEvidenceModel={setActiveEvidenceModel}
       />
 
-      {/* 3. Main Analytical Visual Grid (§3.2): Left 8/12 Time Canvas, Right 4/12 App Constellation */}
+      {/* 3. Slim Time Mix Composition Strip (§3.2) */}
+      <TimeMixStrip
+        categories={effectiveDayResult.categories}
+        totalTrackedSeconds={effectiveDayResult.metrics.unionTrackedSeconds}
+        onShowMatchingActivity={(category) => {
+          router.push(`/logs?category=${encodeURIComponent(category)}`);
+        }}
+      />
+
+      {/* 4. Main Analytical Visual Grid (§3.2): Left 8/12 Time Canvas, Right 4/12 App Constellation */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         {/* Left 8/12: Large Zoomable Time Canvas */}
         <div className="lg:col-span-8 min-w-0 flex flex-col">
@@ -226,10 +241,16 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* 4. Extra Workspace Tabs beneath Canvas (§3.2, §6): Rhythm / Mix / Patterns */}
-      <WorkspaceTabs dayResult={effectiveDayResult} />
+      {/* (WorkspaceTabs removed completely per §3.2) */}
 
-      {/* App Lens Slide-over Sheet (§3.6) */}
+      {/* Shared Evidence Sheet (§4) */}
+      <EvidenceSheet
+        evidence={activeEvidenceModel}
+        isOpen={activeEvidenceModel !== null}
+        onClose={() => setActiveEvidenceModel(null)}
+      />
+
+      {/* App Lens Slide-over Sheet (§3.3, §3.6) */}
       <AppLensSheet
         data={appLensData}
         isOpen={selectedLensAppKey !== null}
@@ -252,8 +273,11 @@ function DashboardContent() {
           }));
           commitReviewBatch("", ops, `Excluded ${app} activity`);
         }}
-        onOpenLogsPrefiltered={(appKey) => {
-          router.push(`/logs?app=${encodeURIComponent(appKey)}`);
+        onOpenLogsPrefiltered={(appKey, thresholdSec) => {
+          const query = thresholdSec
+            ? `/logs?app=${encodeURIComponent(appKey)}&threshold=${thresholdSec}`
+            : `/logs?app=${encodeURIComponent(appKey)}`;
+          router.push(query);
         }}
       />
 
@@ -269,7 +293,7 @@ function DashboardContent() {
 
       {/* Fullscreen Focus Active Surface (§7.2) */}
       {isShowingActiveView && activeBlock && (
-        <div className="fixed inset-0 z-50 bg-[#0B0E14] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-[#171819] overflow-y-auto">
           <FocusActiveView
             block={activeBlock}
             onPause={pauseCurrentBlock}
@@ -328,7 +352,7 @@ export default function TodayPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-8 text-sm text-[#96A5BD]">
+        <div className="p-8 text-sm text-[#A1A9A5]">
           Loading Timeframe observatory…
         </div>
       }

@@ -27,6 +27,7 @@ import { EnrichedSession } from "@/lib/types";
 import { FocusBlock } from "@/lib/focus-blocks";
 import { CorrectionEvent, ClassificationRule } from "@/lib/corrections";
 import { formatDurationSeconds } from "@/lib/format";
+import { EvidenceSheet, EvidenceModel } from "../ui/EvidenceSheet";
 
 interface AnalyzerWorkspaceProps {
   sessions: EnrichedSession[];
@@ -92,7 +93,42 @@ export function AnalyzerWorkspace({
     "focus_time" | "deep_run_length" | "planned_vs_recorded" | "sink_time" | "review_rate"
   >("focus_time");
   const [selectedFinding, setSelectedFinding] = useState<AnalyzerFinding | null>(null);
+  const [subviewEvidence, setSubviewEvidence] = useState<EvidenceModel | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+
+  const handleOpenEvidenceForFinding = (f: AnalyzerFinding) => {
+    if (!analysisResult) return;
+    setSubviewEvidence({
+      title: `Evidence · ${f.headline}`,
+      dateRange: `${analysisResult.resolvedRange.start} – ${analysisResult.resolvedRange.end}`,
+      observedText: f.observed || f.headline,
+      meaningText: f.meaning || f.explanation,
+      limitation: f.limitation || "Averages calculated only over days with recorded activity.",
+      calculation: {
+        definition: "Period aggregation and half-open interval unions across observed days.",
+        unit: "seconds",
+        numerator: null,
+        denominator: analysisResult.resolvedRange.totalDays,
+        rule: "Sum of daily interval unions [04:00, 04:00) divided by observed days count.",
+        timezone,
+        windowBounds: `${analysisResult.resolvedRange.start} to ${analysisResult.resolvedRange.end}`,
+        deviceScope: "Paired devices",
+        sampleCount: analysisResult.resolvedRange.observedDays,
+        basis: "effective",
+        overlapHandling: "Interval union per day",
+        boundaryStatus: "Recorded segment timestamps",
+        definitionVersion: "1.2",
+        dataRevision: analysisResult.dataRevision,
+      },
+      action: f.action
+        ? {
+            label: f.action.label,
+            onClick: () => {},
+          }
+        : undefined,
+      records: [],
+    });
+  };
 
   const handleRunAnalysis = () => {
     if (!baselineValidation.isValid) return;
@@ -141,11 +177,11 @@ export function AnalyzerWorkspace({
   return (
     <div className="flex flex-col gap-6 select-text">
       {/* 1. Setup Form Header (§10.2) */}
-      <div className="card-midnight p-5 bg-[#141A25] border border-[#2B374B] flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-[#2B374B] pb-3">
+      <div className="card-midnight p-5 bg-[#202122] border border-[#3A3D3E] flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#AAA9FF]" />
-            <h2 className="text-sm font-bold text-[#F2F5FB]">Custom-Range AI Analyzer</h2>
+            <Sparkles className="w-4 h-4 text-[#DDB66D]" />
+            <h2 className="text-sm font-bold text-[#ECECE7]">Custom-Range AI Analyzer</h2>
           </div>
           {isDirty && (
             <span className="text-[11px] text-[#D9BE87] px-2 py-0.5 rounded bg-[#D9BE87]/10 font-medium">
@@ -158,8 +194,8 @@ export function AnalyzerWorkspace({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           {/* Time Range */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#B8C4D8]">Time Range</label>
-            <div className="flex bg-[#0B0E14] p-0.5 rounded-[8px] border border-[#2B374B]">
+            <label className="font-semibold text-[#C1C5C1]">Time Range</label>
+            <div className="flex bg-[#171819] p-0.5 rounded-[8px] border border-[#3A3D3E]">
               {(["7d", "14d", "30d", "custom"] as const).map((r) => (
                 <button
                   key={r}
@@ -174,8 +210,8 @@ export function AnalyzerWorkspace({
                   }
                   className={`flex-1 py-1.5 rounded-[6px] capitalize font-mono font-medium transition-colors ${
                     rangeType === r
-                      ? "bg-[#AAA9FF] text-[#0B0E14] font-semibold"
-                      : "text-[#B8C4D8] hover:text-[#F2F5FB]"
+                      ? "bg-[#DDB66D] text-[#171819] font-semibold"
+                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
                   }`}
                 >
                   {r}
@@ -190,19 +226,19 @@ export function AnalyzerWorkspace({
                   value={startDate}
                   max={endDate || todayStr}
                   onChange={(e) => handleFieldChange(() => setStartDate(e.target.value))}
-                  className="px-2 py-1 rounded bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] text-[11px] w-full"
+                  className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
                 />
-                <span className="text-[#96A5BD]">&rarr;</span>
+                <span className="text-[#A1A9A5]">&rarr;</span>
                 <input
                   type="date"
                   value={endDate}
                   max={todayStr}
                   onChange={(e) => handleFieldChange(() => setEndDate(e.target.value))}
-                  className="px-2 py-1 rounded bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] text-[11px] w-full"
+                  className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-between text-[11px] font-mono text-[#96A5BD]">
+              <div className="flex items-center justify-between text-[11px] font-mono text-[#A1A9A5]">
                 <span>{startDate}</span>
                 <span>&rarr;</span>
                 <span>{endDate}</span>
@@ -212,13 +248,13 @@ export function AnalyzerWorkspace({
 
           {/* Compare With */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#B8C4D8]">Compare With</label>
+            <label className="font-semibold text-[#C1C5C1]">Compare With</label>
             <select
               value={compareWith}
               onChange={(e) =>
                 handleFieldChange(() => setCompareWith(e.target.value as any))
               }
-              className="px-3 py-1.5 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] focus:outline-none focus:border-[#AAA9FF]"
+              className="px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
             >
               <option value="previous_period">Previous equal-length period</option>
               <option value="custom_baseline">Custom baseline</option>
@@ -233,25 +269,25 @@ export function AnalyzerWorkspace({
                     value={baselineStartDate}
                     max={baselineEndDate || todayStr}
                     onChange={(e) => handleFieldChange(() => setBaselineStartDate(e.target.value))}
-                    className="px-2 py-1 rounded bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] text-[11px] w-full"
+                    className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
                   />
-                  <span className="text-[#96A5BD]">&rarr;</span>
+                  <span className="text-[#A1A9A5]">&rarr;</span>
                   <input
                     type="date"
                     value={baselineEndDate}
                     max={todayStr}
                     onChange={(e) => handleFieldChange(() => setBaselineEndDate(e.target.value))}
-                    className="px-2 py-1 rounded bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] text-[11px] w-full"
+                    className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
                   />
                 </div>
                 {!baselineValidation.isValid && (
-                  <span className="text-[10px] text-[#EE9DAA] leading-tight">
+                  <span className="text-[10px] text-[#DFA095] leading-tight">
                     {baselineValidation.error}
                   </span>
                 )}
               </div>
             ) : (
-              <span className="text-[11px] text-[#96A5BD]">
+              <span className="text-[11px] text-[#A1A9A5]">
                 Per-eligible-day averages
               </span>
             )}
@@ -259,59 +295,59 @@ export function AnalyzerWorkspace({
 
           {/* Scope Filters */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#B8C4D8]">Look At</label>
+            <label className="font-semibold text-[#C1C5C1]">Look At</label>
             <select
               value={filterKind}
               onChange={(e) =>
                 handleFieldChange(() => setFilterKind(e.target.value as any))
               }
-              className="px-3 py-1.5 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] focus:outline-none focus:border-[#AAA9FF]"
+              className="px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
             >
               <option value="all">All activity (display safe)</option>
               <option value="apps">Selected apps</option>
               <option value="tags">Focus block tags</option>
               <option value="category">Work category only</option>
             </select>
-            <span className="text-[11px] text-[#96A5BD]">
+            <span className="text-[11px] text-[#A1A9A5]">
               Interval unions preserved
             </span>
           </div>
 
           {/* User Intention */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#B8C4D8]">Your Intention</label>
+            <label className="font-semibold text-[#C1C5C1]">Your Intention</label>
             <input
               type="text"
               value={userIntention}
               onChange={(e) => handleFieldChange(() => setUserIntention(e.target.value))}
               placeholder="e.g. Fewer distractions, longer blocks"
-              className="px-3 py-1.5 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] text-[#F2F5FB] focus:outline-none focus:border-[#AAA9FF]"
+              className="px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
             />
-            <span className="text-[11px] text-[#96A5BD]">
+            <span className="text-[11px] text-[#A1A9A5]">
               Grounds accountability findings
             </span>
           </div>
         </div>
 
         {/* Primary Action Button */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#2B374B]">
-          <span className="text-xs text-[#96A5BD]">
+        <div className="flex items-center justify-between pt-2 border-t border-[#3A3D3E]">
+          <span className="text-xs text-[#A1A9A5]">
             Deterministic facts crunching &bull; Zero external data leak
           </span>
 
           <button
             onClick={handleRunAnalysis}
             disabled={isLoading || !baselineValidation.isValid}
-            className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-[#AAA9FF] text-[#0B0E14] hover:bg-[#D0CEFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-sm"
+            className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-[#DDB66D] text-[#171819] hover:bg-[#E8C888] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-sm"
           >
-            <Play className="w-3.5 h-3.5 fill-[#0B0E14]" />
+            <Play className="w-3.5 h-3.5 fill-[#171819]" />
             <span>{isLoading ? "Running..." : "Analyze period"}</span>
           </button>
         </div>
 
         {/* Loading / Progress State (§10.6) */}
         {isLoading && (
-          <div className="p-3 rounded-[8px] bg-[#1A2230] border border-[#AAA9FF]/30 flex items-center justify-between text-xs text-[#AAA9FF]">
+          <div className="p-3 rounded-[8px] bg-[#282A2C] border border-[#DDB66D]/30 flex items-center justify-between text-xs text-[#DDB66D]">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 animate-spin" />
               <span className="capitalize font-semibold">
@@ -322,7 +358,7 @@ export function AnalyzerWorkspace({
             </div>
             <button
               onClick={() => setIsLoading(false)}
-              className="text-[#EE9DAA] hover:underline"
+              className="text-[#DFA095] hover:underline"
             >
               Cancel
             </button>
@@ -332,9 +368,9 @@ export function AnalyzerWorkspace({
 
       {/* 2. Analysis Results Workspace (§10.3) */}
       {analysisResult && (
-        <div className="card-midnight bg-[#141A25] border border-[#2B374B] overflow-hidden flex flex-col">
+        <div className="card-midnight bg-[#202122] border border-[#3A3D3E] overflow-hidden flex flex-col">
           {/* Result Tabs Bar */}
-          <div className="flex items-center justify-between border-b border-[#2B374B] px-5 pt-3 bg-[#0E121B]">
+          <div className="flex items-center justify-between border-b border-[#3A3D3E] px-5 pt-3 bg-[#171819]">
             <div className="flex gap-4">
               {(["summary", "progress", "evidence"] as const).map((t) => (
                 <button
@@ -342,8 +378,8 @@ export function AnalyzerWorkspace({
                   onClick={() => setActiveTab(t)}
                   className={`pb-3 text-xs font-semibold capitalize border-b-2 transition-colors ${
                     activeTab === t
-                      ? "border-[#AAA9FF] text-[#F2F5FB]"
-                      : "border-transparent text-[#96A5BD] hover:text-[#B8C4D8]"
+                      ? "border-[#DDB66D] text-[#ECECE7]"
+                      : "border-transparent text-[#A1A9A5] hover:text-[#C1C5C1]"
                   }`}
                 >
                   {t}
@@ -351,7 +387,7 @@ export function AnalyzerWorkspace({
               ))}
             </div>
 
-            <span className="text-[11px] font-mono text-[#96A5BD] pb-3">
+            <span className="text-[11px] font-mono text-[#A1A9A5] pb-3">
               Revision {analysisResult.dataRevision}
             </span>
           </div>
@@ -361,91 +397,176 @@ export function AnalyzerWorkspace({
             {activeTab === "summary" && (
               <div className="flex flex-col gap-6">
                 {/* 40–70 Word Overview Paragraph (§10.3) */}
-                <div className="p-4 rounded-[12px] bg-[#1A2230] border border-[#2B374B]">
-                  <p className="text-sm sm:text-base text-[#F2F5FB] leading-relaxed font-normal">
+                <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E]">
+                  <p className="text-sm sm:text-base text-[#ECECE7] leading-relaxed font-normal">
                     {analysisResult.summaryText}
                   </p>
                 </div>
 
-                {/* Three Columns / Cards: Working Well, Getting in the Way, Worth Trying (§10.3, §10.5) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Working well */}
-                  <div className="p-4 rounded-[12px] bg-[#1A2230] border border-[#2B374B] flex flex-col gap-3">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#90D2BC]">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Working well</span>
-                    </div>
-                    {analysisResult.findings
-                      .filter((f) => f.kind === "working-well")
-                      .map((f) => (
-                        <div
-                          key={f.id}
-                          onClick={() => setSelectedFinding(f)}
-                          className="p-3 rounded-[8px] bg-[#141A25] border border-[#2B374B] hover:border-[#90D2BC] cursor-pointer transition-colors flex flex-col gap-1.5"
-                        >
-                          <h4 className="text-xs font-bold text-[#F2F5FB] leading-snug">
-                            {f.headline}
-                          </h4>
-                          <p className="text-[11px] text-[#B8C4D8] leading-relaxed">
-                            {f.explanation}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
+                {/* Three Columns / Cards: Aligned with your plan, Worth reviewing, Try and compare (update.md §2, §3.5) */}
+                {(() => {
+                  const hasIntention = Boolean(userIntention && userIntention.trim() !== "");
+                  const col1Title = hasIntention ? "Aligned with your plan" : "What happened";
+                  const col2Title = hasIntention ? "Worth reviewing" : "Patterns to inspect";
+                  const col3Title = "Try and compare";
 
-                  {/* Getting in the way */}
-                  <div className="p-4 rounded-[12px] bg-[#1A2230] border border-[#2B374B] flex flex-col gap-3">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#EE9DAA]">
-                      <AlertTriangle className="w-4 h-4" />
-                      <span>Getting in the way</span>
-                    </div>
-                    {analysisResult.findings
-                      .filter((f) => f.kind === "getting-in-the-way")
-                      .map((f) => (
-                        <div
-                          key={f.id}
-                          onClick={() => setSelectedFinding(f)}
-                          className="p-3 rounded-[8px] bg-[#141A25] border border-[#2B374B] hover:border-[#EE9DAA] cursor-pointer transition-colors flex flex-col gap-1.5"
-                        >
-                          <h4 className="text-xs font-bold text-[#F2F5FB] leading-snug">
-                            {f.headline}
-                          </h4>
-                          <p className="text-[11px] text-[#B8C4D8] leading-relaxed">
-                            {f.explanation}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
+                  const col1Findings = analysisResult.findings.filter(
+                    (f) => f.kind === "aligned-plan" || f.kind === "what-happened" || f.kind === "working-well"
+                  );
+                  const col2Findings = analysisResult.findings.filter(
+                    (f) => f.kind === "worth-reviewing" || f.kind === "pattern-to-inspect" || f.kind === "getting-in-the-way"
+                  );
+                  const col3Findings = analysisResult.findings.filter(
+                    (f) => f.kind === "try-compare" || f.kind === "worth-trying"
+                  );
 
-                  {/* Worth trying */}
-                  <div className="p-4 rounded-[12px] bg-[#1A2230] border border-[#2B374B] flex flex-col gap-3">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#7CDCE5]">
-                      <Lightbulb className="w-4 h-4" />
-                      <span>Worth trying</span>
-                    </div>
-                    {analysisResult.findings
-                      .filter((f) => f.kind === "worth-trying")
-                      .map((f) => (
-                        <div
-                          key={f.id}
-                          onClick={() => setSelectedFinding(f)}
-                          className="p-3 rounded-[8px] bg-[#141A25] border border-[#2B374B] hover:border-[#7CDCE5] cursor-pointer transition-colors flex flex-col gap-1.5"
-                        >
-                          <h4 className="text-xs font-bold text-[#F2F5FB] leading-snug">
-                            {f.headline}
-                          </h4>
-                          <p className="text-[11px] text-[#B8C4D8] leading-relaxed">
-                            {f.explanation}
-                          </p>
-                          {f.suggestedExperiment && (
-                            <div className="mt-1 pt-1.5 border-t border-[#2B374B] text-[10px] text-[#7CDCE5]">
-                              Suggested: {f.suggestedExperiment.action}
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Column 1 */}
+                      <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#90D2BC]">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>{col1Title}</span>
+                        </div>
+                        {col1Findings.map((f) => (
+                          <div
+                            key={f.id}
+                            onClick={() => setSelectedFinding(f)}
+                            className="p-3.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] hover:border-[#90D2BC] cursor-pointer transition-colors flex flex-col gap-2"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-xs font-bold text-[#ECECE7] leading-snug">
+                                {f.headline}
+                              </h4>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEvidenceForFinding(f);
+                                }}
+                                className="text-[10px] text-[#DDB66D] hover:underline font-semibold shrink-0"
+                              >
+                                Evidence &rarr;
+                              </button>
                             </div>
-                          )}
+                            <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
+                              <div>
+                                <span className="font-semibold text-[#ECECE7]">Observed: </span>
+                                <span className="text-[#C1C5C1]">{f.observed || f.explanation}</span>
+                              </div>
+                              {f.meaning && (
+                                <div>
+                                  <span className="font-semibold text-[#A1A9A5]">Meaning: </span>
+                                  <span className="text-[#C1C5C1]">{f.meaning}</span>
+                                </div>
+                              )}
+                              {f.action && (
+                                <div className="mt-1 pt-1.5 border-t border-[#3A3D3E] text-[10px] text-[#DDB66D] flex items-center justify-between">
+                                  <span>Action: {f.action.label}</span>
+                                  <span className="font-semibold text-[#DDB66D]">Open &rarr;</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Column 2 */}
+                      <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#DFA095]">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span>{col2Title}</span>
                         </div>
-                      ))}
-                  </div>
-                </div>
+                        {col2Findings.map((f) => (
+                          <div
+                            key={f.id}
+                            onClick={() => setSelectedFinding(f)}
+                            className="p-3.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] hover:border-[#DFA095] cursor-pointer transition-colors flex flex-col gap-2"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-xs font-bold text-[#ECECE7] leading-snug">
+                                {f.headline}
+                              </h4>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEvidenceForFinding(f);
+                                }}
+                                className="text-[10px] text-[#DDB66D] hover:underline font-semibold shrink-0"
+                              >
+                                Evidence &rarr;
+                              </button>
+                            </div>
+                            <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
+                              <div>
+                                <span className="font-semibold text-[#ECECE7]">Observed: </span>
+                                <span className="text-[#C1C5C1]">{f.observed || f.explanation}</span>
+                              </div>
+                              {f.meaning && (
+                                <div>
+                                  <span className="font-semibold text-[#A1A9A5]">Meaning: </span>
+                                  <span className="text-[#C1C5C1]">{f.meaning}</span>
+                                </div>
+                              )}
+                              {f.action && (
+                                <div className="mt-1 pt-1.5 border-t border-[#3A3D3E] text-[10px] text-[#DDB66D] flex items-center justify-between">
+                                  <span>Action: {f.action.label}</span>
+                                  <span className="font-semibold text-[#DDB66D]">Open &rarr;</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Column 3 */}
+                      <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#DDB66D]">
+                          <Lightbulb className="w-4 h-4" />
+                          <span>{col3Title}</span>
+                        </div>
+                        {col3Findings.map((f) => (
+                          <div
+                            key={f.id}
+                            onClick={() => setSelectedFinding(f)}
+                            className="p-3.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] hover:border-[#DDB66D] cursor-pointer transition-colors flex flex-col gap-2"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-xs font-bold text-[#ECECE7] leading-snug">
+                                {f.headline}
+                              </h4>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEvidenceForFinding(f);
+                                }}
+                                className="text-[10px] text-[#DDB66D] hover:underline font-semibold shrink-0"
+                              >
+                                Evidence &rarr;
+                              </button>
+                            </div>
+                            <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
+                              <div>
+                                <span className="font-semibold text-[#ECECE7]">Observed: </span>
+                                <span className="text-[#C1C5C1]">{f.observed || f.explanation}</span>
+                              </div>
+                              {f.meaning && (
+                                <div>
+                                  <span className="font-semibold text-[#A1A9A5]">Meaning: </span>
+                                  <span className="text-[#C1C5C1]">{f.meaning}</span>
+                                </div>
+                              )}
+                              {f.suggestedExperiment && (
+                                <div className="mt-1 pt-1.5 border-t border-[#3A3D3E] text-[10px] text-[#DDB66D]">
+                                  Suggested: {f.suggestedExperiment.action}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -454,7 +575,7 @@ export function AnalyzerWorkspace({
               <div className="flex flex-col gap-5">
                 {/* Metric Selector */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap bg-[#0B0E14] p-0.5 rounded-[8px] border border-[#2B374B] text-xs">
+                  <div className="flex flex-wrap bg-[#171819] p-0.5 rounded-[8px] border border-[#3A3D3E] text-xs">
                     {(
                       [
                         { key: "focus_time", label: "Work duration" },
@@ -469,8 +590,8 @@ export function AnalyzerWorkspace({
                         onClick={() => setSelectedMetric(m.key)}
                         className={`px-3 py-1.5 rounded-[6px] font-medium transition-colors ${
                           selectedMetric === m.key
-                            ? "bg-[#AAA9FF] text-[#0B0E14] font-semibold"
-                            : "text-[#B8C4D8] hover:text-[#F2F5FB]"
+                            ? "bg-[#DDB66D] text-[#171819] font-semibold"
+                            : "text-[#C1C5C1] hover:text-[#ECECE7]"
                         }`}
                       >
                         {m.label}
@@ -479,12 +600,37 @@ export function AnalyzerWorkspace({
                   </div>
                 </div>
 
+                {/* Recorded Change Comparison Banner (update.md §3.5) */}
+                {(() => {
+                  const currentSeries = analysisResult.progressSeries.find((s) => s.metricKey === selectedMetric);
+                  if (!currentSeries || currentSeries.baselineAverage === undefined) return null;
+                  const diff = currentSeries.averageValue - currentSeries.baselineAverage;
+                  const diffSign = diff > 0 ? "+" : "";
+
+                  return (
+                    <div className="p-3.5 rounded-[10px] bg-[#171819] border border-[#3A3D3E] flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[#ECECE7]">Recorded change:</span>
+                        <span className="font-mono font-bold text-[#DDB66D]">
+                          {diffSign}{diff} {currentSeries.unit}
+                        </span>
+                        <span className="text-[#A1A9A5]">
+                          ({currentSeries.averageValue} {currentSeries.unit} vs {currentSeries.baselineAverage} {currentSeries.unit} baseline)
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-[#A1A9A5]">
+                        {analysisResult.resolvedRange.start} &ndash; {analysisResult.resolvedRange.end} ({analysisResult.resolvedRange.observedDays} of {analysisResult.resolvedRange.totalDays} observed days)
+                      </span>
+                    </div>
+                  );
+                })()}
+
                 {/* Progression Bar Chart */}
-                <div className="p-4 rounded-[12px] bg-[#1A2230] border border-[#2B374B] flex flex-col gap-3">
-                  <span className="text-xs font-semibold text-[#F2F5FB] capitalize">
+                <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
+                  <span className="text-xs font-semibold text-[#ECECE7] capitalize">
                     {selectedMetric.replace(/_/g, " ")} Progression
                   </span>
-                  <div className="h-44 flex items-end gap-1.5 pt-4 pb-2 border-b border-[#2B374B]">
+                  <div className="h-44 flex items-end gap-1.5 pt-4 pb-2 border-b border-[#3A3D3E]">
                     {analysisResult.dayAggregates.map((d) => {
                       let val = 0;
                       let label = "";
@@ -519,23 +665,23 @@ export function AnalyzerWorkspace({
                           key={d.date}
                           className="flex-1 flex flex-col items-center justify-end h-full gap-1"
                         >
-                          <span className="text-[9px] font-mono text-[#96A5BD]">
+                          <span className="text-[9px] font-mono text-[#A1A9A5]">
                             {label}
                           </span>
                           <div
                             className={`w-full rounded-t-[3px] transition-all hover:brightness-125 ${
                               selectedMetric === "sink_time"
-                                ? "bg-[#EE9DAA]"
+                                ? "bg-[#DFA095]"
                                 : selectedMetric === "review_rate"
                                 ? "bg-[#90D2BC]"
                                 : selectedMetric === "planned_vs_recorded"
-                                ? "bg-[#D0CEFF]"
-                                : "bg-[#AAA9FF]"
+                                ? "bg-[#E8C888]"
+                                : "bg-[#DDB66D]"
                             }`}
                             style={{ height: `${pct}%` }}
                             title={`${d.date}: ${label}`}
                           />
-                          <span className="text-[9px] text-[#96A5BD] truncate w-full text-center">
+                          <span className="text-[9px] text-[#A1A9A5] truncate w-full text-center">
                             {d.date.slice(5)}
                           </span>
                         </div>
@@ -545,10 +691,10 @@ export function AnalyzerWorkspace({
 
                   {/* Exact Values Table (§10.3) */}
                   <div className="mt-3 overflow-x-auto">
-                    <div className="text-xs font-semibold text-[#B8C4D8] mb-2">Exact Values Table</div>
+                    <div className="text-xs font-semibold text-[#C1C5C1] mb-2">Exact Values Table</div>
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="border-b border-[#2B374B] text-[#96A5BD] text-[11px]">
+                        <tr className="border-b border-[#3A3D3E] text-[#A1A9A5] text-[11px]">
                           <th className="py-2 px-3 font-medium">Date</th>
                           <th className="py-2 px-3 font-medium">Work Duration</th>
                           <th className="py-2 px-3 font-medium">Longest Run</th>
@@ -560,18 +706,18 @@ export function AnalyzerWorkspace({
                       </thead>
                       <tbody>
                         {analysisResult.dayAggregates.map((d) => (
-                          <tr key={`exact-${d.date}`} className="border-b border-[#2B374B]/40 hover:bg-[#1F2939]/50 transition-colors">
-                            <td className="py-2 px-3 font-mono text-[#F2F5FB]">{d.date}</td>
-                            <td className="py-2 px-3 font-mono text-[#AAA9FF]">{formatDurationSeconds(d.workSeconds)}</td>
-                            <td className="py-2 px-3 font-mono text-[#7CDCE5]">{formatDurationSeconds(d.longestRunSeconds)}</td>
-                            <td className="py-2 px-3 font-mono text-[#D0CEFF]">
+                          <tr key={`exact-${d.date}`} className="border-b border-[#3A3D3E]/40 hover:bg-[#2F3133]/50 transition-colors">
+                            <td className="py-2 px-3 font-mono text-[#ECECE7]">{d.date}</td>
+                            <td className="py-2 px-3 font-mono text-[#DDB66D]">{formatDurationSeconds(d.workSeconds)}</td>
+                            <td className="py-2 px-3 font-mono text-[#DDB66D]">{formatDurationSeconds(d.longestRunSeconds)}</td>
+                            <td className="py-2 px-3 font-mono text-[#E8C888]">
                               {Math.round(d.recordedWorkSecondsInBlocks / 60)}m / {Math.round(d.plannedWorkSeconds / 60)}m
                             </td>
-                            <td className="py-2 px-3 font-mono text-[#EE9DAA]">{formatDurationSeconds(d.sinkSeconds)}</td>
+                            <td className="py-2 px-3 font-mono text-[#DFA095]">{formatDurationSeconds(d.sinkSeconds)}</td>
                             <td className="py-2 px-3 font-mono text-[#90D2BC]">
                               {d.blockCount > 0 ? `${Math.round((d.reviewedBlockCount / d.blockCount) * 100)}%` : "N/A"}
                             </td>
-                            <td className="py-2 px-3 font-mono text-right text-[#96A5BD]">
+                            <td className="py-2 px-3 font-mono text-right text-[#A1A9A5]">
                               {d.reviewedBlockCount}/{d.blockCount}
                             </td>
                           </tr>
@@ -585,14 +731,14 @@ export function AnalyzerWorkspace({
 
             {/* TAB 3: EVIDENCE */}
             {activeTab === "evidence" && (
-              <div className="flex flex-col gap-4 text-xs text-[#B8C4D8]">
-                <h3 className="text-sm font-semibold text-[#F2F5FB]">
+              <div className="flex flex-col gap-4 text-xs text-[#C1C5C1]">
+                <h3 className="text-sm font-semibold text-[#ECECE7]">
                   Supporting Arithmetic & Limitations
                 </h3>
-                <div className="p-4 rounded-[10px] bg-[#1A2230] border border-[#2B374B] flex flex-col gap-2 font-mono">
+                <div className="p-4 rounded-[10px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-2 font-mono">
                   <div className="flex justify-between">
                     <span>Resolved Window:</span>
-                    <span className="text-[#F2F5FB]">
+                    <span className="text-[#ECECE7]">
                       {analysisResult.resolvedRange.start} &ndash; {analysisResult.resolvedRange.end}
                     </span>
                   </div>
@@ -610,9 +756,9 @@ export function AnalyzerWorkspace({
                   )}
                 </div>
 
-                <div className="p-4 rounded-[10px] bg-[#1A2230] border border-[#2B374B] flex flex-col gap-2">
-                  <span className="font-semibold text-[#F2F5FB]">Zero Moralizing Guard</span>
-                  <p className="text-[#96A5BD] leading-relaxed">
+                <div className="p-4 rounded-[10px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-2">
+                  <span className="font-semibold text-[#ECECE7]">Zero Moralizing Guard</span>
+                  <p className="text-[#A1A9A5] leading-relaxed">
                     Findings are bounded strictly to observable timestamps and explicit intentions. The model never assumes mental state, moral discipline, or hidden intent.
                   </p>
                 </div>
@@ -629,33 +775,55 @@ export function AnalyzerWorkspace({
           onClick={() => setSelectedFinding(null)}
         >
           <div
-            className="card-midnight w-full max-w-md p-5 bg-[#141A25] border border-[#53637D] shadow-2xl flex flex-col gap-4 text-left"
+            className="card-midnight w-full max-w-md p-5 bg-[#202122] border border-[#737978] shadow-2xl flex flex-col gap-4 text-left"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#2B374B] pb-2.5">
-              <h3 className="text-sm font-semibold text-[#F2F5FB]">{selectedFinding.headline}</h3>
+            <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-2.5">
+              <h3 className="text-sm font-semibold text-[#ECECE7]">{selectedFinding.headline}</h3>
               <button
                 onClick={() => setSelectedFinding(null)}
-                className="text-xs text-[#96A5BD] hover:text-[#F2F5FB]"
+                className="text-xs text-[#A1A9A5] hover:text-[#ECECE7]"
               >
                 Close
               </button>
             </div>
-            <p className="text-xs text-[#B8C4D8] leading-relaxed">
+            <p className="text-xs text-[#C1C5C1] leading-relaxed">
               {selectedFinding.explanation}
             </p>
             {selectedFinding.suggestedExperiment && (
-              <div className="p-3 rounded-[8px] bg-[#1A2230] border border-[#2B374B] text-xs flex flex-col gap-1.5">
-                <span className="font-semibold text-[#7CDCE5]">Suggested Experiment:</span>
-                <p className="text-[#F2F5FB]">{selectedFinding.suggestedExperiment.action}</p>
-                <div className="text-[11px] text-[#96A5BD] flex justify-between mt-1">
+              <div className="p-3 rounded-[8px] bg-[#282A2C] border border-[#3A3D3E] text-xs flex flex-col gap-1.5">
+                <span className="font-semibold text-[#DDB66D]">Suggested Experiment:</span>
+                <p className="text-[#ECECE7]">{selectedFinding.suggestedExperiment.action}</p>
+                <div className="text-[11px] text-[#A1A9A5] flex justify-between mt-1">
                   <span>Duration: {selectedFinding.suggestedExperiment.durationDays} days</span>
                   <span>Metric: {selectedFinding.suggestedExperiment.successMetric}</span>
                 </div>
               </div>
             )}
+
+            <div className="flex gap-2 pt-2 border-t border-[#3A3D3E]">
+              <button
+                onClick={() => {
+                  const f = selectedFinding;
+                  setSelectedFinding(null);
+                  handleOpenEvidenceForFinding(f);
+                }}
+                className="flex-1 py-2 px-3 rounded-[8px] bg-[#DDB66D] text-[#171819] text-xs font-semibold hover:bg-[#E5C384] transition-colors"
+              >
+                Inspect Evidence in Panel &rarr;
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Evidence Sheet for Findings (update.md §3.5, §4) */}
+      {subviewEvidence && (
+        <EvidenceSheet
+          evidence={subviewEvidence}
+          isOpen={true}
+          onClose={() => setSubviewEvidence(null)}
+        />
       )}
     </div>
   );

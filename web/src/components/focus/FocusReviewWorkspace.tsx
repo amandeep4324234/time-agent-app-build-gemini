@@ -14,14 +14,18 @@ import {
   Save,
   Trash2,
   Filter,
+  Heart,
+  ThumbsDown,
+  ThumbsUp,
 } from "lucide-react";
-import { FocusBlock } from "@/lib/focus-blocks";
+import { FocusBlock, calculateBlockElapsedSeconds } from "@/lib/focus-blocks";
 import { EnrichedSession, Category } from "@/lib/types";
 import {
   CorrectionEvent,
   ClassificationRule,
   sliceSessionWithCorrections,
   EffectiveSessionSlice,
+  UserAppraisal,
 } from "@/lib/corrections";
 import { formatDurationSeconds } from "@/lib/format";
 import { getFriendlyAppName, getAppInitials } from "@/lib/app-lens";
@@ -38,10 +42,10 @@ interface FocusReviewWorkspaceProps {
 }
 
 const CATEGORIES: Array<{ id: Category; label: string; color: string }> = [
-  { id: "work", label: "Work", color: "var(--focus)" },
-  { id: "sink", label: "Sink", color: "var(--sink)" },
-  { id: "games", label: "Games", color: "var(--games)" },
-  { id: "other-known", label: "Other", color: "var(--other)" },
+  { id: "work", label: "Work", color: "#DDB66D" },
+  { id: "sink", label: "Sink", color: "#DFA095" },
+  { id: "games", label: "Games", color: "#B3BBC7" },
+  { id: "other-known", label: "Other", color: "#8795A8" },
 ];
 
 export function FocusReviewWorkspace({
@@ -58,6 +62,10 @@ export function FocusReviewWorkspace({
   const [draftTitle, setDraftTitle] = useState(block.title);
   const [draftTags, setDraftTags] = useState<string[]>(block.tags);
   const [newTagInput, setNewTagInput] = useState("");
+
+  // Appraisal State (§7: Was this how you wanted to spend the time?)
+  const [draftAppraisal, setDraftAppraisal] = useState<UserAppraisal>("unreviewed");
+  const [draftAppraisalReason, setDraftAppraisalReason] = useState<string>("");
 
   // Staged local correction events (not yet saved)
   const [stagedCorrections, setStagedCorrections] = useState<CorrectionEvent[]>([]);
@@ -113,6 +121,9 @@ export function FocusReviewWorkspace({
       const excludedSec = groupSlices
         .filter((s) => s.isExcluded)
         .reduce((a, s) => a + s.sliceSeconds, 0);
+      const unwantedSec = groupSlices
+        .filter((s) => !s.isExcluded && s.appraisal === "unwanted")
+        .reduce((a, s) => a + s.sliceSeconds, 0);
 
       const friendly = getFriendlyAppName(groupSlices[0].label);
 
@@ -125,7 +136,9 @@ export function FocusReviewWorkspace({
         workSeconds: workSec,
         sinkSeconds: sinkSec,
         excludedSeconds: excludedSec,
+        unwantedSeconds: unwantedSec,
         dominantCategory: groupSlices[0].effectiveCategory,
+        dominantAppraisal: groupSlices[0].appraisal,
       };
     }).sort((a, b) => b.totalSeconds - a.totalSeconds);
   }, [blockSlices]);
@@ -139,16 +152,60 @@ export function FocusReviewWorkspace({
     .filter((s) => s.effectiveCategory === "sink" && !s.isExcluded)
     .reduce((a, s) => a + s.sliceSeconds, 0);
 
-  const totalOtherSec = blockSlices
-    .filter((s) => s.effectiveCategory !== "work" && s.effectiveCategory !== "sink" && !s.isExcluded)
-    .reduce((a, s) => a + s.sliceSeconds, 0);
-
   const totalExcludedSec = blockSlices
     .filter((s) => s.isExcluded)
     .reduce((a, s) => a + s.sliceSeconds, 0);
 
+  const totalUnwantedSec = blockSlices
+    .filter((s) => !s.isExcluded && s.appraisal === "unwanted")
+    .reduce((a, s) => a + s.sliceSeconds, 0);
+
   // State to track apps that have had a rule applied going forward
   const [appliedRuleApps, setAppliedRuleApps] = useState<Set<string>>(new Set());
+
+  // Apply appraisal to the entire block (§7)
+  const handleSetBlockAppraisal = (choice: UserAppraisal) => {
+    setDraftAppraisal(choice);
+    if (choice === "unreviewed") return;
+
+    const newEvents: CorrectionEvent[] = blockSlices.map((sl) => ({
+      id: `draft-appr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      targetSessionId: sl.originalSessionId,
+      intervalStartUtc: new Date(sl.sliceStartMs).toISOString(),
+      intervalEndUtc: new Date(sl.sliceEndMs).toISOString(),
+      operation: "appraisal",
+      appraisal: choice,
+      appraisalReason: draftAppraisalReason.trim().slice(0, 160),
+      scopeBlockId: block.id,
+      baseRevisionId: block.revisionId,
+      batchId: `draft-batch-${Date.now()}`,
+      createdAtUtc: new Date().toISOString(),
+    }));
+
+    setStagedCorrections((prev) => [...prev, ...newEvents]);
+  };
+
+  // Stage an appraisal on an app group within this block (§7)
+  const handleStageGroupAppraisal = (groupKey: string, choice: UserAppraisal) => {
+    const targetGroup = appGroups.find((g) => g.key === groupKey);
+    if (!targetGroup) return;
+
+    const newEvents: CorrectionEvent[] = targetGroup.slices.map((sl) => ({
+      id: `draft-appr-grp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      targetSessionId: sl.originalSessionId,
+      intervalStartUtc: new Date(sl.sliceStartMs).toISOString(),
+      intervalEndUtc: new Date(sl.sliceEndMs).toISOString(),
+      operation: "appraisal",
+      appraisal: choice,
+      appraisalReason: draftAppraisalReason.trim().slice(0, 160),
+      scopeBlockId: block.id,
+      baseRevisionId: block.revisionId,
+      batchId: `draft-batch-${Date.now()}`,
+      createdAtUtc: new Date().toISOString(),
+    }));
+
+    setStagedCorrections((prev) => [...prev, ...newEvents]);
+  };
 
   // Stage a category override on an entire app group within this block (§8.2)
   const handleStageGroupCategory = (groupKey: string, newCategory: Category) => {
@@ -209,6 +266,24 @@ export function FocusReviewWorkspace({
     }));
 
     setStagedCorrections((prev) => [...prev, ...newEvents]);
+  };
+
+  // Stage individual session slice appraisal (§7)
+  const handleStageSliceAppraisal = (sl: EffectiveSessionSlice, choice: UserAppraisal) => {
+    const newEvent: CorrectionEvent = {
+      id: `draft-appr-sl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      targetSessionId: sl.originalSessionId,
+      intervalStartUtc: new Date(sl.sliceStartMs).toISOString(),
+      intervalEndUtc: new Date(sl.sliceEndMs).toISOString(),
+      operation: "appraisal",
+      appraisal: choice,
+      appraisalReason: draftAppraisalReason.trim().slice(0, 160),
+      scopeBlockId: block.id,
+      baseRevisionId: block.revisionId,
+      batchId: `draft-batch-${Date.now()}`,
+      createdAtUtc: new Date().toISOString(),
+    };
+    setStagedCorrections((prev) => [...prev, newEvent]);
   };
 
   // Stage individual session slice category override (§8.1, §8.2)
@@ -275,7 +350,7 @@ export function FocusReviewWorkspace({
     setAppliedRuleApps((prev) => new Set([...prev, groupKey]));
   };
 
-  // Save changes atomically (§8.4)
+  // Save changes atomically (§8.4, update.md §7)
   const handleCommitSave = () => {
     const updatedBlock: FocusBlock = {
       ...block,
@@ -285,7 +360,43 @@ export function FocusReviewWorkspace({
       updatedAtUtc: new Date().toISOString(),
     };
 
-    onSaveBatch(stagedCorrections, updatedBlock);
+    const trimmedReason = draftAppraisalReason.trim().slice(0, 160);
+
+    // If block appraisal was selected but no events staged yet, generate them now
+    let ops = [...stagedCorrections];
+    const hasBlockAppraisalOps = ops.some(
+      (op) => op.operation === "appraisal" && op.scopeBlockId === block.id
+    );
+
+    if (!hasBlockAppraisalOps && draftAppraisal !== "unreviewed") {
+      const generated: CorrectionEvent[] = blockSlices.map((sl) => ({
+        id: `draft-appr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        targetSessionId: sl.originalSessionId,
+        intervalStartUtc: new Date(sl.sliceStartMs).toISOString(),
+        intervalEndUtc: new Date(sl.sliceEndMs).toISOString(),
+        operation: "appraisal",
+        appraisal: draftAppraisal,
+        appraisalReason: trimmedReason,
+        scopeBlockId: block.id,
+        baseRevisionId: block.revisionId,
+        batchId: `draft-batch-${Date.now()}`,
+        createdAtUtc: new Date().toISOString(),
+      }));
+      ops.push(...generated);
+    } else {
+      // Synchronize latest typed reason into existing block appraisal operations
+      ops = ops.map((op) => {
+        if (op.operation === "appraisal" && op.scopeBlockId === block.id) {
+          return {
+            ...op,
+            appraisalReason: trimmedReason || op.appraisalReason,
+          };
+        }
+        return op;
+      });
+    }
+
+    onSaveBatch(ops, updatedBlock);
     onClose();
   };
 
@@ -295,350 +406,336 @@ export function FocusReviewWorkspace({
       onClick={onClose}
     >
       <div
-        className="card-midnight w-full max-w-5xl bg-[#141A25] border border-[#53637D] shadow-2xl rounded-[18px] overflow-hidden flex flex-col my-auto max-h-[90vh]"
+        className="w-full max-w-5xl bg-[#202122] border border-[#737978] shadow-2xl rounded-[10px] overflow-hidden flex flex-col my-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Bar (§8.1) */}
-        <div className="p-5 sm:p-6 border-b border-[#2B374B] bg-[#0E121B] flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-[#AAA9FF]">
-                  End-of-Block Review & Corrections
-                </span>
-                <span className="text-xs text-[#96A5BD]">
-                  &bull; Revision {block.revisionId}
-                </span>
-              </div>
-              <input
-                type="text"
-                value={draftTitle}
-                onChange={(e) => setDraftTitle(e.target.value.slice(0, 80))}
-                className="text-xl sm:text-2xl font-bold text-[#F2F5FB] bg-transparent border-b border-transparent hover:border-[#2B374B] focus:border-[#AAA9FF] focus:outline-none w-full"
-                placeholder="Block title"
-              />
+        {/* Header Bar */}
+        <div className="p-4 sm:p-5 border-b border-[#3A3D3E] bg-[#171819] flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#DDB66D]" />
+              <h2 className="text-base font-bold text-[#ECECE7]">Review Focus Block</h2>
+              <span className="text-xs text-[#A1A9A5] font-mono">
+                {formatDurationSeconds(calculateBlockElapsedSeconds(block))} active
+              </span>
             </div>
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-[6px] text-[#96A5BD] hover:text-[#F2F5FB] hover:bg-[#1F2939]"
+              className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#3A3D3E] transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Tags row */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-[#96A5BD]">Tags:</span>
-            {draftTags.map((t) => (
-              <span
-                key={t}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#1A2230] border border-[#2B374B] text-xs text-[#F2F5FB]"
-              >
-                <span>{t}</span>
-                <button
-                  type="button"
-                  onClick={() => setDraftTags(draftTags.filter((x) => x !== t))}
-                  className="text-[#96A5BD] hover:text-[#EE9DAA]"
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
+          {/* Block Title & Tags inputs */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <input
               type="text"
-              value={newTagInput}
-              onChange={(e) => setNewTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newTagInput.trim()) {
-                  e.preventDefault();
-                  setDraftTags([...draftTags, newTagInput.trim()]);
-                  setNewTagInput("");
-                }
-              }}
-              placeholder="+ Add tag..."
-              className="bg-transparent text-xs text-[#F2F5FB] placeholder-[#96A5BD] focus:outline-none px-2 py-0.5"
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              placeholder="Block Title"
+              className="flex-1 bg-[#202122] border border-[#3A3D3E] rounded-[6px] px-3 py-1.5 text-xs text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
             />
+
+            {/* Tags Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {draftTags.map((t) => (
+                <span
+                  key={t}
+                  className="px-2 py-0.5 rounded-[4px] bg-[#171819] border border-[#3A3D3E] text-[11px] text-[#C1C5C1] flex items-center gap-1"
+                >
+                  <span>{t}</span>
+                  <button
+                    onClick={() => setDraftTags(draftTags.filter((tag) => tag !== t))}
+                    className="hover:text-[#DFA095]"
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+
+              <input
+                type="text"
+                placeholder="+ tag"
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newTagInput.trim()) {
+                    e.preventDefault();
+                    if (!draftTags.includes(newTagInput.trim())) {
+                      setDraftTags([...draftTags, newTagInput.trim()]);
+                    }
+                    setNewTagInput("");
+                  }
+                }}
+                className="w-16 bg-[#171819] border border-[#3A3D3E] rounded-[4px] px-2 py-0.5 text-[11px] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Workspace Body: Activity List (65%) left, Live Summary (35%) right (§8.1) */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#2B374B]">
-          {/* Left Column: Grouped Activity Sessions (65% / 8 cols) */}
-          <div className="lg:col-span-8 p-5 sm:p-6 flex flex-col gap-4 overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-[#F2F5FB]">Recorded Activity in Block</h3>
-                <p className="text-xs text-[#96A5BD]">
-                  App occupancy intersecting active block intervals. Partial sessions are sliced accurately.
-                </p>
-              </div>
-              <span className="text-xs font-mono text-[#AAA9FF]">
-                {appGroups.length} apps recorded
+        {/* User Appraisal Section (§7: Was this how you wanted to spend the time?) */}
+        <div className="p-4 bg-[#171819]/80 border-b border-[#3A3D3E] flex flex-col gap-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-xs font-semibold text-[#ECECE7] block">
+                Was this how you wanted to spend the time?
+              </span>
+              <span className="text-[11px] text-[#A1A9A5]">
+                Author your intention. Categories and appraisals measure different things; marking intentional does not erase time.
               </span>
             </div>
 
-            {/* App Groups List */}
-            <div className="flex flex-col gap-3">
-              {appGroups.map((group) => {
-                const isExpanded = expandedApps[group.key] || false;
-                const initials = getAppInitials(group.friendly);
-
-                return (
-                  <div
-                    key={group.key}
-                    className="rounded-[12px] bg-[#1A2230] border border-[#2B374B] p-3.5 flex flex-col gap-3 transition-colors"
-                  >
-                    {/* Group Header */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-[8px] bg-[#0B0E14] border border-[#2B374B] flex items-center justify-center text-xs font-bold text-[#F2F5FB] shrink-0">
-                          {initials}
-                        </div>
-                        <div className="truncate">
-                          <h4 className="text-sm font-semibold text-[#F2F5FB] truncate">
-                            {group.friendly}
-                          </h4>
-                          <span className="text-[11px] font-mono text-[#96A5BD] truncate block">
-                            {group.rawLabel}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="text-right font-mono">
-                          <div className="text-sm font-medium text-[#F2F5FB]">
-                            {formatDurationSeconds(group.totalSeconds)}
-                          </div>
-                          {group.excludedSeconds > 0 && (
-                            <div className="text-[10px] text-[#EE9DAA]">
-                              ({formatDurationSeconds(group.excludedSeconds)} excluded)
-                            </div>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            setExpandedApps((prev) => ({ ...prev, [group.key]: !isExpanded }))
-                          }
-                          className="p-1 rounded text-[#96A5BD] hover:text-[#F2F5FB]"
-                        >
-                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quick Correction Actions for Group (§8.2) */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#2B374B]/60 text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-[#96A5BD]">Mark as:</span>
-                        {CATEGORIES.map((cat) => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => handleStageGroupCategory(group.key, cat.id)}
-                            className={`px-2 py-0.5 rounded-[4px] border text-[11px] font-medium transition-colors ${
-                              group.dominantCategory === cat.id
-                                ? "bg-[#AAA9FF]/20 border-[#AAA9FF] text-[#D0CEFF]"
-                                : "bg-[#141A25] border-[#2B374B] text-[#B8C4D8] hover:text-[#F2F5FB]"
-                            }`}
-                          >
-                            {cat.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {onAddRule && (
-                          <button
-                            type="button"
-                            onClick={() => handleApplyGoingForward(group.rawLabel, group.dominantCategory, group.key)}
-                            disabled={appliedRuleApps.has(group.key)}
-                            className="text-[11px] text-[#7CDCE5] hover:underline disabled:opacity-60"
-                          >
-                            {appliedRuleApps.has(group.key) ? "✓ Rule active going forward" : "Apply to app going forward"}
-                          </button>
-                        )}
-
-                        {group.excludedSeconds > 0 ? (
-                          <button
-                            onClick={() => handleStageGroupRestore(group.key)}
-                            className="text-[11px] text-[#90D2BC] hover:underline"
-                          >
-                            Restore included
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStageGroupExclude(group.key)}
-                            className="text-[11px] text-[#EE9DAA] hover:underline"
-                          >
-                            Exclude from analysis
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Expanded Individual Session Slices (§8.1) */}
-                    {isExpanded && (
-                      <div className="flex flex-col gap-1.5 pt-2 border-t border-[#2B374B]/40 text-xs">
-                        <span className="text-[11px] text-[#96A5BD] font-semibold">
-                          Chronological Slices within Block (individual override & exclude):
-                        </span>
-                        {group.slices.map((sl) => (
-                          <div
-                            key={sl.id}
-                            className="p-2 rounded-[6px] bg-[#141A25] border border-[#2B374B] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-[11px] text-[#B8C4D8]">
-                                {new Date(sl.sliceStartMs).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                })}{" "}
-                                &ndash;{" "}
-                                {new Date(sl.sliceEndMs).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                })}
-                              </span>
-                              <span className="capitalize text-[10px] px-1 rounded bg-[#1A2230] text-[#AAA9FF]">
-                                {sl.effectiveCategory}
-                              </span>
-                              {sl.isExcluded && (
-                                <span className="text-[10px] text-[#EE9DAA] bg-[#EE9DAA]/10 px-1 rounded">
-                                  Excluded
-                                </span>
-                              )}
-                              <span className="font-mono text-[#F2F5FB]">
-                                {formatDurationSeconds(sl.sliceSeconds)}
-                              </span>
-                            </div>
-
-                            {/* Individual Slice Controls (§8.1) */}
-                            <div className="flex items-center gap-1 text-[10px]">
-                              {CATEGORIES.map((cat) => (
-                                <button
-                                  key={cat.id}
-                                  type="button"
-                                  onClick={() => handleStageSliceCategory(sl, cat.id)}
-                                  className={`px-1.5 py-0.5 rounded-[3px] border transition-colors ${
-                                    sl.effectiveCategory === cat.id && !sl.isExcluded
-                                      ? "bg-[#AAA9FF]/20 border-[#AAA9FF] text-[#D0CEFF]"
-                                      : "bg-[#0B0E14] border-[#2B374B] text-[#B8C4D8] hover:text-[#F2F5FB]"
-                                  }`}
-                                  title={`Reclassify slice as ${cat.label}`}
-                                >
-                                  {cat.label[0]}
-                                </button>
-                              ))}
-                              {sl.isExcluded ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStageSliceRestore(sl)}
-                                  className="text-[10px] text-[#90D2BC] hover:underline pl-1"
-                                >
-                                  Restore
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStageSliceExclude(sl)}
-                                  className="text-[10px] text-[#EE9DAA] hover:underline pl-1"
-                                >
-                                  Exclude
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            {/* Appraisal Pills */}
+            <div className="flex items-center gap-1.5 bg-[#202122] p-1 rounded-[6px] border border-[#3A3D3E]">
+              {(
+                [
+                  { id: "intentional", label: "Intentional" },
+                  { id: "unwanted", label: "Unwanted" },
+                  { id: "unsure", label: "Unsure" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleSetBlockAppraisal(opt.id)}
+                  className={`px-2.5 py-1 rounded-[4px] text-xs font-medium transition-colors ${
+                    draftAppraisal === opt.id
+                      ? opt.id === "unwanted"
+                        ? "bg-[#DFA095] text-[#171819] font-bold"
+                        : "bg-[#DDB66D] text-[#171819] font-bold"
+                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Right Column: Live Before / After Summary (35% / 4 cols) (§8.1) */}
-          <div className="lg:col-span-4 p-5 sm:p-6 bg-[#0E121B] flex flex-col justify-between gap-6">
-            <div className="flex flex-col gap-5">
-              <div>
-                <h3 className="text-sm font-semibold text-[#F2F5FB]">Live Block Impact</h3>
-                <p className="text-xs text-[#96A5BD]">
-                  Effective metrics recomputed in real time with staged adjustments.
-                </p>
-              </div>
+          {/* Optional reason max 160 chars */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              maxLength={160}
+              placeholder="Optional private reason (e.g. planned break, necessary research, distracted)"
+              value={draftAppraisalReason}
+              onChange={(e) => setDraftAppraisalReason(e.target.value)}
+              className="flex-1 bg-[#202122] border border-[#3A3D3E] rounded-[6px] px-3 py-1 text-[11px] text-[#ECECE7] placeholder-[#A1A9A5] focus:outline-none focus:border-[#DDB66D]"
+            />
+            <span className="text-[10px] text-[#A1A9A5] shrink-0 font-mono">
+              {draftAppraisalReason.length}/160
+            </span>
+          </div>
+        </div>
 
-              {/* Stat breakdown cards */}
-              <div className="flex flex-col gap-2.5">
-                <div className="p-3.5 rounded-[10px] bg-[#141A25] border border-[#2B374B] flex justify-between items-center">
-                  <span className="text-xs font-semibold text-[#B8C4D8]">Recorded Work</span>
-                  <span className="text-lg font-mono font-bold text-[#AAA9FF]">
-                    {formatDurationSeconds(totalWorkSec)}
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-[10px] bg-[#141A25] border border-[#2B374B] flex justify-between items-center">
-                  <span className="text-xs font-semibold text-[#B8C4D8]">Recorded Sinks</span>
-                  <span className="text-lg font-mono font-bold text-[#EE9DAA]">
-                    {formatDurationSeconds(totalSinkSec)}
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-[10px] bg-[#141A25] border border-[#2B374B] flex justify-between items-center">
-                  <span className="text-xs font-semibold text-[#B8C4D8]">Other Activity</span>
-                  <span className="text-lg font-mono font-bold text-[#92A6C1]">
-                    {formatDurationSeconds(totalOtherSec)}
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-[10px] bg-[#141A25] border border-[#2B374B] flex justify-between items-center">
-                  <span className="text-xs font-semibold text-[#96A5BD]">Excluded Time</span>
-                  <span className="text-lg font-mono font-bold text-[#96A5BD]">
-                    {formatDurationSeconds(totalExcludedSec)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Explanatory disclosure (§8.2) */}
-              <div className="p-3.5 rounded-[10px] bg-[#1A2230] border border-[#2B374B] text-[11px] text-[#B8C4D8] leading-relaxed">
-                <span className="font-semibold text-[#F2F5FB] block mb-1">
-                  How time is counted:
-                </span>
-                Exclusion removes intervals from effective analysis while retaining raw rows in storage. Corrections apply to the exact intersection of active block intervals and do not manufacture artificial deep blocks.
-              </div>
+        {/* Live Calculation Summary Bar (§7, §8.3) */}
+        <div className="grid grid-cols-4 gap-2 p-3 bg-[#171819] border-b border-[#3A3D3E] text-xs">
+          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
+            <span className="text-[10px] uppercase text-[#A1A9A5]">Work Overlap</span>
+            <div className="font-mono text-sm font-bold text-[#DDB66D] mt-0.5">
+              {formatDurationSeconds(totalWorkSec)}
             </div>
-
-            {/* Sticky Save / Discard Footer (§8.4) */}
-            <div className="flex flex-col gap-2 pt-4 border-t border-[#2B374B]">
-              <div className="flex justify-between text-xs text-[#B8C4D8]">
-                <span>Staged corrections:</span>
-                <span className="font-mono text-[#AAA9FF]">
-                  {stagedCorrections.length} operations
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStagedCorrections([])}
-                  disabled={stagedCorrections.length === 0}
-                  className="px-4 py-2 rounded-[8px] text-xs font-semibold text-[#96A5BD] hover:text-[#F2F5FB] disabled:opacity-30 transition-colors"
-                >
-                  Discard
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCommitSave}
-                  className="flex-1 py-2.5 px-4 rounded-[8px] bg-[#AAA9FF] text-[#0B0E14] hover:bg-[#D0CEFF] text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save changes</span>
-                </button>
-              </div>
+          </div>
+          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
+            <span className="text-[10px] uppercase text-[#A1A9A5]">Sink Overlap</span>
+            <div className="font-mono text-sm font-bold text-[#DFA095] mt-0.5">
+              {formatDurationSeconds(totalSinkSec)}
             </div>
+          </div>
+          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
+            <span className="text-[10px] uppercase text-[#A1A9A5]">Marked Unwanted</span>
+            <div className="font-mono text-sm font-bold text-[#DFA095] mt-0.5">
+              {formatDurationSeconds(totalUnwantedSec)}
+            </div>
+          </div>
+          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
+            <span className="text-[10px] uppercase text-[#A1A9A5]">Excluded</span>
+            <div className="font-mono text-sm font-bold text-[#A1A9A5] mt-0.5">
+              {formatDurationSeconds(totalExcludedSec)}
+            </div>
+          </div>
+        </div>
+
+        {/* App Groups List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {appGroups.map((group) => {
+            const isExpanded = !!expandedApps[group.key];
+            return (
+              <div
+                key={group.key}
+                className="rounded-[8px] bg-[#171819] border border-[#3A3D3E] p-3 flex flex-col gap-2.5"
+              >
+                {/* Group Summary Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor:
+                          CATEGORIES.find((c) => c.id === group.dominantCategory)?.color || "#8795A8",
+                      }}
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-[#ECECE7]">{group.friendly}</span>
+                      <span className="text-[10px] font-mono text-[#A1A9A5] ml-2">
+                        {group.rawLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 font-mono text-xs">
+                    <span className="text-[#ECECE7] font-semibold">
+                      {formatDurationSeconds(group.totalSeconds)}
+                    </span>
+                    {group.unwantedSeconds > 0 && (
+                      <span className="text-[10px] text-[#DFA095]">
+                        ({formatDurationSeconds(group.unwantedSeconds)} unwanted)
+                      </span>
+                    )}
+                    <button
+                      onClick={() =>
+                        setExpandedApps((prev) => ({ ...prev, [group.key]: !isExpanded }))
+                      }
+                      className="p-1 text-[#A1A9A5] hover:text-[#ECECE7]"
+                    >
+                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Controls Row */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#3A3D3E] text-xs">
+                  {/* Category Selection */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-[#A1A9A5]">Category:</span>
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleStageGroupCategory(group.key, cat.id)}
+                        className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-medium transition-colors ${
+                          group.dominantCategory === cat.id
+                            ? "bg-[#202122] border-[#DDB66D] text-[#DDB66D]"
+                            : "bg-[#202122] border-[#3A3D3E] text-[#C1C5C1] hover:text-[#ECECE7]"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Appraisal Selection (§7) */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-[#A1A9A5]">Appraisal:</span>
+                    {(["intentional", "unwanted", "unsure"] as const).map((appr) => (
+                      <button
+                        key={appr}
+                        type="button"
+                        onClick={() => handleStageGroupAppraisal(group.key, appr)}
+                        className={`px-1.5 py-0.5 rounded-[4px] border text-[10px] font-medium capitalize transition-colors ${
+                          group.dominantAppraisal === appr
+                            ? "bg-[#202122] border-[#DDB66D] text-[#DDB66D]"
+                            : "bg-[#202122] border-[#3A3D3E] text-[#C1C5C1] hover:text-[#ECECE7]"
+                        }`}
+                      >
+                        {appr}
+                      </button>
+                    ))}
+
+                    {/* Exclude / Restore */}
+                    {group.excludedSeconds > 0 ? (
+                      <button
+                        onClick={() => handleStageGroupRestore(group.key)}
+                        className="text-[10px] text-[#90D2BC] hover:underline ml-2"
+                      >
+                        Restore
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleStageGroupExclude(group.key)}
+                        className="text-[10px] text-[#DFA095] hover:underline ml-2"
+                      >
+                        Exclude
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Expanded Slices */}
+                {isExpanded && (
+                  <div className="divide-y divide-[#3A3D3E] border border-[#3A3D3E] rounded-[6px] overflow-hidden mt-1 text-[11px]">
+                    {group.slices.map((sl) => (
+                      <div
+                        key={sl.id}
+                        className="p-2 bg-[#202122] flex items-center justify-between hover:bg-[#202122]/70"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[#C1C5C1]">
+                            {new Date(sl.sliceStartMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            {" – "}
+                            {new Date(sl.sliceEndMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          <span className="font-mono text-[#ECECE7]">
+                            {formatDurationSeconds(sl.sliceSeconds)}
+                          </span>
+                          {sl.appraisal && sl.appraisal !== "unreviewed" && (
+                            <span className="text-[9px] px-1 rounded bg-[#DDB66D]/10 text-[#DDB66D] border border-[#DDB66D]/30 capitalize">
+                              {sl.appraisal}
+                            </span>
+                          )}
+                          {sl.isExcluded && (
+                            <span className="text-[9px] px-1 rounded bg-[#DFA095]/10 text-[#DFA095]">
+                              Excluded
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 text-[9px]">
+                          {(["intentional", "unwanted"] as const).map((a) => (
+                            <button
+                              key={a}
+                              onClick={() => handleStageSliceAppraisal(sl, a)}
+                              className={`px-1.5 py-0.5 rounded border capitalize ${
+                                sl.appraisal === a
+                                  ? "bg-[#171819] border-[#DDB66D] text-[#DDB66D]"
+                                  : "border-[#3A3D3E] text-[#A1A9A5] hover:text-[#ECECE7]"
+                              }`}
+                            >
+                              {a}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-4 border-t border-[#3A3D3E] bg-[#171819] flex items-center justify-between">
+          <span className="text-xs text-[#A1A9A5]">
+            {stagedCorrections.length} correction/appraisal edits staged
+          </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 rounded-[6px] bg-[#202122] text-[#C1C5C1] hover:text-[#ECECE7] border border-[#3A3D3E] text-xs font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCommitSave}
+              className="px-4 py-1.5 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white text-xs font-semibold shadow-sm flex items-center gap-1.5"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Save review & recompute</span>
+            </button>
           </div>
         </div>
       </div>

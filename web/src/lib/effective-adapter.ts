@@ -18,6 +18,8 @@ import {
   ClassificationRule,
   EffectiveSessionSlice,
   computeEffectiveSessions,
+  UserAppraisal,
+  computeUnwantedUnionSeconds,
 } from "./corrections";
 
 export interface SafeEffectiveTimelineSegment {
@@ -34,6 +36,9 @@ export interface SafeEffectiveTimelineSegment {
   widthPercent: number;
   isExcluded: boolean;
   isAdjusted: boolean;
+  isReviewed?: boolean;
+  appraisal?: UserAppraisal;
+  appraisalReason?: string;
   associatedBlockId?: string;
   appliedCorrectionIds: string[];
 }
@@ -49,7 +54,11 @@ export interface SafeBlockTimelineSegment {
   workSeconds: number;
   sinkSeconds: number;
   excludedSeconds: number;
+  unwantedSeconds?: number;
   isReviewed: boolean;
+  isAdjusted?: boolean;
+  appraisal?: UserAppraisal;
+  appraisalReason?: string;
   syncStatus: FocusBlock["syncStatus"];
   activeIntervals: Array<{
     startMs: number;
@@ -205,6 +214,9 @@ export function buildEffectiveDayPresentation(params: {
       widthPercent,
       isExcluded: sl.isExcluded,
       isAdjusted: sl.isAdjusted,
+      isReviewed: sl.isReviewed,
+      appraisal: sl.appraisal,
+      appraisalReason: sl.appraisalReason,
       associatedBlockId: sl.associatedBlockId,
       appliedCorrectionIds: sl.appliedCorrectionIds,
     };
@@ -331,6 +343,12 @@ export function buildEffectiveDayPresentation(params: {
     const overallLeftPercent = ((overallStartMs - dayStartMs) / totalDayMs) * 100;
     const overallWidthPercent = Math.max(0.5, ((overallEndMs - overallStartMs) / totalDayMs) * 100);
 
+    const blockHasAdjusted = blockSlices.some((s) => s.isAdjusted);
+    const blockHasReviewed = b.state === "reviewed" || blockSlices.some((s) => s.isReviewed);
+    const blockUnwantedSeconds = computeUnwantedUnionSeconds(blockSlices);
+    const firstReviewedAppraisal = blockSlices.find((s) => s.appraisal && s.appraisal !== "unreviewed")?.appraisal || "unreviewed";
+    const blockAppraisalReason = blockSlices.find((s) => s.appraisalReason)?.appraisalReason;
+
     safeBlockSegments.push({
       id: b.id,
       block: b,
@@ -342,7 +360,11 @@ export function buildEffectiveDayPresentation(params: {
       workSeconds: blockWork,
       sinkSeconds: blockSink,
       excludedSeconds: blockExcluded,
-      isReviewed: b.state === "reviewed",
+      unwantedSeconds: blockUnwantedSeconds,
+      isReviewed: blockHasReviewed,
+      isAdjusted: blockHasAdjusted,
+      appraisal: firstReviewedAppraisal,
+      appraisalReason: blockAppraisalReason,
       syncStatus: b.syncStatus || "saved_locally",
       activeIntervals,
       overallStartMs,
