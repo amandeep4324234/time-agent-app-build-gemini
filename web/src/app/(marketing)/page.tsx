@@ -165,13 +165,11 @@ export default function MarketingPage() {
                   $15/yr billed annually. Locked early bird rate.
                 </p>
                 <div className="flex flex-col gap-1 pt-2 text-[11px] text-[#E6EDF3]">
-                  <div>✓ Full cross-device history</div>
-                  <div>✓ Compare / ghost overlay mode</div>
-                  <div>✓ Read-time insight engine</div>
-                  <div>✓ Goals, sink allowance &amp; streaks</div>
-                  <div>✓ Weekly graded report cards (A–F)</div>
-                  <div>✓ Creature companion live block</div>
-                  <div>✓ Unlimited shareable image exports</div>
+                  <div>✓ Full cross-device history beyond 7 days</div>
+                  <div>✓ Aligned period compare workspace</div>
+                  <div>✓ Historical pattern analysis (14d &amp; 28d)</div>
+                  <div>✓ User-set focus goals &amp; sink allowance</div>
+                  <div>✓ Clean weekly review export preview</div>
                 </div>
               </div>
 

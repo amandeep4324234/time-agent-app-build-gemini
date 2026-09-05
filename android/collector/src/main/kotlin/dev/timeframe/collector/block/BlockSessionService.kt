@@ -15,8 +15,8 @@ class BlockSessionService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = NotificationCompat.Builder(this, BlockNotifications.CHANNEL_SESSION)
             .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle("Focus block live")
-            .setContentText("Creature growing · 00:00")
+            .setContentTitle("Focus run in progress")
+            .setContentText("Focus run · 00:00")
             .setOngoing(true)
             .build()
 
@@ -41,8 +41,8 @@ class BlockSessionService : Service() {
 
                 val updatedNotification = NotificationCompat.Builder(this@BlockSessionService, BlockNotifications.CHANNEL_SESSION)
                     .setSmallIcon(android.R.drawable.ic_media_play)
-                    .setContentTitle("Focus block live")
-                    .setContentText("Creature growing · $mm:$ss")
+                    .setContentTitle("Focus run in progress")
+                    .setContentText("Focus run · $mm:$ss")
                     .setOngoing(true)
                     .build()
 

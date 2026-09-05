@@ -122,16 +122,16 @@ export default function CheckoutPage() {
       )}
 
       {isAlreadyPaid ? (
-        <div className="p-6 rounded-[4px] border border-[#D29922]/40 bg-[#161B22] flex flex-col items-center gap-4 text-center">
-          <span className="text-sm font-semibold text-[#D29922]">
+        <div className="p-6 rounded-[10px] border border-[#E4B45F]/40 bg-[#141A22] flex flex-col items-center gap-4 text-center">
+          <span className="text-sm font-semibold text-[#E4B45F]">
             Pro Membership Active
           </span>
-          <p className="text-[11px] text-[#8B949E] max-w-sm">
-            You have full history, compare/ghost mode, the creature companion, and weekly report cards.
+          <p className="text-xs text-[#B0BBC9] max-w-sm leading-relaxed">
+            You have access to historical pattern analysis, period comparisons, full multi-week history, and goals.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pt-2">
             <Button variant="primary" onClick={() => router.push("/app")}>
-              Open Instrument Panel
+              Open Today
             </Button>
             <Button variant="secondary" onClick={handleDeactivate}>
               Switch to Free
@@ -139,60 +139,52 @@ export default function CheckoutPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-5 p-6 rounded-[4px] border border-[#21262D] bg-[#161B22]">
+        <div className="flex flex-col gap-5 p-6 rounded-[10px] border border-[#303B49] bg-[#141A22]">
           {/* Price Frame: Locked BUSINESS.md §1 & QA.md B8 */}
-          <div className="flex flex-col gap-1 border-b border-[#21262D] pb-4">
+          <div className="flex flex-col gap-1 border-b border-[#303B49] pb-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-xs uppercase tracking-wider text-[#8B949E]">
-                Early Bird License
+              <span className="text-xs uppercase tracking-wider text-[#94A1B2] font-medium">
+                Annual Subscription
               </span>
-              <span className="text-2xl font-bold text-[#E6EDF3] tnum">
-                $1.25<span className="text-xs text-[#8B949E] font-normal">/mo</span>
+              <span className="text-2xl font-bold text-[#EDF1F5] font-mono-nums">
+                $1.25<span className="text-xs text-[#94A1B2] font-normal">/mo</span>
               </span>
             </div>
-            <div className="text-[11px] text-[#8B949E]">
-              $15/yr billed yearly. Permanent early bird price. One SKU, one decision.
+            <div className="text-xs text-[#B0BBC9]">
+              $15.00 billed annually. All core ledger features remain free forever.
             </div>
           </div>
 
           {/* Feature Matrix */}
-          <div className="flex flex-col gap-2 text-[11px]">
-            <div className="text-[10px] uppercase tracking-wider text-[#6E7681]">
+          <div className="flex flex-col gap-2.5 text-xs">
+            <div className="text-[11px] uppercase tracking-wider text-[#94A1B2] font-medium">
               Included in Pro
             </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Full history across all devices (Free has 7 days)</span>
+            <div className="flex items-center gap-2 text-[#EDF1F5]">
+              <span className="text-[#E4B45F]">✓</span>
+              <span>Full history across all devices (Free includes recent 7 days)</span>
             </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Compare / ghost overlay (week-over-week timeline)</span>
+            <div className="flex items-center gap-2 text-[#EDF1F5]">
+              <span className="text-[#E4B45F]">✓</span>
+              <span>Aligned period compare workspace (day &amp; week modes)</span>
             </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Read-time insight engine &amp; danger-zone detection</span>
+            <div className="flex items-center gap-2 text-[#EDF1F5]">
+              <span className="text-[#E4B45F]">✓</span>
+              <span>Historical pattern analysis across 14-day and 28-day windows</span>
             </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Goals layer, sink allowance, and run streaks</span>
+            <div className="flex items-center gap-2 text-[#EDF1F5]">
+              <span className="text-[#E4B45F]">✓</span>
+              <span>User-configured daily focus goal &amp; weekly sink allowance</span>
             </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Weekly graded report card (A–F rubric)</span>
-            </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Creature live block companion growth</span>
-            </div>
-            <div className="flex items-center gap-2 text-[#E6EDF3]">
-              <span className="text-[#D29922]">✓</span>
-              <span>Unlimited shareable image exports</span>
+            <div className="flex items-center gap-2 text-[#EDF1F5]">
+              <span className="text-[#E4B45F]">✓</span>
+              <span>Clean 1080×1350 PNG weekly export preview</span>
             </div>
           </div>
 
           {/* Privacy Guarantee */}
-          <div className="p-3 rounded-[2px] bg-[#0D1117] border border-[#21262D] text-[10px] text-[#6E7681] leading-relaxed">
-            Timeframe measures which app is on screen and for how long. It never sees screen content, keystrokes, or anything you type. Private apps (health/finance/dating) stay off all shared cards.
+          <div className="p-3.5 rounded-[6px] bg-[#0D1117] border border-[#303B49] text-xs text-[#94A1B2] leading-relaxed">
+            Timeframe measures which app is on screen and for how long. It never sees screen content, keystrokes, or anything you type. Private activity is excluded from all views and exports.
           </div>
 
           {statusMessage && (

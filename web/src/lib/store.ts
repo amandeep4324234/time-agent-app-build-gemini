@@ -8,6 +8,8 @@ import { SEED_WORK, SEED_KILLERS } from "./classify";
 export interface SettingsSlice {
   deathFloor: number;
   onboarded: boolean;
+  focusGoalHours: number | null;
+  sinkAllowanceHours: number | null;
 }
 
 export interface SeedPinsSlice {
@@ -25,6 +27,7 @@ export interface AppState {
   // Actions
   setDeathFloor: (floor: number) => void;
   setOnboarded: (onboarded: boolean) => void;
+  setGoals: (focusGoalHours: number | null, sinkAllowanceHours: number | null) => void;
   setSeedPins: (pins: SeedPinsSlice) => void;
   setOverride: (label: string, category: Category) => void;
   setEntitlement: (entitlement: Entitlement) => void;
@@ -38,6 +41,8 @@ export const useAppStore = create<AppState>()(
       settings: {
         deathFloor: 5,
         onboarded: false,
+        focusGoalHours: null,
+        sinkAllowanceHours: null,
       },
       seedPins: {
         work: [...SEED_WORK],
@@ -56,6 +61,11 @@ export const useAppStore = create<AppState>()(
       setOnboarded: (onboarded) =>
         set((state) => ({
           settings: { ...state.settings, onboarded },
+        })),
+
+      setGoals: (focusGoalHours, sinkAllowanceHours) =>
+        set((state) => ({
+          settings: { ...state.settings, focusGoalHours, sinkAllowanceHours },
         })),
 
       setSeedPins: (seedPins) =>

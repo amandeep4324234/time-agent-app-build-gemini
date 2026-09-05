@@ -68,6 +68,8 @@ export interface WeekCardModel {
   footer: string;
   clean: boolean;
   watermark: boolean;
+  dateRange?: string;
+  dailyBars?: Array<{ dayLabel: string; focusHours: number; sinkHours: number }>;
 }
 
 export interface LogEntry {
@@ -172,4 +174,6 @@ export interface WeekMetrics {
   unclassifiedPercent: number;
   doubleCountedHours: number;
   footer: string;
+  dateRange?: string;
+  dailyBars?: Array<{ dayLabel: string; focusHours: number; sinkHours: number }>;
 }

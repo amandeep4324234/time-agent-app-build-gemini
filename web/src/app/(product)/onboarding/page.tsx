@@ -4,14 +4,18 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { SEED_WORK, SEED_KILLERS } from "@/lib/classify";
-import { COPY } from "@/lib/copy";
 import { Button } from "@/components/ui/button";
 
+/**
+ * First-run onboarding per TIMEFRAME-UI-REDESIGN.md §11.3:
+ * "See where your time goes."
+ * "Timeframe measures which app is on the screen and for how long. It never sees screen content, keystrokes, or anything you type."
+ */
 export default function OnboardingPage() {
   const router = useRouter();
   const { setSeedPins, setOnboarded } = useAppStore();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [selectedWork, setSelectedWork] = useState<string[]>([...SEED_WORK]);
   const [selectedKillers, setSelectedKillers] = useState<string[]>([...SEED_KILLERS]);
 
@@ -27,7 +31,7 @@ export default function OnboardingPage() {
     );
   };
 
-  const handleSavePins = () => {
+  const handleFinish = () => {
     setSeedPins({
       work: selectedWork,
       killers: selectedKillers,
@@ -37,71 +41,52 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center max-w-[560px] mx-auto p-4 font-mono text-center">
-      {/* Screen 1: The Egg */}
+    <div className="min-h-[70vh] flex flex-col items-center justify-center max-w-[560px] w-full mx-auto p-4 text-center">
+      {/* Screen 1: Real setup panel (§11.3) */}
       {step === 1 && (
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-160">
-          <div className="w-20 h-20 rounded-[4px] bg-[#161B22] border border-[#21262D] flex items-center justify-center relative">
-            <svg viewBox="0 0 64 64" className="w-12 h-12 text-[#8B949E]">
-              <ellipse cx="32" cy="34" rx="16" ry="20" fill="#0D1117" stroke="currentColor" strokeWidth="1" />
-              <path d="M38 18 L36 24 L40 30" fill="none" stroke="#D29922" strokeWidth="1" />
-            </svg>
-          </div>
-
+        <div className="flex flex-col items-center gap-6 w-full p-6 md:p-8 rounded-[10px] border border-[#303B49] bg-[#141A22] text-left">
           <div className="flex flex-col gap-2">
-            <h1 className="text-sm font-semibold uppercase tracking-[0.06em] text-[#E6EDF3]">
-              {COPY.egg.headline}
+            <h1 className="text-xl font-semibold text-[#EDF1F5]">
+              See where your time goes
             </h1>
-            <p className="text-xs text-[#8B949E] max-w-xs">
-              {COPY.egg.sub}
+            <p className="text-sm text-[#B0BBC9] leading-relaxed">
+              Timeframe measures which app is on the screen and for how long. It never sees screen content, keystrokes, or anything you type.
             </p>
           </div>
 
-          <Button variant="primary" onClick={() => setStep(2)} className="min-w-[160px]">
-            Continue
-          </Button>
+          <div className="text-xs text-[#94A1B2] border-t border-[#303B49] pt-4 w-full">
+            Private activity is excluded from all views. All metrics are computed locally on your device.
+          </div>
+
+          <div className="flex items-center gap-3 w-full pt-2">
+            <Button variant="primary" onClick={() => setStep(2)} className="flex-1">
+              Configure app categories
+            </Button>
+            <Button variant="secondary" onClick={handleFinish} className="flex-1">
+              Not now
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Screen 2: Web Honesty Contract */}
+      {/* Screen 2: Initial category seeds */}
       {step === 2 && (
-        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-160 w-full">
-          <div className="flex flex-col gap-3 text-left bg-[#161B22] p-6 rounded-[4px] border border-[#21262D] w-full">
-            <h1 className="text-sm font-semibold uppercase tracking-[0.06em] text-[#E6EDF3]">
-              {COPY.onboardingWeb.headline}
-            </h1>
-            <p className="text-xs text-[#8B949E] leading-relaxed">
-              {COPY.onboardingWeb.body}
-            </p>
-            <div className="text-[11px] text-[#D29922] border-t border-[#21262D] pt-3 mt-1">
-              {COPY.onboardingWeb.disclosure}
-            </div>
-          </div>
-
-          <Button variant="primary" onClick={() => setStep(3)} className="min-w-[160px]">
-            Continue to Pins
-          </Button>
-        </div>
-      )}
-
-      {/* Screen 3: Chip Lists */}
-      {step === 3 && (
-        <div className="flex flex-col gap-6 text-left w-full animate-in fade-in duration-160">
-          <div className="border-b border-[#21262D] pb-3">
-            <h1 className="text-sm font-semibold uppercase tracking-[0.06em] text-[#E6EDF3]">
-              {COPY.prompts.pinApps}
-            </h1>
-            <p className="text-[11px] text-[#6E7681] mt-1">
-              {COPY.prompts.subLine}
+        <div className="flex flex-col gap-6 text-left w-full p-6 md:p-8 rounded-[10px] border border-[#303B49] bg-[#141A22]">
+          <div className="border-b border-[#303B49] pb-3">
+            <h2 className="text-lg font-semibold text-[#EDF1F5]">
+              Confirm initial app categories
+            </h2>
+            <p className="text-xs text-[#94A1B2] mt-1">
+              Select which apps should count toward focus time or sinks. You can change these anytime in Settings.
             </p>
           </div>
 
           {/* Work Seeds */}
           <div className="flex flex-col gap-2">
-            <span className="text-[11px] uppercase tracking-[0.06em] text-[#8B949E]">
-              Focus-set time seeds
+            <span className="text-xs font-medium text-[#B0BBC9]">
+              Work apps (count as focus time)
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {SEED_WORK.map((item) => {
                 const isSelected = selectedWork.includes(item);
                 return (
@@ -109,10 +94,10 @@ export default function OnboardingPage() {
                     key={item}
                     type="button"
                     onClick={() => toggleWork(item)}
-                    className={`px-2.5 py-1 rounded-[2px] text-xs transition-colors border ${
+                    className={`px-3 py-1.5 rounded-[6px] text-xs transition-colors border ${
                       isSelected
-                        ? "bg-[#D29922]/10 border-[#D29922] text-[#D29922]"
-                        : "bg-[#161B22] border-[#21262D] text-[#8B949E] hover:text-[#E6EDF3]"
+                        ? "bg-[#E4B45F]/15 border-[#E4B45F] text-[#E4B45F] font-medium"
+                        : "bg-[#1D2530] border-[#303B49] text-[#94A1B2] hover:text-[#EDF1F5]"
                     }`}
                   >
                     {item}
@@ -122,12 +107,12 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* Killer Seeds */}
+          {/* Sink Seeds */}
           <div className="flex flex-col gap-2">
-            <span className="text-[11px] uppercase tracking-[0.06em] text-[#8B949E]">
-              Killer-set seeds
+            <span className="text-xs font-medium text-[#B0BBC9]">
+              Sink apps (categorized as sinks)
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {SEED_KILLERS.map((item) => {
                 const isSelected = selectedKillers.includes(item);
                 return (
@@ -135,10 +120,10 @@ export default function OnboardingPage() {
                     key={item}
                     type="button"
                     onClick={() => toggleKiller(item)}
-                    className={`px-2.5 py-1 rounded-[2px] text-xs transition-colors border ${
+                    className={`px-3 py-1.5 rounded-[6px] text-xs transition-colors border ${
                       isSelected
-                        ? "bg-[#F85149]/10 border-[#F85149] text-[#F85149]"
-                        : "bg-[#161B22] border-[#21262D] text-[#8B949E] hover:text-[#E6EDF3]"
+                        ? "bg-[#F28D87]/15 border-[#F28D87] text-[#F28D87] font-medium"
+                        : "bg-[#1D2530] border-[#303B49] text-[#94A1B2] hover:text-[#EDF1F5]"
                     }`}
                   >
                     {item}
@@ -148,14 +133,11 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* Chess Note Line */}
-          <div className="text-[11px] text-[#6E7681] border-t border-[#21262D] pt-3">
-            {COPY.prompts.chessCaption}
+          <div className="pt-3 border-t border-[#303B49] flex justify-end">
+            <Button variant="primary" onClick={handleFinish} className="w-full">
+              Finish setup
+            </Button>
           </div>
-
-          <Button variant="primary" onClick={handleSavePins} className="w-full mt-2">
-            {COPY.onboardingWeb.primaryButton}
-          </Button>
         </div>
       )}
     </div>

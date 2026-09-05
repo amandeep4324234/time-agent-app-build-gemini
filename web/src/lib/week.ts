@@ -4,6 +4,7 @@ import { computeTrackedMetrics } from "./union";
 import { computeFocusRuns } from "./focus-run";
 import { computeMix } from "./mix";
 import { COPY } from "./copy";
+import { DateTime } from "luxon";
 
 /**
  * Computes week metrics and verbatim footer.
@@ -49,6 +50,41 @@ export function computeWeek(
 
   const footer = COPY.footer.format(D, D_p, D_c, U, doubleCountHours.toFixed(2));
 
+  const sortedDays = Array.from(daySet).sort();
+  const dateRange = sortedDays.length > 0
+    ? `${sortedDays[0]} – ${sortedDays[sortedDays.length - 1]}`
+    : "7-day period";
+
+  // Build daily focus and sink hours for the observed days (§13)
+  const dayBarsMap = new Map<string, { focusSeconds: number; sinkSeconds: number }>();
+  for (const day of sortedDays) {
+    dayBarsMap.set(day, { focusSeconds: 0, sinkSeconds: 0 });
+  }
+
+  for (const s of nonPrivate) {
+    const day = getLogicalDay(s.started_at_ms, tz);
+    if (!dayBarsMap.has(day)) {
+      dayBarsMap.set(day, { focusSeconds: 0, sinkSeconds: 0 });
+    }
+    const dur = Math.max(0, (s.ended_at_ms - s.started_at_ms) / 1000);
+    const entry = dayBarsMap.get(day)!;
+    if (s.category === "work") {
+      entry.focusSeconds += dur;
+    } else if (s.category === "sink") {
+      entry.sinkSeconds += dur;
+    }
+  }
+
+  const dailyBars = Array.from(dayBarsMap.entries()).slice(-7).map(([day, val]) => {
+    const dt = DateTime.fromISO(day, { zone: tz });
+    const dayLabel = dt.isValid ? dt.toFormat("ccc") : day.slice(-5);
+    return {
+      dayLabel,
+      focusHours: val.focusSeconds / 3600,
+      sinkHours: val.sinkSeconds / 3600,
+    };
+  });
+
   return {
     totalHours: unionHours,
     focusHours,
@@ -61,6 +97,8 @@ export function computeWeek(
     unclassifiedPercent: U,
     doubleCountedHours: doubleCountHours,
     footer,
+    dateRange,
+    dailyBars,
   };
 }
 
@@ -70,7 +108,9 @@ export function computeWeek(
 export function buildWeekCardModel(
   weekMetrics: WeekMetrics,
   deviceSelector: "phone this week" | "laptop this week" | "merged export",
-  isPaid: boolean
+  isPaid: boolean,
+  dateRange?: string,
+  dailyBars?: Array<{ dayLabel: string; focusHours: number; sinkHours: number }>
 ): WeekCardModel {
   const focusSharePercent = weekMetrics.totalHours > 0
     ? Math.round((weekMetrics.focusHours / weekMetrics.totalHours) * 100)
@@ -88,5 +128,7 @@ export function buildWeekCardModel(
     footer: weekMetrics.footer,
     clean: isPaid,
     watermark: !isPaid,
+    dateRange: dateRange || weekMetrics.dateRange,
+    dailyBars: dailyBars || weekMetrics.dailyBars,
   };
 }

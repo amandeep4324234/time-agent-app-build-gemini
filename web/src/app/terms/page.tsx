@@ -26,7 +26,7 @@ export default function TermsPage() {
 
         <h2 className="text-sm font-semibold text-[#F8FAFC] mt-4">2. Paid Subscriptions</h2>
         <p>
-          Purchases of Timeframe Pro grant access to creature growth features and clean export cards. Core ledger features are free forever. Subscriptions may be canceled at any time.
+          Purchases of Timeframe Pro grant access to historical pattern analysis, period compare, and clean export cards. Core ledger features are free forever. Subscriptions may be canceled at any time.
         </p>
 
         <h2 className="text-sm font-semibold text-[#F8FAFC] mt-4">3. Contact</h2>

@@ -42,43 +42,79 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+const val CREATURE_ENABLED = false
+
 enum class NavigationTab(val label: String) {
-    Dashboard("Dashboard"),
-    Week("Week"),
-    Block("Block"),
-    Settings("Settings")
+    Dashboard("Today"),
+    Patterns("Patterns"),
+    Compare("Compare")
 }
 
 @Composable
 fun MainAppScreen() {
     var currentTab by remember { mutableStateOf(NavigationTab.Dashboard) }
+    var showSettings by remember { mutableStateOf(false) }
 
     Scaffold(
-        bottomBar = {
-            NavigationBar(
-                containerColor = SurfaceOverlay,
-                tonalElevation = 0.dp,
-                modifier = Modifier.height(64.dp)
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(SurfaceBase)
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                NavigationTab.values().forEach { tab ->
-                    val isSelected = currentTab == tab
-                    val activeColor = if (tab == NavigationTab.Block) AccentCreature else TextPrimary
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { currentTab = tab },
-                        icon = {},
-                        label = {
-                            Text(
-                                text = tab.label,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) activeColor else TextTertiary
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = Color.Transparent
-                        )
+                Text(
+                    text = if (showSettings) "Settings" else currentTab.label,
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable { showSettings = !showSettings },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (showSettings) "Done" else "Settings",
+                        color = CatFocus,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
+                }
+            }
+        },
+        bottomBar = {
+            if (!showSettings) {
+                NavigationBar(
+                    containerColor = SurfaceOverlay,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.height(64.dp)
+                ) {
+                    NavigationTab.values().forEach { tab ->
+                        val isSelected = currentTab == tab
+                        val activeColor = if (isSelected) CatFocus else TextTertiary
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = { currentTab = tab },
+                            icon = {},
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = activeColor
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent
+                            )
+                        )
+                    }
                 }
             }
         },
@@ -90,11 +126,14 @@ fun MainAppScreen() {
                 .padding(innerPadding)
                 .background(SurfaceBase)
         ) {
-            when (currentTab) {
-                NavigationTab.Dashboard -> DashboardScreen()
-                NavigationTab.Week -> WeekScreen()
-                NavigationTab.Block -> BlockScreen()
-                NavigationTab.Settings -> SettingsScreen()
+            if (showSettings) {
+                SettingsScreen(onClose = { showSettings = false })
+            } else {
+                when (currentTab) {
+                    NavigationTab.Dashboard -> DashboardScreen()
+                    NavigationTab.Patterns -> PatternsScreen()
+                    NavigationTab.Compare -> CompareScreen()
+                }
             }
         }
     }
@@ -148,148 +187,183 @@ fun DashboardScreen() {
             }
         }
 
-        // Habitat hero (200dp home hero per C5)
+        // 1. Contiguous Summary Strip (§6.2) — No four equal floating cards, no streaks/habits
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = SurfaceRaised),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    .border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(20.dp)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Creature Zone
-                    Box(
-                        modifier = Modifier
-                            .size(96.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(SurfaceBase)
-                            .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .border(2.dp, AccentCreature, CircleShape)
+                    // Focus time: primary mono duration, amber
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Focus time", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text("All devices", color = TextTertiary, fontSize = 11.sp)
+                        }
+                        Text(
+                            text = "4h 22m",
+                            color = CatFocus,
+                            fontSize = 40.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Medium
                         )
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Current streak", color = TextTertiary, fontSize = 11.sp)
-                        Text("7 days", color = TextPrimary, fontSize = 24.sp, fontFamily = FontFamily.Monospace)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Last block: completed", color = TextSecondary, fontSize = 12.sp)
-                    }
-                }
-            }
-        }
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(BorderSubtle))
 
-        // Spec order: Card 1 - Focus-set time
-        item {
-            MetricCard(
-                label = "Focus-set time",
-                value = "4h 22m",
-                delta = "▲ 0.4h"
-            )
-        }
-
-        // Spec order: Card 2 - Sink
-        item {
-            MetricCard(
-                label = "Sink",
-                value = "1h 08m",
-                delta = "▼ 0.2h"
-            )
-        }
-
-        // Spec order: Card 3 - Blocks >= 15 min & Longest
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = SurfaceRaised),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Blocks ≥15 min", color = TextTertiary, fontSize = 11.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    // Sink time and Deep blocks row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Text("4", color = TextPrimary, fontSize = 28.sp, fontFamily = FontFamily.Monospace)
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("longest", color = TextTertiary, fontSize = 11.sp)
-                            Text("45 min", color = TextPrimary, fontSize = 18.sp, fontFamily = FontFamily.Monospace)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Sink time", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                text = "1h 08m",
+                                color = CatSink,
+                                fontSize = 24.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("Deep blocks (≥15m)", color = TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "4",
+                                    color = TextPrimary,
+                                    fontSize = 24.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "longest 45m",
+                                    color = TextTertiary,
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
+
+                    // Strongest eligible observation (§6.2)
+                    Surface(
+                        color = SurfaceBase,
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, BorderSubtle, RoundedCornerShape(6.dp))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Your longest recorded focus block lasted 45 minutes.",
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "Evidence",
+                                color = CatFocus,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
             }
         }
 
-        // Spec order: Card 4 - Share of tracked time (Mix ring)
+        // 2. Time by Category (§6.3): Stacked horizontal bar, 10dp high
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = SurfaceRaised),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    .border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Share of tracked time", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        Surface(
-                            color = Color.Transparent,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-                            shape = CircleShape
-                        ) {
-                            Text(
-                                "19% unclassified",
-                                color = TextTertiary,
-                                fontSize = 11.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
+                        Text("Time by category", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text("5h 30m total", color = TextTertiary, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
                     }
-                    Text("% of tracked time", color = TextTertiary, fontSize = 12.sp)
 
-                    // Wedge legend rows
-                    MixRow("Work", "62%", CatFocus)
-                    MixRow("Sink", "16%", CatSink)
-                    MixRow("Games", "3%", CatGames)
-                    MixRow("Unclassified", "19%", CatUnclassified)
+                    // 10dp high stacked category bar (§6.3)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                    ) {
+                        Box(modifier = Modifier.weight(62f).fillMaxHeight().background(CatFocus))
+                        Box(modifier = Modifier.weight(16f).fillMaxHeight().background(CatSink))
+                        Box(modifier = Modifier.weight(3f).fillMaxHeight().background(CatGames))
+                        Box(modifier = Modifier.weight(19f).fillMaxHeight().background(CatUnclassified))
+                    }
+
+                    // Legend rows with exact durations and approved percentages
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MixRow("Work", "4h 22m · 62%", CatFocus)
+                        MixRow("Sinks", "1h 08m · 16%", CatSink)
+                        MixRow("Games", "12m · 3%", CatGames)
+                        MixRow("Unclassified", "19% unclassified", CatUnclassified)
+                    }
                 }
             }
         }
 
-        // Spec order: Card 5 - Top 5 sinks by hours
+        // 3. Apps Section (§6.3): 5 rows, Sessions column
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = SurfaceRaised),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    .border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Top 5 sinks by hours", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    SinkRow("Instagram", "45m", "×8", CatSink)
-                    SinkRow("YouTube", "18m", "×3", CatSink)
-                    SinkRow("Reddit", "5m", "×2", CatSink)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Apps", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Sessions", color = TextTertiary, fontSize = 12.sp)
+                    }
+
+                    AppRow("VS Code", "Work", "3h 40m", "12", CatFocus)
+                    AppRow("Instagram", "Sink", "45m", "8", CatSink)
+                    AppRow("Terminal", "Work", "42m", "6", CatFocus)
+                    AppRow("YouTube", "Sink", "18m", "3", CatSink)
+                    AppRow("Reddit", "Sink", "5m", "2", CatSink)
                 }
             }
         }
@@ -397,6 +471,29 @@ fun SinkRow(name: String, duration: String, count: String, dotColor: Color) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(duration, color = TextPrimary, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
             Text(count, color = TextTertiary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+        }
+    }
+}
+
+@Composable
+fun AppRow(name: String, category: String, duration: String, sessions: String, dotColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(8.dp).background(dotColor, CircleShape))
+            Column {
+                Text(name, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(category, color = TextTertiary, fontSize = 11.sp)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(duration, color = TextPrimary, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+            Text(sessions, color = TextTertiary, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
         }
     }
 }
@@ -641,7 +738,7 @@ fun BlockScreen() {
 }
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onClose: (() -> Unit)? = null) {
     val context = LocalContext.current
     var deathFloor by remember { mutableStateOf(5) }
     var showWipeDialog by remember { mutableStateOf(false) }
@@ -660,11 +757,22 @@ fun SettingsScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text("Settings", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Settings", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            if (onClose != null) {
+                TextButton(onClick = onClose) {
+                    Text("Done", color = CatFocus, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
 
-        // Death Floor Setting
+        // Sink Threshold Setting (§3.2, §1.2 neutral language)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Death floor — when a killer ends a block", color = TextSecondary, fontSize = 13.sp)
+            Text("Sink threshold — when a sink ends a focus run", color = TextSecondary, fontSize = 13.sp)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -749,3 +857,50 @@ fun SettingsScreen() {
         )
     }
 }
+
+@Composable
+fun PatternsScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Patterns", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+        Text("Window: Last 14 days", color = TextSecondary, fontSize = 14.sp)
+        Surface(
+            color = SurfaceRaised,
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth().border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Observational Insight", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text("Evaluated across completed days with adequate coverage.", color = TextSecondary, fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun CompareScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Compare", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+        Text("Previous 7 days vs Prior 7 days", color = TextSecondary, fontSize = 14.sp)
+        Surface(
+            color = SurfaceRaised,
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth().border(1.dp, BorderDefault, RoundedCornerShape(10.dp))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Aligned Periods", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text("Direct comparison of completed periods without overlapping pixels.", color = TextSecondary, fontSize = 14.sp)
+            }
+        }
+    }
+}
+
