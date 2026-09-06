@@ -534,7 +534,7 @@ export function TimeCanvas({
             if (posV < 0 || posV > 100) return null;
             return (
               <div
-                key={tick.hour}
+                key={`tick-${tick.hour}-${tick.pct}`}
                 className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 flex flex-col justify-between"
                 style={{ left: `${posV}%` }}
               >

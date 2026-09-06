@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import { DateTime } from "luxon";
 import {
   Play,
   CheckCircle2,
@@ -70,12 +71,9 @@ export default function FocusBlocksPage() {
   const blocksByDay = useMemo(() => {
     const map = new Map<string, typeof focusBlocks>();
     for (const b of focusBlocks) {
-      const dateStr = new Date(b.createdAtUtc).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      const dateStr = DateTime.fromISO(b.createdAtUtc, { zone: "Asia/Kolkata" }).isValid
+        ? DateTime.fromISO(b.createdAtUtc, { zone: "Asia/Kolkata" }).toFormat("ccc, LLL d, yyyy")
+        : b.createdAtUtc.slice(0, 10);
       const list = map.get(dateStr) || [];
       list.push(b);
       map.set(dateStr, list);

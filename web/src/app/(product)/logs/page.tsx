@@ -839,7 +839,7 @@ function LogsContent() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-[#8E9296] mt-1">
-                    <span>{new Date(b.createdAtUtc).toLocaleDateString()}</span>
+                    <span>{DateTime.fromISO(b.createdAtUtc, { zone: TIMEZONE }).toFormat("LLL d, yyyy")}</span>
                     <span>&bull;</span>
                     <span className="font-mono text-[#DDB66D]">
                       {formatDurationSeconds(elapsed)} elapsed

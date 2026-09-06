@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Clock, TrendingUp, HelpCircle, X, ChevronRight, Sparkles } from "lucide-react";
+import { DateTime } from "luxon";
 import { SafeEffectiveDayResult } from "@/lib/effective-adapter";
 import { formatDurationSeconds } from "@/lib/format";
 import { MetricCard } from "../ui/MetricCard";
@@ -69,8 +70,8 @@ export function MetricCards({
           id: s.id,
           label: s.app,
           device: s.device,
-          startFormatted: new Date(s.startMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          endFormatted: new Date(s.endMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          startFormatted: DateTime.fromMillis(s.startMs, { zone: timezone }).toFormat("hh:mm a"),
+          endFormatted: DateTime.fromMillis(s.endMs, { zone: timezone }).toFormat("hh:mm a"),
           durationSeconds: s.durationSeconds,
           durationFormatted: formatDurationSeconds(s.durationSeconds),
           category: s.category,
@@ -113,8 +114,8 @@ export function MetricCards({
           id: s.id,
           label: s.app,
           device: s.device,
-          startFormatted: new Date(s.startMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          endFormatted: new Date(s.endMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          startFormatted: DateTime.fromMillis(s.startMs, { zone: timezone }).toFormat("hh:mm a"),
+          endFormatted: DateTime.fromMillis(s.endMs, { zone: timezone }).toFormat("hh:mm a"),
           durationSeconds: s.durationSeconds,
           durationFormatted: formatDurationSeconds(s.durationSeconds),
           category: s.category,
@@ -153,8 +154,8 @@ export function MetricCards({
       records: metrics.longestDeepBlock.runs.map((r, i) => ({
         id: `run-${i}`,
         label: `Work Run #${i + 1}`,
-        startFormatted: new Date(r.startMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        endFormatted: new Date(r.startMs + r.durationSeconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        startFormatted: DateTime.fromMillis(r.startMs, { zone: timezone }).toFormat("hh:mm a"),
+        endFormatted: DateTime.fromMillis(r.startMs + r.durationSeconds * 1000, { zone: timezone }).toFormat("hh:mm a"),
         durationSeconds: r.durationSeconds,
         durationFormatted: formatDurationSeconds(r.durationSeconds),
         category: "work",

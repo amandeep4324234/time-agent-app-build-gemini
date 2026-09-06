@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Play, RotateCcw, Calendar, Clock } from "lucide-react";
+import { DateTime } from "luxon";
 import { ReflectionCard } from "./ReflectionCard";
 import { ReflectionResult, ReflectionTone } from "@/lib/reflection-service";
 import { FocusBlock, calculateBlockElapsedSeconds } from "@/lib/focus-blocks";
@@ -45,10 +46,14 @@ export function PinnedCommandArea({
   isAiVisible,
   onOpenEvidence,
 }: PinnedCommandAreaProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const currentIndex = availableDays.indexOf(selectedDay);
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < availableDays.length - 1;
-  const isToday = selectedDay === latestDay;
 
   const handlePrev = () => {
     if (canGoPrev) onSelectDay(availableDays[currentIndex - 1]);
@@ -58,19 +63,18 @@ export function PinnedCommandArea({
     if (canGoNext) onSelectDay(availableDays[currentIndex + 1]);
   };
 
+  const isToday = selectedDay === latestDay;
+
   const activeElapsedSeconds = activeBlock ? calculateBlockElapsedSeconds(activeBlock) : 0;
   const activeElapsedFormatted = formatDurationSeconds(activeElapsedSeconds);
 
-  // Compute greeting and formatted date
-  const dateObj = new Date(selectedDay + "T12:00:00");
-  const formattedDate = dateObj.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Deterministic date formatting with Luxon
+  const formattedDate = DateTime.fromISO(selectedDay, { zone: timezone }).isValid
+    ? DateTime.fromISO(selectedDay, { zone: timezone }).toFormat("ccc, LLL d, yyyy")
+    : selectedDay;
 
   const getGreeting = () => {
+    if (!mounted) return "Welcome";
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
     if (hour < 17) return "Good afternoon";
@@ -83,7 +87,7 @@ export function PinnedCommandArea({
       <div className="flex items-center justify-between gap-4 pt-2">
         {/* Left: Greeting & Formatted Date */}
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#ECECE7] tracking-tight">
+          <h1 suppressHydrationWarning className="text-xl sm:text-2xl font-semibold text-[#ECECE7] tracking-tight">
             {getGreeting()}
           </h1>
           <p className="text-xs text-[#8E9296] mt-0.5">{formattedDate}</p>

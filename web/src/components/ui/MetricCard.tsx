@@ -102,7 +102,7 @@ export function MetricCard({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        role={onClickCard ? "button" : "region"}
+        role={onClickCard ? "group" : "region"}
         tabIndex={onClickCard ? 0 : undefined}
         aria-label={`${title} metric`}
         className={`p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer bg-[#1C1D1F] border border-[#2A2C2E] hover:border-[#3E4145] transition-colors rounded-[10px] select-text relative ${className}`}
