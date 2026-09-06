@@ -105,16 +105,16 @@ export function MetricCard({
         role={onClickCard ? "button" : "region"}
         tabIndex={onClickCard ? 0 : undefined}
         aria-label={`${title} metric`}
-        className={`card-midnight p-4 sm:p-5 flex flex-col justify-between cursor-pointer bg-[#202122] border border-[#3A3D3E] hover:border-[#737978] transition-colors rounded-[10px] select-text relative ${className}`}
+        className={`p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer bg-[#1C1D1F] border border-[#2A2C2E] hover:border-[#3E4145] transition-colors rounded-[10px] select-text relative ${className}`}
       >
         {/* Top Label Row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#C1C5C1]">
+            <span className="text-xs text-[#8E9296] font-medium">
               {title}
             </span>
 
-            {/* Accessible Info Action Button (Single tap/click, >=44px hit area per §4.1) */}
+            {/* Accessible Info Action Button */}
             {definition && (
               <button
                 type="button"
@@ -128,11 +128,11 @@ export function MetricCard({
                     setShowHelp(true);
                   }
                 }}
-                className="w-11 h-11 -m-3 flex items-center justify-center rounded-full text-[#A1A9A5] hover:text-[#DDB66D] transition-colors focus:outline-none focus:ring-1 focus:ring-[#DDB66D]"
+                className="w-4 h-4 flex items-center justify-center rounded-full text-[#6E737A] hover:text-[#DDB66D] transition-colors focus:outline-none"
                 aria-label={definition.accessibleLabel}
                 title={definition.accessibleLabel}
               >
-                <HelpCircle className="w-3.5 h-3.5 pointer-events-none" />
+                <HelpCircle className="w-3 h-3 pointer-events-none" />
               </button>
             )}
           </div>
@@ -141,12 +141,12 @@ export function MetricCard({
         </div>
 
         {/* Value Row */}
-        <div className="my-1.5 sm:my-2">
-          <div className="text-3xl sm:text-4xl font-mono font-medium text-[#ECECE7] tracking-tight">
+        <div className="my-1">
+          <div className="text-2xl sm:text-[28px] font-semibold text-[#ECECE7] tracking-tight">
             {value}
           </div>
           {subtitle && (
-            <div className="text-[11px] text-[#A1A9A5] mt-0.5 leading-snug">
+            <div className="text-[11px] text-[#8E9296] mt-0.5 leading-snug">
               {subtitle}
             </div>
           )}

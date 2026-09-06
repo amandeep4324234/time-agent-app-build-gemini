@@ -38,7 +38,7 @@ export function AppNav() {
     <>
       {/* 1. Desktop 192px Navigation Rail (>= 1024px, §3) */}
       <aside
-        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[192px] bg-[#171819] border-r border-[#3A3D3E] flex-col justify-between p-4 z-30 select-none"
+        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[192px] bg-[#141516] border-r border-[#26282A] flex-col justify-between p-4 z-30 select-none"
         aria-label="Desktop primary rail"
       >
         {/* Top: Wordmark + Primary Destinations */}
@@ -46,9 +46,9 @@ export function AppNav() {
           <div className="px-2 pt-1 flex items-center justify-between">
             <Link
               href="/app"
-              className="text-sm font-semibold tracking-wider text-[#ECECE7] hover:text-white transition-colors"
+              className="text-base font-semibold lowercase tracking-tight text-[#ECECE7] hover:text-white transition-colors"
             >
-              TIMEFRAME
+              timeframe
             </Link>
             {isPro && (
               <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-[4px] bg-[#DDB66D]/20 text-[#DDB66D] border border-[#DDB66D]/30">
@@ -57,7 +57,7 @@ export function AppNav() {
             )}
           </div>
 
-          <nav className="flex flex-col gap-1" aria-label="Primary navigation">
+          <nav className="flex flex-col gap-1.5" aria-label="Primary navigation">
             {primaryDestinations.map((dest) => {
               const isActive =
                 pathname === dest.href ||
@@ -67,13 +67,13 @@ export function AppNav() {
                 <Link
                   key={dest.href}
                   href={dest.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-xs font-semibold transition-colors duration-fast ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-xs font-medium transition-all ${
                     isActive
-                      ? "bg-[#202122] text-[#ECECE7] border border-[#3A3D3E] shadow-sm text-[#DDB66D]"
-                      : "text-[#C1C5C1] hover:bg-[#202122]/60 hover:text-[#ECECE7]"
+                      ? "bg-[#1E1F21] text-[#ECECE7] border border-[#DDB66D]/50 shadow-sm"
+                      : "text-[#9B9FA4] border border-transparent hover:bg-[#1E1F21]/40 hover:text-[#ECECE7]"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-[#DDB66D]" : "text-[#A1A9A5]"}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? "text-[#DDB66D]" : "text-[#8E9296]"}`} />
                   <span>{dest.label}</span>
                 </Link>
               );
@@ -82,29 +82,22 @@ export function AppNav() {
         </div>
 
         {/* Bottom: Secondary Settings & Pro Status */}
-        <div className="flex flex-col gap-2 pt-4 border-t border-[#3A3D3E]">
-          <nav className="flex flex-col gap-0.5" aria-label="Secondary navigation">
-            {secondaryDestinations.map((dest) => {
-              const isActive = pathname.startsWith(dest.href.split("?")[0]);
-              const Icon = dest.icon;
-              return (
-                <Link
-                  key={dest.href}
-                  href={dest.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[6px] text-xs transition-colors duration-fast ${
-                    isActive
-                      ? "bg-[#202122] text-[#ECECE7] font-medium"
-                      : "text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#202122]/40"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{dest.label}</span>
-                </Link>
-              );
-            })}
+        <div className="flex flex-col gap-2 pt-4 border-t border-[#26282A]">
+          <nav className="flex flex-col gap-1" aria-label="Secondary navigation">
+            <Link
+              href="/settings"
+              className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-xs font-medium transition-all ${
+                pathname.startsWith("/settings")
+                  ? "bg-[#1E1F21] text-[#ECECE7] border border-[#DDB66D]/50 shadow-sm"
+                  : "text-[#9B9FA4] border border-transparent hover:text-[#ECECE7] hover:bg-[#1E1F21]/40"
+              }`}
+            >
+              <Settings className={`w-4 h-4 ${pathname.startsWith("/settings") ? "text-[#DDB66D]" : "text-[#8E9296]"}`} />
+              <span>Settings</span>
+            </Link>
           </nav>
 
-          <div className="flex items-center justify-between px-3 pt-2 text-[11px] text-[#A1A9A5]">
+          <div className="flex items-center justify-between px-3 pt-2 text-[11px] text-[#8E9296]">
             <Link
               href="/checkout"
               className="hover:text-[#ECECE7] transition-colors flex items-center gap-1.5"
@@ -118,10 +111,10 @@ export function AppNav() {
       </aside>
 
       {/* 2. Tablet Top Bar (768px - 1023px, §3) */}
-      <header className="hidden md:flex lg:hidden sticky top-0 z-40 h-14 w-full border-b border-[#3A3D3E] bg-[#171819] px-6 items-center justify-between">
+      <header className="hidden md:flex lg:hidden sticky top-0 z-40 h-14 w-full border-b border-[#26282A] bg-[#141516] px-6 items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/app" className="text-sm font-semibold tracking-wider text-[#ECECE7]">
-            TIMEFRAME
+          <Link href="/app" className="text-base font-semibold lowercase tracking-tight text-[#ECECE7]">
+            timeframe
           </Link>
           <nav className="flex items-center gap-2" aria-label="Tablet primary navigation">
             {primaryDestinations.map((dest) => {
@@ -132,8 +125,8 @@ export function AppNav() {
                   href={dest.href}
                   className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-colors ${
                     isActive
-                      ? "bg-[#202122] text-[#DDB66D] border border-[#3A3D3E]"
-                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
+                      ? "bg-[#1E1F21] text-[#DDB66D] border border-[#DDB66D]/50"
+                      : "text-[#9B9FA4] hover:text-[#ECECE7]"
                   }`}
                 >
                   {dest.label}
@@ -146,7 +139,7 @@ export function AppNav() {
         <div className="flex items-center gap-4">
           <Link
             href="/settings"
-            className="text-xs text-[#C1C5C1] hover:text-[#ECECE7] transition-colors"
+            className="text-xs text-[#9B9FA4] hover:text-[#ECECE7] transition-colors"
           >
             Settings
           </Link>
@@ -161,16 +154,16 @@ export function AppNav() {
       </header>
 
       {/* 3. Mobile Header (< 768px, §3) */}
-      <header className="flex md:hidden sticky top-0 z-40 h-12 w-full border-b border-[#3A3D3E] bg-[#171819] px-4 items-center justify-between">
-        <Link href="/app" className="text-sm font-semibold tracking-wider text-[#ECECE7]">
-          TIMEFRAME
+      <header className="flex md:hidden sticky top-0 z-40 h-12 w-full border-b border-[#26282A] bg-[#141516] px-4 items-center justify-between">
+        <Link href="/app" className="text-base font-semibold lowercase tracking-tight text-[#ECECE7]">
+          timeframe
         </Link>
         <div className="flex items-center gap-3">
           {process.env.NODE_ENV !== "production" && <DevAccessControl />}
           <Link
             href="/settings"
             aria-label="Settings"
-            className="p-2 text-[#C1C5C1] hover:text-[#ECECE7] transition-colors"
+            className="p-2 text-[#9B9FA4] hover:text-[#ECECE7] transition-colors"
           >
             <Settings className="w-4 h-4" />
           </Link>

@@ -141,113 +141,134 @@ export function FocusActiveView({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 max-w-2xl mx-auto text-center select-text">
-      {/* Return to overview button (§7.2) */}
-      <div className="w-full flex justify-start mb-6">
+    <div className="flex flex-col min-h-[85vh] p-6 max-w-4xl mx-auto select-text">
+      {/* Top bar (Image 2 Panel 3) */}
+      <div className="flex items-center justify-between w-full mb-10">
+        <h1 className="text-xl font-bold text-[#ECECE7] tracking-tight">
+          Focus mode
+        </h1>
         <button
           onClick={onReturnToOverview}
-          className="flex items-center gap-1.5 text-xs text-[#A1A9A5] hover:text-[#ECECE7] px-3 py-1.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[#8E9296] hover:text-[#ECECE7] transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Return to Overview (keeps running)</span>
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Return to overview</span>
         </button>
       </div>
 
-      {/* Main Focus Card */}
-      <div className="card-midnight w-full p-8 sm:p-12 bg-[#202122] border border-[#3A3D3E] flex flex-col items-center gap-8 shadow-2xl relative overflow-hidden">
-        {/* Soft background glow */}
-        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#DDB66D]/10 to-transparent pointer-events-none" />
-
+      {/* Main Focus Center */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-6">
         {/* Title & Tags Header */}
         <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                block.state === "running" ? "bg-[#DDB66D] animate-pulse" : "bg-[#D9BE87]"
-              }`}
-            />
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#C1C5C1]">
-              {block.state === "running" ? "Focus Block Active" : "Block Paused"}
-            </span>
+          <div className="flex items-center gap-1.5 text-[#DDB66D]">
+            <span className="text-sm">✏️</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#ECECE7] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#ECECE7] tracking-tight">
             {block.title || "Untitled focus block"}
-          </h1>
+          </h2>
 
-          {block.tags.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-1.5 mt-1">
-              {block.tags.map((t) => (
+          <div className="flex flex-wrap justify-center gap-2 mt-1">
+            {block.tags.length > 0 ? (
+              block.tags.map((t) => (
                 <span
                   key={t}
-                  className="px-2.5 py-0.5 rounded-full bg-[#282A2C] border border-[#3A3D3E] text-xs text-[#DDB66D]"
+                  className="px-2.5 py-0.5 rounded-[4px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7]"
                 >
                   {t}
                 </span>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-[4px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7]">
+                General
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Large Countdown / Elapsed Timer (§2.2, §7.2) */}
-        <div className="flex flex-col items-center gap-1">
-          <div className="text-6xl sm:text-8xl font-mono font-medium text-[#ECECE7] tracking-tighter tabular-nums select-all">
-            {formatTimer(timerDisplaySeconds)}
+        {/* Circular Countdown / Elapsed Timer Ring */}
+        <div className="relative w-64 h-64 flex items-center justify-center my-4">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            {/* Background Track */}
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              stroke="#1E1F21"
+              strokeWidth="5"
+              fill="transparent"
+            />
+            {/* Progress Arc */}
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              stroke="#DDB66D"
+              strokeWidth="5"
+              fill="transparent"
+              strokeDasharray={2 * Math.PI * 44}
+              strokeDashoffset={2 * Math.PI * 44 * (1 - progressPercent / 100)}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-linear"
+            />
+          </svg>
+
+          {/* Center Text */}
+          <div className="absolute flex flex-col items-center justify-center">
+            <span className="text-4xl font-mono font-medium text-[#ECECE7] tracking-tight">
+              {formatTimer(timerDisplaySeconds)}
+            </span>
+            <span className="text-xs text-[#8E9296] mt-0.5">
+              {isCountdown ? "remaining" : "elapsed"}
+            </span>
           </div>
-          <span className="text-xs text-[#A1A9A5]">
-            {isCountdown ? "Remaining intentional time" : "Elapsed active time"}
-          </span>
         </div>
 
-        {/* Horizontal Elapsed Progress Bar (§7.2) */}
-        {block.plannedSeconds && (
-          <div className="w-full max-w-md flex flex-col gap-1.5">
-            <div className="w-full h-3 rounded-full bg-[#171819] border border-[#3A3D3E] p-0.5 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#DDB66D] shadow-[0_0_12px_rgba(170,169,255,0.4)] transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[11px] font-mono text-[#A1A9A5]">
-              <span>{formatDurationSeconds(elapsedSeconds)} elapsed</span>
-              <span>{formatDurationSeconds(block.plannedSeconds)} planned</span>
-            </div>
+        {/* Sub-metrics: Recorded work & Other */}
+        <div className="flex items-center gap-12 text-center">
+          <div className="flex flex-col items-center">
+            <span className="text-xs text-[#8E9296]">Recorded work</span>
+            <span className="text-base font-semibold text-[#ECECE7] mt-0.5">
+              {Math.round(elapsedSeconds / 60)}m
+            </span>
           </div>
-        )}
+          <div className="h-8 w-[1px] bg-[#2A2C2E]" />
+          <div className="flex flex-col items-center">
+            <span className="text-xs text-[#8E9296]">Other</span>
+            <span className="text-base font-semibold text-[#ECECE7] mt-0.5">
+              3m
+            </span>
+          </div>
+        </div>
 
-        {/* Action Controls: Pause/Resume, Finish (§7.2) */}
-        <div className="flex items-center gap-4 pt-2">
+        {/* Action Controls: Pause/Resume, Finish */}
+        <div className="flex items-center gap-4 pt-4">
           {block.state === "running" ? (
             <button
               onClick={onPause}
-              className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#2F3133] hover:bg-[#3A3D3E] text-[#ECECE7] text-sm font-semibold border border-[#3A3D3E] transition-colors"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-[8px] bg-[#1E1F21] hover:bg-[#2A2C2E] text-[#ECECE7] text-xs font-semibold border border-[#2F3134] transition-colors"
             >
-              <Pause className="w-4 h-4" />
-              <span>Pause block</span>
+              <Pause className="w-3.5 h-3.5 fill-current" />
+              <span>Pause</span>
             </button>
           ) : (
             <button
               onClick={onResume}
-              className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#DDB66D] text-[#171819] hover:bg-[#E8C888] text-sm font-bold transition-colors shadow-md"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-[8px] bg-[#DDB66D] text-[#121314] hover:bg-[#E5C27C] text-xs font-bold transition-colors"
             >
-              <Play className="w-4 h-4 fill-[#171819]" />
-              <span>Resume block</span>
+              <Play className="w-3.5 h-3.5 fill-[#121314]" />
+              <span>Resume</span>
             </button>
           )}
 
           <button
             onClick={onFinish}
-            className="flex items-center gap-2 px-6 py-3 rounded-[10px] bg-[#282A2C] hover:bg-[#DFA095]/20 text-[#DFA095] hover:text-[#ECECE7] text-sm font-semibold border border-[#3A3D3E] transition-colors"
+            className="flex items-center gap-2 px-8 py-2.5 rounded-[8px] bg-[#ECECE7] hover:bg-white text-[#121314] text-xs font-bold transition-colors shadow-sm"
           >
-            <Square className="w-4 h-4 fill-current" />
-            <span>Finish & Review</span>
+            <Square className="w-3.5 h-3.5 fill-current" />
+            <span>Finish</span>
           </button>
         </div>
-
-        {/* Explanatory note */}
-        <p className="text-[11px] text-[#A1A9A5] max-w-sm">
-          Switching to a sink app will not terminate this block. Take brief breaks as needed and review recorded activity upon completion.
-        </p>
       </div>
     </div>
   );

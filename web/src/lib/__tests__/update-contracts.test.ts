@@ -142,12 +142,16 @@ describe("update.md Section 7 & 11: User Appraisal Contracts", () => {
     id: "sess-1",
     started_at_ms: 100_000,
     ended_at_ms: 300_000, // 200s
-    duration_seconds: 200,
+    seconds: 200,
+    minutes: 3.33,
+    started_at: "2026-09-02T10:00:00.000Z",
+    ended_at: "2026-09-02T10:03:20.000Z",
     label: "github.com",
+    canonical_app: "github.com",
     category: "work",
     device: "computer",
-    source: "chrome",
-    is_fenced: false,
+    source: "chrome_extension",
+    session_kind: "block",
   };
 
   it("§7 & §11: Appraisal changes interpretation but does not change category or union duration", () => {
@@ -179,7 +183,8 @@ describe("update.md Section 7 & 11: User Appraisal Contracts", () => {
       category: "sink",
       started_at_ms: 400_000,
       ended_at_ms: 700_000, // 300s
-      duration_seconds: 300,
+      seconds: 300,
+      minutes: 5,
     };
 
     const corrections: CorrectionEvent[] = [
@@ -240,19 +245,20 @@ describe("update.md Section 4.1 & 9: Metric Registry Contracts", () => {
     for (const id of METRIC_IDS) {
       const def = getMetricDefinition(id);
       expect(def).toBeDefined();
-      expect(def!.stableId).toBe(id);
-      expect(def!.definitionVersion).toBe("1.2");
+      if (!def) continue;
+      expect(def.stableId).toBe(id);
+      expect(def.definitionVersion).toBe("1.2");
 
       // What it means: ideally under 25 words
-      const meaningWords = def!.whatItMeans.trim().split(/\s+/).length;
+      const meaningWords = (def.whatItMeans || "").trim().split(/\s+/).length;
       expect(meaningWords).toBeLessThan(25);
 
       // How we count it: ideally under 30 words
-      const countingWords = def!.howWeCountIt.trim().split(/\s+/).length;
+      const countingWords = (def.howWeCountIt || "").trim().split(/\s+/).length;
       expect(countingWords).toBeLessThan(30);
 
       // Accessible label
-      expect(def!.accessibleLabel).toMatch(/^Explain /);
+      expect(def.accessibleLabel).toMatch(/^Explain /);
     }
   });
 

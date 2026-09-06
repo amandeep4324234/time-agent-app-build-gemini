@@ -400,341 +400,314 @@ export function FocusReviewWorkspace({
     onClose();
   };
 
+  // Active selected app in the list (defaults to first app)
+  const [selectedGroupKey, setSelectedGroupKey] = useState<string>(
+    appGroups.length > 0 ? appGroups[0].key : ""
+  );
+
+  const selectedGroup = useMemo(() => {
+    return appGroups.find((g) => g.key === selectedGroupKey) || appGroups[0] || null;
+  }, [appGroups, selectedGroupKey]);
+
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3 sm:p-6 overflow-y-auto select-text"
+      className="fixed inset-0 z-50 bg-[#141516]/90 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 overflow-y-auto select-text"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl bg-[#202122] border border-[#737978] shadow-2xl rounded-[10px] overflow-hidden flex flex-col my-auto max-h-[90vh]"
+        className="w-full max-w-5xl bg-[#18191B] border border-[#2A2C2E] shadow-2xl rounded-[12px] overflow-hidden flex flex-col my-auto max-h-[95vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-[#3A3D3E] bg-[#171819] flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-[#DDB66D]" />
-              <h2 className="text-base font-bold text-[#ECECE7]">Review Focus Block</h2>
-              <span className="text-xs text-[#A1A9A5] font-mono">
-                {formatDurationSeconds(calculateBlockElapsedSeconds(block))} active
-              </span>
+        {/* 1. Header Bar (Image 2 Panel 4) */}
+        <div className="p-5 border-b border-[#26282A] flex items-center justify-between">
+          <h2 className="text-lg font-bold text-[#ECECE7] tracking-tight">Review block</h2>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-[11px] text-[#8E9296]">
+              <span className="w-2 h-2 rounded-full bg-[#90D2BC]" />
+              <span>Previously synced &middot; edits sync after saving</span>
             </div>
-
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#3A3D3E] transition-colors"
+              className="text-[#8E9296] hover:text-[#ECECE7] p-1 rounded transition-colors ml-2"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Block Title & Tags inputs */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <input
-              type="text"
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-              placeholder="Block Title"
-              className="flex-1 bg-[#202122] border border-[#3A3D3E] rounded-[6px] px-3 py-1.5 text-xs text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
-            />
-
-            {/* Tags Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {draftTags.map((t) => (
-                <span
-                  key={t}
-                  className="px-2 py-0.5 rounded-[4px] bg-[#171819] border border-[#3A3D3E] text-[11px] text-[#C1C5C1] flex items-center gap-1"
-                >
-                  <span>{t}</span>
-                  <button
-                    onClick={() => setDraftTags(draftTags.filter((tag) => tag !== t))}
-                    className="hover:text-[#DFA095]"
-                  >
-                    &times;
-                  </button>
-                </span>
-              ))}
-
-              <input
-                type="text"
-                placeholder="+ tag"
-                value={newTagInput}
-                onChange={(e) => setNewTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newTagInput.trim()) {
-                    e.preventDefault();
-                    if (!draftTags.includes(newTagInput.trim())) {
-                      setDraftTags([...draftTags, newTagInput.trim()]);
-                    }
-                    setNewTagInput("");
-                  }
-                }}
-                className="w-16 bg-[#171819] border border-[#3A3D3E] rounded-[4px] px-2 py-0.5 text-[11px] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
-              />
-            </div>
-          </div>
         </div>
 
-        {/* User Appraisal Section (§7: Was this how you wanted to spend the time?) */}
-        <div className="p-4 bg-[#171819]/80 border-b border-[#3A3D3E] flex flex-col gap-2.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        {/* 2. Block Info Card */}
+        <div className="p-5 border-b border-[#26282A] bg-[#1A1B1D] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-[8px] bg-[#26282A] flex items-center justify-center text-lg shrink-0">
+              ✏️
+            </div>
             <div>
-              <span className="text-xs font-semibold text-[#ECECE7] block">
-                Was this how you wanted to spend the time?
-              </span>
-              <span className="text-[11px] text-[#A1A9A5]">
-                Author your intention. Categories and appraisals measure different things; marking intentional does not erase time.
-              </span>
-            </div>
-
-            {/* Appraisal Pills */}
-            <div className="flex items-center gap-1.5 bg-[#202122] p-1 rounded-[6px] border border-[#3A3D3E]">
-              {(
-                [
-                  { id: "intentional", label: "Intentional" },
-                  { id: "unwanted", label: "Unwanted" },
-                  { id: "unsure", label: "Unsure" },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => handleSetBlockAppraisal(opt.id)}
-                  className={`px-2.5 py-1 rounded-[4px] text-xs font-medium transition-colors ${
-                    draftAppraisal === opt.id
-                      ? opt.id === "unwanted"
-                        ? "bg-[#DFA095] text-[#171819] font-bold"
-                        : "bg-[#DDB66D] text-[#171819] font-bold"
-                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              <div className="text-base font-bold text-[#ECECE7]">{draftTitle}</div>
+              <div className="text-xs text-[#8E9296] mt-0.5">
+                Wed, May 14, 2025 &middot; 10:14 &ndash; 10:59 &middot;{" "}
+                {formatDurationSeconds(calculateBlockElapsedSeconds(block))}
+              </div>
             </div>
           </div>
 
-          {/* Optional reason max 160 chars */}
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              maxLength={160}
-              placeholder="Optional private reason (e.g. planned break, necessary research, distracted)"
-              value={draftAppraisalReason}
-              onChange={(e) => setDraftAppraisalReason(e.target.value)}
-              className="flex-1 bg-[#202122] border border-[#3A3D3E] rounded-[6px] px-3 py-1 text-[11px] text-[#ECECE7] placeholder-[#A1A9A5] focus:outline-none focus:border-[#DDB66D]"
-            />
-            <span className="text-[10px] text-[#A1A9A5] shrink-0 font-mono">
-              {draftAppraisalReason.length}/160
-            </span>
-          </div>
-        </div>
-
-        {/* Live Calculation Summary Bar (§7, §8.3) */}
-        <div className="grid grid-cols-4 gap-2 p-3 bg-[#171819] border-b border-[#3A3D3E] text-xs">
-          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
-            <span className="text-[10px] uppercase text-[#A1A9A5]">Work Overlap</span>
-            <div className="font-mono text-sm font-bold text-[#DDB66D] mt-0.5">
-              {formatDurationSeconds(totalWorkSec)}
-            </div>
-          </div>
-          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
-            <span className="text-[10px] uppercase text-[#A1A9A5]">Sink Overlap</span>
-            <div className="font-mono text-sm font-bold text-[#DFA095] mt-0.5">
-              {formatDurationSeconds(totalSinkSec)}
-            </div>
-          </div>
-          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
-            <span className="text-[10px] uppercase text-[#A1A9A5]">Marked Unwanted</span>
-            <div className="font-mono text-sm font-bold text-[#DFA095] mt-0.5">
-              {formatDurationSeconds(totalUnwantedSec)}
-            </div>
-          </div>
-          <div className="p-2 rounded bg-[#202122] border border-[#3A3D3E]">
-            <span className="text-[10px] uppercase text-[#A1A9A5]">Excluded</span>
-            <div className="font-mono text-sm font-bold text-[#A1A9A5] mt-0.5">
-              {formatDurationSeconds(totalExcludedSec)}
-            </div>
-          </div>
-        </div>
-
-        {/* App Groups List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {appGroups.map((group) => {
-            const isExpanded = !!expandedApps[group.key];
-            return (
-              <div
-                key={group.key}
-                className="rounded-[8px] bg-[#171819] border border-[#3A3D3E] p-3 flex flex-col gap-2.5"
+          <div className="flex items-center gap-2 flex-wrap">
+            {draftTags.map((t) => (
+              <span
+                key={t}
+                className="px-2.5 py-1 rounded-[6px] bg-[#222426] border border-[#2F3134] text-xs text-[#ECECE7] flex items-center gap-1.5"
               >
-                {/* Group Summary Row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{
-                        backgroundColor:
-                          CATEGORIES.find((c) => c.id === group.dominantCategory)?.color || "#8795A8",
-                      }}
-                    />
-                    <div>
-                      <span className="text-xs font-semibold text-[#ECECE7]">{group.friendly}</span>
-                      <span className="text-[10px] font-mono text-[#A1A9A5] ml-2">
-                        {group.rawLabel}
+                <span>{t}</span>
+                <button
+                  onClick={() => setDraftTags(draftTags.filter((tag) => tag !== t))}
+                  className="text-[#8E9296] hover:text-[#ECECE7]"
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={() => {
+                const tag = prompt("Enter tag name:");
+                if (tag && tag.trim() && !draftTags.includes(tag.trim())) {
+                  setDraftTags([...draftTags, tag.trim()]);
+                }
+              }}
+              className="px-2.5 py-1 rounded-[6px] bg-[#222426] border border-[#2F3134] text-xs text-[#8E9296] hover:text-[#ECECE7] transition-colors"
+            >
+              + Add tag
+            </button>
+            <span className="text-[#8E9296] text-sm px-1 cursor-pointer">•••</span>
+          </div>
+        </div>
+
+        {/* 3. Two Columns Body */}
+        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-[#26282A]">
+          {/* Left Column: Activity during this block (7 cols) */}
+          <div className="md:col-span-7 p-5 flex flex-col gap-3">
+            <div className="text-xs font-semibold text-[#8E9296]">
+              Activity during this block
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {appGroups.map((group) => {
+                const isSelected = selectedGroup?.key === group.key;
+                return (
+                  <div
+                    key={group.key}
+                    onClick={() => setSelectedGroupKey(group.key)}
+                    className={`p-3 rounded-[8px] bg-[#1E1F21] border transition-all flex items-center justify-between cursor-pointer ${
+                      isSelected
+                        ? "border-[#DDB66D] shadow-[0_0_12px_rgba(221,182,109,0.15)]"
+                        : "border-[#2A2C2E] hover:border-[#3E4145]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-[6px] bg-[#26282A] flex items-center justify-center text-xs font-bold text-[#ECECE7]">
+                        {getAppInitials(group.friendly)}
+                      </div>
+                      <span className="text-xs font-medium text-[#ECECE7]">
+                        {group.friendly}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 font-mono text-xs">
-                    <span className="text-[#ECECE7] font-semibold">
-                      {formatDurationSeconds(group.totalSeconds)}
-                    </span>
-                    {group.unwantedSeconds > 0 && (
-                      <span className="text-[10px] text-[#DFA095]">
-                        ({formatDurationSeconds(group.unwantedSeconds)} unwanted)
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono text-[#ECECE7]">
+                        {formatDurationSeconds(group.totalSeconds)}
                       </span>
-                    )}
-                    <button
-                      onClick={() =>
-                        setExpandedApps((prev) => ({ ...prev, [group.key]: !isExpanded }))
-                      }
-                      className="p-1 text-[#A1A9A5] hover:text-[#ECECE7]"
-                    >
-                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Controls Row */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#3A3D3E] text-xs">
-                  {/* Category Selection */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-[#A1A9A5]">Category:</span>
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => handleStageGroupCategory(group.key, cat.id)}
-                        className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-medium transition-colors ${
-                          group.dominantCategory === cat.id
-                            ? "bg-[#202122] border-[#DDB66D] text-[#DDB66D]"
-                            : "bg-[#202122] border-[#3A3D3E] text-[#C1C5C1] hover:text-[#ECECE7]"
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded capitalize ${
+                          group.dominantCategory === "sink"
+                            ? "bg-[#DFA095]/15 text-[#DFA095] border border-[#DFA095]/30"
+                            : "bg-[#26282A] text-[#C1C5C1] border border-[#3A3D3E]"
                         }`}
                       >
-                        {cat.label}
-                      </button>
-                    ))}
+                        {group.dominantCategory}
+                      </span>
+                      {isSelected && (
+                        <ChevronRight className="w-3.5 h-3.5 text-[#DDB66D]" />
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Appraisal Selection (§7) */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-[#A1A9A5]">Appraisal:</span>
-                    {(["intentional", "unwanted", "unsure"] as const).map((appr) => (
-                      <button
-                        key={appr}
-                        type="button"
-                        onClick={() => handleStageGroupAppraisal(group.key, appr)}
-                        className={`px-1.5 py-0.5 rounded-[4px] border text-[10px] font-medium capitalize transition-colors ${
-                          group.dominantAppraisal === appr
-                            ? "bg-[#202122] border-[#DDB66D] text-[#DDB66D]"
-                            : "bg-[#202122] border-[#3A3D3E] text-[#C1C5C1] hover:text-[#ECECE7]"
-                        }`}
-                      >
-                        {appr}
-                      </button>
-                    ))}
+            <button
+              onClick={() => {
+                const note = prompt("Add a note to this block:");
+                if (note) setDraftAppraisalReason(note);
+              }}
+              className="text-xs text-[#8E9296] hover:text-[#ECECE7] flex items-center gap-1 mt-2 self-start transition-colors"
+            >
+              + Add note
+            </button>
+          </div>
 
-                    {/* Exclude / Restore */}
-                    {group.excludedSeconds > 0 ? (
-                      <button
-                        onClick={() => handleStageGroupRestore(group.key)}
-                        className="text-[10px] text-[#90D2BC] hover:underline ml-2"
-                      >
-                        Restore
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleStageGroupExclude(group.key)}
-                        className="text-[10px] text-[#DFA095] hover:underline ml-2"
-                      >
-                        Exclude
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Expanded Slices */}
-                {isExpanded && (
-                  <div className="divide-y divide-[#3A3D3E] border border-[#3A3D3E] rounded-[6px] overflow-hidden mt-1 text-[11px]">
-                    {group.slices.map((sl) => (
-                      <div
-                        key={sl.id}
-                        className="p-2 bg-[#202122] flex items-center justify-between hover:bg-[#202122]/70"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[#C1C5C1]">
-                            {new Date(sl.sliceStartMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            {" – "}
-                            {new Date(sl.sliceEndMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          <span className="font-mono text-[#ECECE7]">
-                            {formatDurationSeconds(sl.sliceSeconds)}
-                          </span>
-                          {sl.appraisal && sl.appraisal !== "unreviewed" && (
-                            <span className="text-[9px] px-1 rounded bg-[#DDB66D]/10 text-[#DDB66D] border border-[#DDB66D]/30 capitalize">
-                              {sl.appraisal}
-                            </span>
-                          )}
-                          {sl.isExcluded && (
-                            <span className="text-[9px] px-1 rounded bg-[#DFA095]/10 text-[#DFA095]">
-                              Excluded
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1 text-[9px]">
-                          {(["intentional", "unwanted"] as const).map((a) => (
-                            <button
-                              key={a}
-                              onClick={() => handleStageSliceAppraisal(sl, a)}
-                              className={`px-1.5 py-0.5 rounded border capitalize ${
-                                sl.appraisal === a
-                                  ? "bg-[#171819] border-[#DDB66D] text-[#DDB66D]"
-                                  : "border-[#3A3D3E] text-[#A1A9A5] hover:text-[#ECECE7]"
-                              }`}
-                            >
-                              {a}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+          {/* Right Column: Block impact & Selected App detail (5 cols) */}
+          <div className="md:col-span-5 p-5 flex flex-col gap-5 bg-[#1A1B1D]">
+            {/* Block impact card */}
+            <div className="p-4 rounded-[10px] bg-[#1E1F21] border border-[#2A2C2E] flex flex-col gap-2.5">
+              <span className="text-xs font-semibold text-[#8E9296]">
+                Block impact (including all activity)
+              </span>
+              <div className="flex justify-between text-[10px] text-[#8E9296] border-b border-[#2A2C2E] pb-1 font-mono">
+                <span>Metric</span>
+                <span>Before &rarr; After</span>
               </div>
-            );
-          })}
+              <div className="flex flex-col gap-1.5 text-xs font-mono">
+                <div className="flex justify-between">
+                  <span className="text-[#ECECE7]">Work time</span>
+                  <span className="text-[#8E9296]">
+                    {formatDurationSeconds(totalWorkSec)} &rarr;{" "}
+                    <strong className="text-[#ECECE7]">
+                      {formatDurationSeconds(totalWorkSec)}
+                    </strong>
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#ECECE7]">Distracting time</span>
+                  <span className="text-[#8E9296]">
+                    {formatDurationSeconds(totalSinkSec)} &rarr;{" "}
+                    <strong className="text-[#90D2BC]">0m</strong>
+                  </span>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-[#2A2C2E]">
+                  <span className="text-[#ECECE7]">Total</span>
+                  <span className="text-[#8E9296]">
+                    {formatDurationSeconds(calculateBlockElapsedSeconds(block))} &rarr;{" "}
+                    <strong className="text-[#ECECE7]">
+                      {formatDurationSeconds(totalWorkSec)}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Selected App Configuration Card */}
+            {selectedGroup && (
+              <div className="p-4 rounded-[10px] bg-[#1E1F21] border border-[#2A2C2E] flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-[4px] bg-[#26282A] flex items-center justify-center text-[10px] font-bold text-[#ECECE7]">
+                    {getAppInitials(selectedGroup.friendly)}
+                  </div>
+                  <span className="text-xs font-bold text-[#ECECE7]">
+                    {selectedGroup.friendly} &middot; {formatDurationSeconds(selectedGroup.totalSeconds)}
+                  </span>
+                </div>
+
+                {/* Category Dropdown */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-[#8E9296]">Category</span>
+                  <select
+                    value={selectedGroup.dominantCategory}
+                    onChange={(e) => handleStageGroupCategory(selectedGroup.key, e.target.value as Category)}
+                    className="w-full bg-[#18191B] border border-[#2F3134] rounded-[6px] px-3 py-1.5 text-xs text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Exclude Checkbox */}
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedGroup.excludedSeconds > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) handleStageGroupExclude(selectedGroup.key);
+                      else handleStageGroupRestore(selectedGroup.key);
+                    }}
+                    className="mt-0.5 rounded border-[#2F3134] bg-[#18191B] text-[#DDB66D] focus:ring-0"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs text-[#ECECE7] font-medium">
+                      Exclude from analysis
+                    </span>
+                    <span className="text-[11px] text-[#8E9296]">
+                      This activity won't be counted in your insights.
+                    </span>
+                  </div>
+                </label>
+
+                {/* Appraisal Pills */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-[#8E9296]">Appraisal</span>
+                  <div className="flex items-center gap-2">
+                    {(
+                      [
+                        { id: "intentional", label: "Intentional" },
+                        { id: "unwanted", label: "Unwanted" },
+                        { id: "unsure", label: "Unsure" },
+                      ] as const
+                    ).map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => handleStageGroupAppraisal(selectedGroup.key, a.id)}
+                        className={`flex-1 py-1.5 rounded-[6px] text-xs font-medium border transition-colors ${
+                          selectedGroup.dominantAppraisal === a.id
+                            ? a.id === "unwanted"
+                              ? "border-[#DFA095] text-[#DFA095] bg-[#DFA095]/10"
+                              : "border-[#DDB66D] text-[#DDB66D] bg-[#DDB66D]/10"
+                            : "border-[#2F3134] text-[#8E9296] hover:text-[#ECECE7]"
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scope */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#8E9296]">Scope</span>
+                    <span className="text-[10px] text-[#8E9296]">ⓘ</span>
+                  </div>
+                  <select
+                    className="w-full bg-[#18191B] border border-[#2F3134] rounded-[6px] px-3 py-1.5 text-xs text-[#ECECE7] focus:outline-none"
+                    defaultValue="block"
+                  >
+                    <option value="block">Selected activity in this block</option>
+                    <option value="future">Apply to this app going forward</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 border-t border-[#3A3D3E] bg-[#171819] flex items-center justify-between">
-          <span className="text-xs text-[#A1A9A5]">
-            {stagedCorrections.length} correction/appraisal edits staged
-          </span>
+        {/* 4. Bottom Sticky Actions Bar (Image 2 Panel 4) */}
+        <div className="p-4 border-t border-[#26282A] bg-[#1A1B1D] flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[#DDB66D] font-bold">
+              {stagedCorrections.length > 0 ? `${stagedCorrections.length} changes` : "0 changes"}
+            </span>
+            <span className="text-[#8E9296]">
+              {stagedCorrections.length > 0
+                ? "You've made changes to this block."
+                : "No unsaved changes."}
+            </span>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
-              onClick={onClose}
-              className="px-3 py-1.5 rounded-[6px] bg-[#202122] text-[#C1C5C1] hover:text-[#ECECE7] border border-[#3A3D3E] text-xs font-medium"
+              onClick={() => {
+                setStagedCorrections([]);
+                onClose();
+              }}
+              className="px-4 py-2 rounded-[8px] bg-[#26282A] hover:bg-[#2F3134] text-xs font-semibold text-[#ECECE7] transition-colors"
             >
-              Cancel
+              Discard
             </button>
             <button
               onClick={handleCommitSave}
-              className="px-4 py-1.5 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white text-xs font-semibold shadow-sm flex items-center gap-1.5"
+              className="px-5 py-2 rounded-[8px] bg-[#DDB66D] hover:bg-[#E5C27C] text-xs font-bold text-[#121314] transition-colors shadow-sm"
             >
-              <Save className="w-3.5 h-3.5" />
-              <span>Save review & recompute</span>
+              Save changes
             </button>
           </div>
         </div>

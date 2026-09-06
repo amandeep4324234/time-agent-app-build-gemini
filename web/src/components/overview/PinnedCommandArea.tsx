@@ -61,57 +61,66 @@ export function PinnedCommandArea({
   const activeElapsedSeconds = activeBlock ? calculateBlockElapsedSeconds(activeBlock) : 0;
   const activeElapsedFormatted = formatDurationSeconds(activeElapsedSeconds);
 
+  // Compute greeting and formatted date
+  const dateObj = new Date(selectedDay + "T12:00:00");
+  const formattedDate = dateObj.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
-    <div className="sticky top-0 z-20 bg-[#171819] border-b border-[#3A3D3E] pb-3 -mx-4 sm:-mx-6 xl:-mx-8 px-4 sm:px-6 xl:px-8 flex flex-col gap-2.5">
-      {/* 1. Header Bar (~56px) */}
-      <div className="flex items-center justify-between gap-4 h-12 pt-1">
-        {/* Date Controls */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-[#202122] rounded-[8px] border border-[#3A3D3E] p-0.5">
-            <button
-              onClick={handlePrev}
-              disabled={!canGoPrev}
-              className="p-1.5 rounded-[6px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#3A3D3E] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-              aria-label="Previous day"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={!canGoNext}
-              className="p-1.5 rounded-[6px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#3A3D3E] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-              aria-label="Next day"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-base sm:text-lg font-semibold text-[#ECECE7] tracking-tight">
-              {selectedDay}
-            </span>
-            <span className="hidden sm:inline text-xs text-[#A1A9A5]">
-              {timezone.replace("_", " ")}
-            </span>
-          </div>
-
-          {!isToday && (
-            <button
-              onClick={onBackToToday}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-[6px] bg-[#202122] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#3A3D3E] border border-[#3A3D3E] transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Jump to Today</span>
-            </button>
-          )}
+    <div className="sticky top-0 z-20 bg-[#141516] border-b border-[#26282A] pb-3 -mx-4 sm:-mx-6 xl:-mx-8 px-4 sm:px-6 xl:px-8 flex flex-col gap-3">
+      {/* 1. Top Header Row: Greeting on left, Date Nav in center, Start Focus on right */}
+      <div className="flex items-center justify-between gap-4 pt-2">
+        {/* Left: Greeting & Formatted Date */}
+        <div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-[#ECECE7] tracking-tight">
+            {getGreeting()}
+          </h1>
+          <p className="text-xs text-[#8E9296] mt-0.5">{formattedDate}</p>
         </div>
 
-        {/* Primary Action Button: "Start focus" or "Return to block · {elapsed}" (§4.2: off-white dark text) */}
+        {/* Center: Compact Date Pill */}
+        <div className="flex items-center bg-[#1E1F21] rounded-[8px] border border-[#2F3134] px-1 py-0.5">
+          <button
+            onClick={handlePrev}
+            disabled={!canGoPrev}
+            className="p-1 rounded-[4px] text-[#8E9296] hover:text-[#ECECE7] hover:bg-[#2A2C2E] disabled:opacity-30 transition-colors"
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={onBackToToday}
+            className="px-3 py-1 text-xs font-medium text-[#ECECE7] hover:text-white transition-colors"
+          >
+            {isToday ? "Today" : selectedDay}
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={!canGoNext}
+            className="p-1 rounded-[4px] text-[#8E9296] hover:text-[#ECECE7] hover:bg-[#2A2C2E] disabled:opacity-30 transition-colors"
+            aria-label="Next day"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Right: + Start Focus amber button */}
         <div>
           {activeBlock ? (
             <button
               onClick={onOpenActiveBlock}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-[6px] bg-[#202122] border border-[#DDB66D] text-[#DDB66D] hover:bg-[#DDB66D]/10 transition-all text-xs sm:text-sm font-semibold shadow-[0_0_12px_rgba(221,182,109,0.2)]"
+              className="flex items-center gap-2 px-4 py-2 rounded-[8px] bg-[#1E1F21] border border-[#DDB66D] text-[#DDB66D] hover:bg-[#DDB66D]/10 transition-all text-xs sm:text-sm font-semibold shadow-[0_0_12px_rgba(221,182,109,0.2)]"
             >
               <span className="w-2 h-2 rounded-full bg-[#DDB66D] animate-ping" />
               <span>Return to block · {activeElapsedFormatted}</span>
@@ -119,25 +128,53 @@ export function PinnedCommandArea({
           ) : (
             <button
               onClick={onStartFocus}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white transition-colors text-xs sm:text-sm font-semibold shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] bg-[#DDB66D] text-[#121314] hover:bg-[#E5C27C] transition-colors text-xs sm:text-sm font-semibold shadow-sm"
             >
-              <Play className="w-3.5 h-3.5 fill-[#171819]" />
+              <span className="text-base font-bold leading-none">+</span>
               <span>Start focus</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* 2. Pinned AI Observation Card (§3.1, §4) */}
-      {isAiVisible && (
-        <ReflectionCard
-          reflection={reflection}
-          onSelectTone={onSelectAiTone}
-          onRefresh={onRefreshReflection}
-          onDismiss={onDismissReflection}
-          onTurnOff={onTurnOffAi}
-          onOpenEvidence={onOpenEvidence}
-        />
+      {/* 2. Observation Banner (Image 4 Panel 1 style) */}
+      {isAiVisible && reflection && (
+        <div className="w-full bg-[#1A1B1D] border border-[#2B2D30] rounded-[8px] px-3.5 py-2.5 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Clock className="w-4 h-4 text-[#8E9296] shrink-0" />
+            <span className="text-[#ECECE7] truncate">
+              {(reflection as any).headline || reflection.text}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            {onOpenEvidence && (
+              <button
+                onClick={() =>
+                  onOpenEvidence(
+                    (reflection as any).evidence || {
+                      headline: (reflection as any).headline || reflection.text,
+                      explanation: reflection.evidenceExplanation,
+                      sampleCount: reflection.facts?.length || 1,
+                      timezone: "Asia/Kolkata",
+                      periodLabel: "Today",
+                    }
+                  )
+                }
+                className="text-xs text-[#DDB66D] hover:underline font-medium"
+              >
+                Why this?
+              </button>
+            )}
+            <button
+              onClick={onDismissReflection}
+              className="text-[#8E9296] hover:text-[#ECECE7] text-xs"
+              title="Dismiss"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

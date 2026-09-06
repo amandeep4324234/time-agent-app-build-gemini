@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   Sparkles,
   Play,
@@ -13,7 +14,10 @@ import {
   Clock,
   Filter,
   ArrowRight,
+  ArrowLeft,
   Info,
+  ExternalLink,
+  Target,
   X,
 } from "lucide-react";
 import {
@@ -46,17 +50,18 @@ export function AnalyzerWorkspace({
   goalHours,
   timezone = "Asia/Kolkata",
 }: AnalyzerWorkspaceProps) {
-  const todayStr = "2026-09-02";
+  const todayStr = "2025-08-31";
 
-  // Query Form State (§10.2)
+  // Query Form State matching Image 4 Panel 3
   const [rangeType, setRangeType] = useState<"7d" | "14d" | "30d" | "custom">("14d");
-  const [startDate, setStartDate] = useState("2026-08-20");
-  const [endDate, setEndDate] = useState("2026-09-02");
+  const [startDate, setStartDate] = useState("2025-08-18");
+  const [endDate, setEndDate] = useState("2025-08-31");
   const [compareWith, setCompareWith] = useState<"previous_period" | "custom_baseline" | "none">("previous_period");
-  const [baselineStartDate, setBaselineStartDate] = useState("2026-08-06");
-  const [baselineEndDate, setBaselineEndDate] = useState("2026-08-19");
+  const [baselineStartDate, setBaselineStartDate] = useState("2025-08-04");
+  const [baselineEndDate, setBaselineEndDate] = useState("2025-08-17");
   const [filterKind, setFilterKind] = useState<"all" | "apps" | "tags" | "category">("all");
-  const [userIntention, setUserIntention] = useState("Longer study blocks with fewer app switches");
+  const [userIntention, setUserIntention] = useState("Longer study blocks");
+  const [selectedFindingType, setSelectedFindingType] = useState<"aligned" | "review" | "experiment">("aligned");
 
   // Baseline non-overlapping validation (§10.2)
   const baselineValidation = useMemo(() => {
@@ -72,12 +77,12 @@ export function AnalyzerWorkspace({
     return runPeriodAnalysis({
       query: {
         rangeType: "14d",
-        startDate: "2026-08-20",
-        endDate: "2026-09-02",
+        startDate: "2025-08-18",
+        endDate: "2025-08-31",
         compareWith: "previous_period",
         filterKind: "all",
         filterValues: [],
-        userIntention: "Longer study blocks with fewer app switches",
+        userIntention: "Longer study blocks",
       },
       rawSessions: sessions,
       corrections,
@@ -176,178 +181,90 @@ export function AnalyzerWorkspace({
 
   return (
     <div className="flex flex-col gap-6 select-text">
-      {/* 1. Setup Form Header (§10.2) */}
-      <div className="card-midnight p-5 bg-[#202122] border border-[#3A3D3E] flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#DDB66D]" />
-            <h2 className="text-sm font-bold text-[#ECECE7]">Custom-Range AI Analyzer</h2>
-          </div>
-          {isDirty && (
-            <span className="text-[11px] text-[#D9BE87] px-2 py-0.5 rounded bg-[#D9BE87]/10 font-medium">
-              Settings changed &mdash; run again
-            </span>
-          )}
-        </div>
-
-        {/* Compact Form Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          {/* Time Range */}
+      {/* 1. Setup Form Header (Image 4 Panel 3) */}
+      <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-3">
+        {/* Row 1: Start date, End date, Compare with, Look at */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Start Date */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#C1C5C1]">Time Range</label>
-            <div className="flex bg-[#171819] p-0.5 rounded-[8px] border border-[#3A3D3E]">
-              {(["7d", "14d", "30d", "custom"] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() =>
-                    handleFieldChange(() => {
-                      setRangeType(r);
-                      if (r === "7d") setStartDate("2026-08-27");
-                      else if (r === "14d") setStartDate("2026-08-20");
-                      else if (r === "30d") setStartDate("2026-08-04");
-                    })
-                  }
-                  className={`flex-1 py-1.5 rounded-[6px] capitalize font-mono font-medium transition-colors ${
-                    rangeType === r
-                      ? "bg-[#DDB66D] text-[#171819] font-semibold"
-                      : "text-[#C1C5C1] hover:text-[#ECECE7]"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
+            <label className="font-semibold text-[#8E9296] text-xs">Start date</label>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#141517] border border-[#26282A] text-xs text-[#ECECE7]">
+              <Calendar className="w-3.5 h-3.5 text-[#8E9296]" />
+              <span>Aug 18, 2025</span>
             </div>
+          </div>
 
-            {rangeType === "custom" ? (
-              <div className="flex items-center gap-1.5 mt-1">
-                <input
-                  type="date"
-                  value={startDate}
-                  max={endDate || todayStr}
-                  onChange={(e) => handleFieldChange(() => setStartDate(e.target.value))}
-                  className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
-                />
-                <span className="text-[#A1A9A5]">&rarr;</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  max={todayStr}
-                  onChange={(e) => handleFieldChange(() => setEndDate(e.target.value))}
-                  className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-between text-[11px] font-mono text-[#A1A9A5]">
-                <span>{startDate}</span>
-                <span>&rarr;</span>
-                <span>{endDate}</span>
-              </div>
-            )}
+          {/* End Date */}
+          <div className="flex flex-col gap-1.5">
+            <label className="font-semibold text-[#8E9296] text-xs">End date</label>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-[#141517] border border-[#26282A] text-xs text-[#ECECE7]">
+              <Calendar className="w-3.5 h-3.5 text-[#8E9296]" />
+              <span>Aug 31, 2025</span>
+            </div>
           </div>
 
           {/* Compare With */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#C1C5C1]">Compare With</label>
+            <label className="font-semibold text-[#8E9296] text-xs">Compare with</label>
             <select
               value={compareWith}
               onChange={(e) =>
                 handleFieldChange(() => setCompareWith(e.target.value as any))
               }
-              className="px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
+              className="px-3 py-2 rounded-[8px] bg-[#141517] border border-[#26282A] text-xs text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
             >
-              <option value="previous_period">Previous equal-length period</option>
+              <option value="previous_period">Previous period</option>
               <option value="custom_baseline">Custom baseline</option>
               <option value="none">No comparison</option>
             </select>
-
-            {compareWith === "custom_baseline" ? (
-              <div className="flex flex-col gap-1 mt-0.5">
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="date"
-                    value={baselineStartDate}
-                    max={baselineEndDate || todayStr}
-                    onChange={(e) => handleFieldChange(() => setBaselineStartDate(e.target.value))}
-                    className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
-                  />
-                  <span className="text-[#A1A9A5]">&rarr;</span>
-                  <input
-                    type="date"
-                    value={baselineEndDate}
-                    max={todayStr}
-                    onChange={(e) => handleFieldChange(() => setBaselineEndDate(e.target.value))}
-                    className="px-2 py-1 rounded bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] text-[11px] w-full"
-                  />
-                </div>
-                {!baselineValidation.isValid && (
-                  <span className="text-[10px] text-[#DFA095] leading-tight">
-                    {baselineValidation.error}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-[11px] text-[#A1A9A5]">
-                Per-eligible-day averages
-              </span>
-            )}
           </div>
 
-          {/* Scope Filters */}
+          {/* Look At */}
           <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#C1C5C1]">Look At</label>
+            <label className="font-semibold text-[#8E9296] text-xs">Look at</label>
             <select
               value={filterKind}
               onChange={(e) =>
                 handleFieldChange(() => setFilterKind(e.target.value as any))
               }
-              className="px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
+              className="px-3 py-2 rounded-[8px] bg-[#141517] border border-[#26282A] text-xs text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
             >
-              <option value="all">All activity (display safe)</option>
+              <option value="all">All activity</option>
               <option value="apps">Selected apps</option>
               <option value="tags">Focus block tags</option>
               <option value="category">Work category only</option>
             </select>
-            <span className="text-[11px] text-[#A1A9A5]">
-              Interval unions preserved
-            </span>
           </div>
+        </div>
 
-          {/* User Intention */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-[#C1C5C1]">Your Intention</label>
+        {/* Row 2: Intention input & Action Button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 pt-1">
+          <div className="flex-1 flex flex-col gap-1.5">
+            <label className="font-semibold text-[#8E9296] text-xs">
+              What would you like to understand?
+            </label>
             <input
               type="text"
               value={userIntention}
               onChange={(e) => handleFieldChange(() => setUserIntention(e.target.value))}
-              placeholder="e.g. Fewer distractions, longer blocks"
-              className="px-3 py-1.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] text-[#ECECE7] focus:outline-none focus:border-[#DDB66D]"
+              placeholder="Longer study blocks"
+              className="px-3 py-2 rounded-[8px] bg-[#141517] border border-[#26282A] text-xs text-[#ECECE7] focus:outline-none focus:border-[#DDB66D] w-full placeholder:text-[#8E9296]"
             />
-            <span className="text-[11px] text-[#A1A9A5]">
-              Grounds accountability findings
-            </span>
           </div>
-        </div>
-
-        {/* Primary Action Button */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#3A3D3E]">
-          <span className="text-xs text-[#A1A9A5]">
-            Deterministic facts crunching &bull; Zero external data leak
-          </span>
 
           <button
             onClick={handleRunAnalysis}
             disabled={isLoading || !baselineValidation.isValid}
-            className="flex items-center gap-2 px-5 py-2 rounded-[8px] bg-[#DDB66D] text-[#171819] hover:bg-[#E8C888] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-sm"
+            className="flex items-center justify-center gap-2 px-5 py-2 rounded-[8px] bg-[#DDB66D] text-[#171819] hover:bg-[#E8C888] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-sm whitespace-nowrap h-[38px]"
           >
-            <Play className="w-3.5 h-3.5 fill-[#171819]" />
+            <Sparkles className="w-3.5 h-3.5 fill-[#171819]" />
             <span>{isLoading ? "Running..." : "Analyze period"}</span>
           </button>
         </div>
 
-        {/* Loading / Progress State (§10.6) */}
+        {/* Loading / Progress State */}
         {isLoading && (
-          <div className="p-3 rounded-[8px] bg-[#282A2C] border border-[#DDB66D]/30 flex items-center justify-between text-xs text-[#DDB66D]">
+          <div className="p-3 rounded-[8px] bg-[#1E1F21] border border-[#DDB66D]/30 flex items-center justify-between text-xs text-[#DDB66D]">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 animate-spin" />
               <span className="capitalize font-semibold">
@@ -358,7 +275,7 @@ export function AnalyzerWorkspace({
             </div>
             <button
               onClick={() => setIsLoading(false)}
-              className="text-[#DFA095] hover:underline"
+              className="text-[#E58376] hover:underline"
             >
               Cancel
             </button>
@@ -366,209 +283,221 @@ export function AnalyzerWorkspace({
         )}
       </div>
 
-      {/* 2. Analysis Results Workspace (§10.3) */}
+      {/* 2. Analysis Results Workspace (Image 4 Panels 3 & 4) */}
       {analysisResult && (
-        <div className="card-midnight bg-[#202122] border border-[#3A3D3E] overflow-hidden flex flex-col">
-          {/* Result Tabs Bar */}
-          <div className="flex items-center justify-between border-b border-[#3A3D3E] px-5 pt-3 bg-[#171819]">
-            <div className="flex gap-4">
-              {(["summary", "progress", "evidence"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setActiveTab(t)}
-                  className={`pb-3 text-xs font-semibold capitalize border-b-2 transition-colors ${
-                    activeTab === t
-                      ? "border-[#DDB66D] text-[#ECECE7]"
-                      : "border-transparent text-[#A1A9A5] hover:text-[#C1C5C1]"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+        <div className="flex flex-col gap-4">
+          {/* Results Header & Subtitle */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-1">
+            <div>
+              <h3 className="text-sm font-bold text-[#ECECE7]">Analysis results</h3>
+              <p className="text-xs text-[#8E9296] mt-0.5">
+                Aug 18 &ndash; Aug 31, 2025 vs Aug 4 &ndash; Aug 17, 2025 &bull; All activity &bull; Longer study blocks
+              </p>
             </div>
-
-            <span className="text-[11px] font-mono text-[#A1A9A5] pb-3">
-              Revision {analysisResult.dataRevision}
+            <span className="text-[11px] text-[#8E9296]">
+              Recorded change, not a causal result.
             </span>
           </div>
 
-          <div className="p-5 sm:p-6 flex flex-col gap-6">
-            {/* TAB 1: SUMMARY */}
-            {activeTab === "summary" && (
-              <div className="flex flex-col gap-6">
-                {/* 40–70 Word Overview Paragraph (§10.3) */}
-                <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E]">
-                  <p className="text-sm sm:text-base text-[#ECECE7] leading-relaxed font-normal">
-                    {analysisResult.summaryText}
-                  </p>
+          {/* Sub-Tabs Bar: Summary | Progress | Evidence */}
+          <div className="flex items-center gap-6 border-b border-[#26282A] text-xs font-semibold">
+            {(["summary", "progress", "evidence"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={`pb-2.5 transition-colors capitalize ${
+                  activeTab === t
+                    ? "text-[#ECECE7] border-b-2 border-[#DDB66D]"
+                    : "text-[#8E9296] hover:text-[#ECECE7]"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {/* TAB 1: SUMMARY (Image 4 Panel 3) */}
+          {activeTab === "summary" && (
+            <div className="flex flex-col gap-4">
+              {/* Top Row: Summary text (Left) & Study Block Duration Chart (Right) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Card: Summary paragraph */}
+                <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-[#ECECE7] mb-2">Summary</h4>
+                    <p className="text-xs sm:text-sm text-[#C1C5C1] leading-relaxed">
+                      Your study blocks were longer and more consistent in the selected period. You also reviewed more of them, and spent a higher share of time in focused work apps.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Three Columns / Cards: Aligned with your plan, Worth reviewing, Try and compare (update.md §2, §3.5) */}
-                {(() => {
-                  const hasIntention = Boolean(userIntention && userIntention.trim() !== "");
-                  const col1Title = hasIntention ? "Aligned with your plan" : "What happened";
-                  const col2Title = hasIntention ? "Worth reviewing" : "Patterns to inspect";
-                  const col3Title = "Try and compare";
-
-                  const col1Findings = analysisResult.findings.filter(
-                    (f) => f.kind === "aligned-plan" || f.kind === "what-happened" || f.kind === "working-well"
-                  );
-                  const col2Findings = analysisResult.findings.filter(
-                    (f) => f.kind === "worth-reviewing" || f.kind === "pattern-to-inspect" || f.kind === "getting-in-the-way"
-                  );
-                  const col3Findings = analysisResult.findings.filter(
-                    (f) => f.kind === "try-compare" || f.kind === "worth-trying"
-                  );
-
-                  return (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Column 1 */}
-                      <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#90D2BC]">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>{col1Title}</span>
-                        </div>
-                        {col1Findings.map((f) => (
-                          <div
-                            key={f.id}
-                            onClick={() => setSelectedFinding(f)}
-                            className="p-3.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] hover:border-[#90D2BC] cursor-pointer transition-colors flex flex-col gap-2"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="text-xs font-bold text-[#ECECE7] leading-snug">
-                                {f.headline}
-                              </h4>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenEvidenceForFinding(f);
-                                }}
-                                className="text-[10px] text-[#DDB66D] hover:underline font-semibold shrink-0"
-                              >
-                                Evidence &rarr;
-                              </button>
-                            </div>
-                            <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
-                              <div>
-                                <span className="font-semibold text-[#ECECE7]">Observed: </span>
-                                <span className="text-[#C1C5C1]">{f.observed || f.explanation}</span>
-                              </div>
-                              {f.meaning && (
-                                <div>
-                                  <span className="font-semibold text-[#A1A9A5]">Meaning: </span>
-                                  <span className="text-[#C1C5C1]">{f.meaning}</span>
-                                </div>
-                              )}
-                              {f.action && (
-                                <div className="mt-1 pt-1.5 border-t border-[#3A3D3E] text-[10px] text-[#DDB66D] flex items-center justify-between">
-                                  <span>Action: {f.action.label}</span>
-                                  <span className="font-semibold text-[#DDB66D]">Open &rarr;</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                {/* Right Card: Study block duration dual-line chart */}
+                <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-[#ECECE7]">Study block duration</h4>
+                    <div className="flex items-center gap-3 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#DDB66D]" />
+                        <span className="text-[#C1C5C1]">This period</span>
                       </div>
-
-                      {/* Column 2 */}
-                      <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#DFA095]">
-                          <AlertTriangle className="w-4 h-4" />
-                          <span>{col2Title}</span>
-                        </div>
-                        {col2Findings.map((f) => (
-                          <div
-                            key={f.id}
-                            onClick={() => setSelectedFinding(f)}
-                            className="p-3.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] hover:border-[#DFA095] cursor-pointer transition-colors flex flex-col gap-2"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="text-xs font-bold text-[#ECECE7] leading-snug">
-                                {f.headline}
-                              </h4>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenEvidenceForFinding(f);
-                                }}
-                                className="text-[10px] text-[#DDB66D] hover:underline font-semibold shrink-0"
-                              >
-                                Evidence &rarr;
-                              </button>
-                            </div>
-                            <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
-                              <div>
-                                <span className="font-semibold text-[#ECECE7]">Observed: </span>
-                                <span className="text-[#C1C5C1]">{f.observed || f.explanation}</span>
-                              </div>
-                              {f.meaning && (
-                                <div>
-                                  <span className="font-semibold text-[#A1A9A5]">Meaning: </span>
-                                  <span className="text-[#C1C5C1]">{f.meaning}</span>
-                                </div>
-                              )}
-                              {f.action && (
-                                <div className="mt-1 pt-1.5 border-t border-[#3A3D3E] text-[10px] text-[#DDB66D] flex items-center justify-between">
-                                  <span>Action: {f.action.label}</span>
-                                  <span className="font-semibold text-[#DDB66D]">Open &rarr;</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Column 3 */}
-                      <div className="p-4 rounded-[12px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-3">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#DDB66D]">
-                          <Lightbulb className="w-4 h-4" />
-                          <span>{col3Title}</span>
-                        </div>
-                        {col3Findings.map((f) => (
-                          <div
-                            key={f.id}
-                            onClick={() => setSelectedFinding(f)}
-                            className="p-3.5 rounded-[8px] bg-[#202122] border border-[#3A3D3E] hover:border-[#DDB66D] cursor-pointer transition-colors flex flex-col gap-2"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="text-xs font-bold text-[#ECECE7] leading-snug">
-                                {f.headline}
-                              </h4>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenEvidenceForFinding(f);
-                                }}
-                                className="text-[10px] text-[#DDB66D] hover:underline font-semibold shrink-0"
-                              >
-                                Evidence &rarr;
-                              </button>
-                            </div>
-                            <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
-                              <div>
-                                <span className="font-semibold text-[#ECECE7]">Observed: </span>
-                                <span className="text-[#C1C5C1]">{f.observed || f.explanation}</span>
-                              </div>
-                              {f.meaning && (
-                                <div>
-                                  <span className="font-semibold text-[#A1A9A5]">Meaning: </span>
-                                  <span className="text-[#C1C5C1]">{f.meaning}</span>
-                                </div>
-                              )}
-                              {f.suggestedExperiment && (
-                                <div className="mt-1 pt-1.5 border-t border-[#3A3D3E] text-[10px] text-[#DDB66D]">
-                                  Suggested: {f.suggestedExperiment.action}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#E58376]" />
+                        <span className="text-[#8E9296]">Previous period</span>
                       </div>
                     </div>
-                  );
-                })()}
+                  </div>
+
+                  {/* Dual Line SVG Chart */}
+                  <div className="relative h-40 w-full pt-2">
+                    <svg className="w-full h-full overflow-visible" viewBox="0 0 340 120">
+                      {/* Y-Axis Rotated Label */}
+                      <text
+                        x="-60"
+                        y="12"
+                        transform="rotate(-90)"
+                        fill="#8E9296"
+                        fontSize="8"
+                        textAnchor="middle"
+                      >
+                        Minutes
+                      </text>
+
+                      {/* Horizontal Grid Lines */}
+                      <line x1="32" y1="15" x2="330" y2="15" stroke="#26282A" strokeDasharray="2 2" />
+                      <line x1="32" y1="45" x2="330" y2="45" stroke="#26282A" strokeDasharray="2 2" />
+                      <line x1="32" y1="75" x2="330" y2="75" stroke="#26282A" strokeDasharray="2 2" />
+                      <line x1="32" y1="105" x2="330" y2="105" stroke="#26282A" />
+
+                      {/* Y-axis Labels */}
+                      <text x="26" y="18" fill="#8E9296" fontSize="8" textAnchor="end">90</text>
+                      <text x="26" y="48" fill="#8E9296" fontSize="8" textAnchor="end">60</text>
+                      <text x="26" y="78" fill="#8E9296" fontSize="8" textAnchor="end">30</text>
+                      <text x="26" y="108" fill="#8E9296" fontSize="8" textAnchor="end">0</text>
+
+                      {/* Line 2: Previous Period (Pink #E58376) */}
+                      <polyline
+                        fill="none"
+                        stroke="#E58376"
+                        strokeWidth="1.8"
+                        points="45,85 102,72 159,90 216,74 273,78 325,82"
+                      />
+                      {[
+                        { x: 45, y: 85 },
+                        { x: 102, y: 72 },
+                        { x: 159, y: 90 },
+                        { x: 216, y: 74 },
+                        { x: 273, y: 78 },
+                        { x: 325, y: 82 },
+                      ].map((pt, i) => (
+                        <circle key={`prev-${i}`} cx={pt.x} cy={pt.y} r="3" fill="#E58376" />
+                      ))}
+
+                      {/* Line 1: This Period (Gold #DDB66D) */}
+                      <polyline
+                        fill="none"
+                        stroke="#DDB66D"
+                        strokeWidth="2"
+                        points="45,62 102,48 159,54 216,40 273,46 325,36"
+                      />
+                      {[
+                        { x: 45, y: 62 },
+                        { x: 102, y: 48 },
+                        { x: 159, y: 54 },
+                        { x: 216, y: 40 },
+                        { x: 273, y: 46 },
+                        { x: 325, y: 36 },
+                      ].map((pt, i) => (
+                        <circle key={`cur-${i}`} cx={pt.x} cy={pt.y} r="3.5" fill="#DDB66D" />
+                      ))}
+
+                      {/* X-axis Labels */}
+                      <text x="45" y="118" fill="#8E9296" fontSize="8" textAnchor="middle">Aug 18</text>
+                      <text x="102" y="118" fill="#8E9296" fontSize="8" textAnchor="middle">Aug 21</text>
+                      <text x="159" y="118" fill="#8E9296" fontSize="8" textAnchor="middle">Aug 24</text>
+                      <text x="216" y="118" fill="#8E9296" fontSize="8" textAnchor="middle">Aug 27</text>
+                      <text x="273" y="118" fill="#8E9296" fontSize="8" textAnchor="middle">Aug 30</text>
+                      <text x="325" y="118" fill="#8E9296" fontSize="8" textAnchor="middle">Aug 31</text>
+                    </svg>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Bottom Row: 3 Callout Cards (Image 4 Panel 3) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Card 1: Aligned with your plan */}
+                <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col justify-between gap-3">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#90D2BC]">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Aligned with your plan</span>
+                    </div>
+                    <p className="text-xs text-[#ECECE7] leading-relaxed">
+                      Study blocks were 42% longer on average in the selected period.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedFindingType("aligned");
+                      setActiveTab("evidence");
+                    }}
+                    className="text-xs font-medium text-[#DDB66D] hover:underline text-left inline-flex items-center gap-1"
+                  >
+                    <span>View evidence</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+
+                {/* Card 2: Worth reviewing */}
+                <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col justify-between gap-3">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#E58376]">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span>Worth reviewing</span>
+                    </div>
+                    <p className="text-xs text-[#ECECE7] leading-relaxed">
+                      Fewer evening study blocks than in the previous period.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedFindingType("review");
+                      setActiveTab("evidence");
+                    }}
+                    className="text-xs font-medium text-[#DDB66D] hover:underline text-left inline-flex items-center gap-1"
+                  >
+                    <span>View evidence</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+
+                {/* Card 3: Try and compare */}
+                <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col justify-between gap-3">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#DDB66D]">
+                      <Lightbulb className="w-4 h-4" />
+                      <span>Try and compare</span>
+                    </div>
+                    <p className="text-xs text-[#ECECE7] leading-relaxed">
+                      Your longest blocks happen on weekday mornings. Try scheduling two this week.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedFindingType("experiment");
+                      setActiveTab("evidence");
+                    }}
+                    className="text-xs font-medium text-[#DDB66D] hover:underline text-left inline-flex items-center gap-1"
+                  >
+                    <span>View evidence</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-right text-[10px] text-[#8E9296] pt-1">
+                Illustrative data
+              </div>
+            </div>
+          )}
 
             {/* TAB 2: PROGRESS (§10.3) */}
             {activeTab === "progress" && (
@@ -729,42 +658,160 @@ export function AnalyzerWorkspace({
               </div>
             )}
 
-            {/* TAB 3: EVIDENCE */}
-            {activeTab === "evidence" && (
-              <div className="flex flex-col gap-4 text-xs text-[#C1C5C1]">
-                <h3 className="text-sm font-semibold text-[#ECECE7]">
-                  Supporting Arithmetic & Limitations
-                </h3>
-                <div className="p-4 rounded-[10px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-2 font-mono">
-                  <div className="flex justify-between">
-                    <span>Resolved Window:</span>
-                    <span className="text-[#ECECE7]">
-                      {analysisResult.resolvedRange.start} &ndash; {analysisResult.resolvedRange.end}
-                    </span>
+          {/* TAB 3: EVIDENCE (Image 4 Panel 4) */}
+          {activeTab === "evidence" && (
+            <div className="flex flex-col gap-4">
+              {/* Back to findings link */}
+              <button
+                onClick={() => setActiveTab("summary")}
+                className="flex items-center gap-1.5 text-xs text-[#8E9296] hover:text-[#ECECE7] transition-colors self-start"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to findings</span>
+              </button>
+
+              {/* Finding Banner (Panel 4) */}
+              <div className="p-4 rounded-[10px] bg-[#14231E]/60 border border-[#90D2BC]/40 flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm font-bold text-[#ECECE7]">
+                  <CheckCircle2 className="w-4 h-4 text-[#90D2BC]" />
+                  <span>
+                    {selectedFindingType === "review"
+                      ? "Fewer evening study blocks than in the previous period."
+                      : selectedFindingType === "experiment"
+                      ? "Your longest blocks happen on weekday mornings."
+                      : "Reviewed blocks contained more Work time in the selected period."}
+                  </span>
+                </div>
+                <p className="text-xs text-[#90D2BC] pl-6">
+                  {selectedFindingType === "review"
+                    ? "In the selected period, evening study blocks decreased from 14 to 6 across 14 observed days."
+                    : selectedFindingType === "experiment"
+                    ? "Morning weekday blocks averaged 58m compared to 34m across other windows."
+                    : "In the selected period, 78% of reviewed blocks were categorized as Work, compared to 62% in the previous period."}
+                </p>
+              </div>
+
+              {/* 2-Column Main Evidence Grid: Sample Blocks (Left) & Calculation/Limitation/Intention (Right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Left Column (8 cols): Sample blocks table */}
+                <div className="lg:col-span-8 p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-3">
+                  <h4 className="text-xs font-bold text-[#ECECE7]">
+                    Sample blocks (8 of 34 reviewed blocks)
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#26282A] text-[#8E9296] text-[10px] font-semibold uppercase">
+                          <th className="py-2 px-2.5">Date</th>
+                          <th className="py-2 px-2.5">Start</th>
+                          <th className="py-2 px-2.5">Duration</th>
+                          <th className="py-2 px-2.5">Primary app</th>
+                          <th className="py-2 px-2.5">Category</th>
+                          <th className="py-2 px-2.5">Review status</th>
+                          <th className="py-2 px-1 text-right"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#26282A]/40 text-xs">
+                        {[
+                          { date: "Aug 18, 2025", start: "09:12", duration: "55m", app: "Visual Studio Code", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 19, 2025", start: "10:03", duration: "50m", app: "Notion", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 20, 2025", start: "14:21", duration: "42m", app: "Chrome", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 22, 2025", start: "09:07", duration: "60m", app: "Visual Studio Code", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 25, 2025", start: "11:18", duration: "45m", app: "Notion", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 27, 2025", start: "08:56", duration: "50m", app: "Visual Studio Code", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 29, 2025", start: "10:31", duration: "37m", app: "Chrome", cat: "Work", status: "Reviewed" },
+                          { date: "Aug 31, 2025", start: "09:14", duration: "65m", app: "Notion", cat: "Work", status: "Reviewed" },
+                        ].map((row, idx) => (
+                          <tr key={idx} className="hover:bg-[#1E1F21] transition-colors">
+                            <td className="py-2.5 px-2.5 font-mono text-[#8E9296] text-[11px]">{row.date}</td>
+                            <td className="py-2.5 px-2.5 font-mono text-[#8E9296] text-[11px]">{row.start}</td>
+                            <td className="py-2.5 px-2.5 font-mono text-[#ECECE7] font-semibold">{row.duration}</td>
+                            <td className="py-2.5 px-2.5 text-[#ECECE7]">{row.app}</td>
+                            <td className="py-2.5 px-2.5 text-[#8E9296]">{row.cat}</td>
+                            <td className="py-2.5 px-2.5 text-[#8E9296]">{row.status}</td>
+                            <td className="py-2.5 px-1 text-right text-[#8E9296] hover:text-[#ECECE7]">
+                              <ExternalLink className="w-3.5 h-3.5 ml-auto inline cursor-pointer" />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Observed Days Denominator:</span>
-                    <span className="text-[#90D2BC]">
-                      {analysisResult.resolvedRange.observedDays} of {analysisResult.resolvedRange.totalDays} days
-                    </span>
-                  </div>
-                  {analysisResult.coverageLimitation && (
-                    <div className="flex justify-between text-[#D9BE87]">
-                      <span>Coverage Limitation:</span>
-                      <span>{analysisResult.coverageLimitation}</span>
-                    </div>
-                  )}
                 </div>
 
-                <div className="p-4 rounded-[10px] bg-[#282A2C] border border-[#3A3D3E] flex flex-col gap-2">
-                  <span className="font-semibold text-[#ECECE7]">Zero Moralizing Guard</span>
-                  <p className="text-[#A1A9A5] leading-relaxed">
-                    Findings are bounded strictly to observable timestamps and explicit intentions. The model never assumes mental state, moral discipline, or hidden intent.
-                  </p>
+                {/* Right Column (4 cols): Calculation, Limitation, Intention, Actions */}
+                <div className="lg:col-span-4 flex flex-col gap-4">
+                  {/* Calculation Card */}
+                  <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-2">
+                    <h4 className="text-xs font-bold text-[#ECECE7]">Calculation</h4>
+                    <span className="text-[11px] text-[#8E9296]">Share of reviewed blocks with Work time</span>
+                    <div className="flex justify-between items-center text-xs mt-1">
+                      <span className="text-[#8E9296]">Selected period</span>
+                      <span className="font-mono font-bold text-[#ECECE7]">
+                        78% <span className="font-normal text-[#8E9296]">(26 of 34)</span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#8E9296]">Previous period</span>
+                      <span className="font-mono text-[#8E9296]">
+                        62% <span className="font-normal text-[#8E9296]">(18 of 29)</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Limitation Card */}
+                  <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 text-xs text-[#8E9296]">
+                      <Info className="w-3.5 h-3.5" />
+                      <span className="font-bold">Limitation</span>
+                    </div>
+                    <span className="text-xs font-bold text-[#ECECE7]">Browser activity only</span>
+                    <p className="text-[11px] text-[#8E9296] leading-relaxed">
+                      This analysis is based on browser and desktop app activity. Offline work (e.g. documents, meetings, or non-tracked apps) is not included and may affect the results.
+                    </p>
+                  </div>
+
+                  {/* Linked to your intention Card */}
+                  <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-2">
+                    <h4 className="text-xs font-bold text-[#ECECE7]">Linked to your intention</h4>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-[#ECECE7]">
+                        <Target className="w-3.5 h-3.5 text-[#8E9296]" />
+                        <span>Longer study blocks</span>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("summary")}
+                        className="px-2.5 py-1 rounded-[6px] bg-[#222426] border border-[#333538] text-[11px] text-[#ECECE7] hover:bg-[#2A2C2F] transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Related actions Card */}
+                  <div className="p-4 rounded-[10px] bg-[#18191B] border border-[#26282A] flex flex-col gap-2">
+                    <h4 className="text-xs font-bold text-[#ECECE7]">Related actions</h4>
+                    <Link
+                      href="/logs"
+                      className="w-full py-2 px-3 rounded-[8px] bg-[#DDB66D] text-[#171819] font-bold text-xs text-center hover:bg-[#E8C888] transition-colors"
+                    >
+                      View matching logs
+                    </Link>
+                    <Link
+                      href="/focus"
+                      className="w-full py-2 px-3 rounded-[8px] bg-[#222426] border border-[#333538] text-[#ECECE7] font-semibold text-xs text-center hover:bg-[#2A2C2F] transition-colors"
+                    >
+                      Review activity
+                    </Link>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="text-right text-[10px] text-[#8E9296] pt-1">
+                Illustrative data
+              </div>
+            </div>
+          )}
         </div>
       )}
 

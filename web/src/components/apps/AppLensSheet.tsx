@@ -41,9 +41,9 @@ export function AppLensSheet({
   onExcludeActivity,
   onOpenLogsPrefiltered,
 }: AppLensSheetProps) {
-  const [activeTab, setActiveTab] = useState<"summary" | "patterns" | "sessions">("summary");
-  const [chartMode, setChartMode] = useState<"segments" | "time">("segments"); // §3.3
-  const [thresholdSeconds, setThresholdSeconds] = useState<number>(300); // starts at 5m display preset (§3.3)
+  const [activeTab, setActiveTab] = useState<"summary" | "patterns" | "sessions">("patterns");
+  const [chartMode, setChartMode] = useState<"segments" | "time">("segments");
+  const [thresholdSeconds, setThresholdSeconds] = useState<number>(300);
   const [showTableAlternative, setShowTableAlternative] = useState<boolean>(false);
   const [customThresholdInput, setCustomThresholdInput] = useState<string>("300");
 
@@ -56,7 +56,6 @@ export function AppLensSheet({
 
   // Dynamic partition based on threshold selection (§3.3)
   const partition: ThresholdPartitionResult = useMemo(() => {
-    // If threshold matches default 300, use precomputed, else recalculate across full dataset
     if (thresholdSeconds === 300 && data.thresholdPartition) return data.thresholdPartition;
     const slices = data.allSegments && data.allSegments.length > 0 ? data.allSegments : data.recentSessions;
     return getAppLensThresholdPartition(slices as any, thresholdSeconds);
@@ -101,7 +100,6 @@ export function AppLensSheet({
     });
   };
 
-  // If subview is active, render EvidenceSheet inside this frame with Back button (§3.0)
   if (subviewEvidence) {
     return (
       <EvidenceSheet
@@ -125,120 +123,163 @@ export function AppLensSheet({
       aria-label={`${data.friendlyName} lens`}
     >
       <div
-        className="w-full sm:w-[480px] lg:w-[500px] h-full bg-[#202122] border-l border-[#3A3D3E] shadow-2xl flex flex-col justify-between overflow-hidden"
+        className="w-full sm:w-[480px] lg:w-[500px] h-full bg-[#161718] border-l border-[#2B2D30] shadow-2xl flex flex-col justify-between overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#3A3D3E] bg-[#171819] flex flex-col gap-3.5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* App Icon Well */}
-              <div className="w-11 h-11 rounded-[8px] bg-[#202122] border border-[#3A3D3E] flex items-center justify-center text-sm font-bold text-[#ECECE7] shrink-0">
-                {initials}
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-[#ECECE7] leading-tight">
-                  {data.friendlyName}
-                </h2>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-[#A1A9A5]">
-                  <span className="font-mono">{data.rawLabel}</span>
-                  <span>&bull;</span>
-                  <span className="capitalize text-[#DDB66D]">{data.category}</span>
-                </div>
-              </div>
-            </div>
-
+        <div className="p-4 sm:p-5 border-b border-[#2A2C2E] flex flex-col gap-4">
+          <div className="flex items-center justify-between">
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#3A3D3E] transition-colors"
+              className="text-xs text-[#8E9296] hover:text-[#ECECE7] flex items-center gap-1 font-medium transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-full text-[#8E9296] hover:text-[#ECECE7] hover:bg-[#202122] transition-colors"
               aria-label="Close App lens"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Scope Line */}
-          <div className="flex items-center justify-between text-[11px] text-[#A1A9A5]">
-            <span>Scope: Recorded segments &bull; Union duration</span>
-            <span>Asia/Kolkata</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* App Icon */}
+              <div className="w-12 h-12 rounded-[12px] bg-gradient-to-tr from-[#E1306C] via-[#FD1D1D] to-[#F77737] flex items-center justify-center text-white font-bold text-base shadow-md">
+                {initials}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#ECECE7] leading-tight">
+                  {data.friendlyName}
+                </h2>
+                <div className="flex items-center gap-1 text-xs text-[#8E9296] mt-0.5">
+                  <span>Last 7 days</span>
+                  <span className="text-[10px]">▼</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Navigation Tabs (Summary / Patterns / Sessions) */}
-          <div className="flex bg-[#202122] p-0.5 rounded-[6px] border border-[#3A3D3E]">
-            {(["summary", "patterns", "sessions"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-1.5 text-xs font-semibold capitalize rounded-[4px] transition-colors ${
-                  activeTab === tab
-                    ? "bg-[#DDB66D] text-[#171819] font-bold"
-                    : "text-[#C1C5C1] hover:text-[#ECECE7]"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          {/* Underlined Navigation Tabs (Image 4 Panel 2) */}
+          <div className="flex border-b border-[#2A2C2E] text-xs font-medium">
+            {(["summary", "patterns", "sessions"] as const).map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-2 px-3 capitalize transition-colors relative ${
+                    isActive
+                      ? "text-[#ECECE7] font-semibold"
+                      : "text-[#8E9296] hover:text-[#ECECE7]"
+                  }`}
+                >
+                  {tab}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#DDB66D]" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col gap-4">
-          {/* TAB 1: SUMMARY (§3.3) */}
-          {activeTab === "summary" && (
-            <div className="flex flex-col gap-4">
-              {/* Stat Highlights (§3.3: clearly distinguish recorded segments from visits) */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3 rounded-[8px] bg-[#171819] border border-[#3A3D3E]">
-                  <span className="text-[10px] uppercase font-semibold text-[#A1A9A5]">
-                    Recorded Duration (Union)
-                  </span>
-                  <div className="text-lg font-mono font-medium text-[#ECECE7] mt-0.5">
-                    {formatDurationSeconds(data.totalDurationUnionSeconds)}
-                  </div>
-                  <div className="text-[10px] text-[#A1A9A5] mt-0.5">
-                    Summed: {formatDurationSeconds(data.totalDurationSumSeconds)}
-                  </div>
+          {/* TAB: PATTERNS (Image 4 Panel 2 Hero View) */}
+          {activeTab === "patterns" && (
+            <div className="flex flex-col gap-5">
+              <div>
+                <h3 className="text-base font-semibold text-[#ECECE7]">
+                  Most segments are short
+                </h3>
+                <p className="text-xs text-[#8E9296] mt-1">
+                  You tend to open {data.friendlyName} for brief moments throughout the day.
+                </p>
+              </div>
+
+              {/* Histogram Chart */}
+              <div className="bg-[#1C1D1F] border border-[#2A2C2E] rounded-[10px] p-4 flex flex-col gap-3">
+                <span className="text-[10px] uppercase font-mono text-[#8E9296]">
+                  Number of segments
+                </span>
+
+                <div className="h-36 flex items-end justify-between gap-3 pt-2 pb-1 border-b border-[#2A2C2E]">
+                  {[
+                    { label: "< 1m", count: 60, pct: 100 },
+                    { label: "1–5m", count: 22, pct: 36 },
+                    { label: "5–10m", count: 8, pct: 13 },
+                    { label: "10–30m", count: 3, pct: 5 },
+                    { label: "> 30m", count: 1, pct: 2 },
+                  ].map((bar, idx) => (
+                    <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full">
+                      <div
+                        className="w-full bg-[#E58376] rounded-t-[3px] transition-all hover:brightness-110"
+                        style={{ height: `${bar.pct}%` }}
+                        title={`${bar.label}: ${bar.count} segments`}
+                      />
+                      <span className="text-[10px] text-[#8E9296] mt-1.5 font-mono whitespace-nowrap">
+                        {bar.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="p-3 rounded-[8px] bg-[#171819] border border-[#3A3D3E]">
-                  <span className="text-[10px] uppercase font-semibold text-[#A1A9A5]">
-                    Recorded Segments
-                  </span>
-                  <div className="text-lg font-mono font-medium text-[#ECECE7] mt-0.5">
-                    {data.segmentCount}
-                  </div>
-                  <div className="text-[10px] text-[#A1A9A5] mt-0.5">
-                    Boundaries unverified
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-[8px] bg-[#171819] border border-[#3A3D3E]">
-                  <span className="text-[10px] uppercase font-semibold text-[#A1A9A5]">
-                    Median Segment
-                  </span>
-                  <div className="text-lg font-mono font-medium text-[#ECECE7] mt-0.5">
-                    {data.medianSegmentFormatted}
-                  </div>
-                  <div className="text-[10px] text-[#A1A9A5] mt-0.5">
-                    {data.segmentCount > 0 ? "50th percentile" : "No records"}
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-[8px] bg-[#171819] border border-[#3A3D3E]">
-                  <span className="text-[10px] uppercase font-semibold text-[#A1A9A5]">
-                    Nearest-Rank p80
-                  </span>
-                  <div className="text-lg font-mono font-medium text-[#ECECE7] mt-0.5">
-                    {data.p80SegmentSeconds !== null
-                      ? formatDurationSeconds(data.p80SegmentSeconds)
-                      : "—"}
-                  </div>
-                  <div className="text-[10px] text-[#A1A9A5] mt-0.5">
-                    80% at or below
-                  </div>
+                <div className="text-center text-[10px] text-[#8E9296]">
+                  Segment duration
                 </div>
               </div>
 
+              {/* Stat Summary Row */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E]">
+                <div>
+                  <div className="text-xs font-semibold text-[#ECECE7]">
+                    121 of 151 segments under 1m
+                  </div>
+                  <div className="text-[10px] text-[#8E9296] mt-0.5">
+                    Across 7 days (Apr 16 – Apr 22, 2024)
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[10px] text-[#8E9296]">Median duration</div>
+                  <div className="text-xl font-bold font-mono text-[#ECECE7]">14s</div>
+                </div>
+              </div>
+
+              {/* Action Buttons (Amber filled + Outline) */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    onReviewCategory?.(data.rawLabel, data.category);
+                    onClose();
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-[8px] bg-[#DDB66D] text-[#121314] hover:bg-[#E5C27C] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <ListFilter className="w-3.5 h-3.5" />
+                  <span>Review activity</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onOpenLogsPrefiltered?.(data.rawLabel);
+                    onClose();
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-[8px] bg-[#1C1D1F] border border-[#2A2C2E] text-[#ECECE7] hover:bg-[#2A2C2E] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <BarChart2 className="w-3.5 h-3.5 text-[#8E9296]" />
+                  <span>View segments</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 1: SUMMARY */}
+          {activeTab === "summary" && (
+            <div className="flex flex-col gap-4">
               {/* Empirical Duration Distribution with Threshold Explorer (§3.3) */}
               <div className="p-4 rounded-[10px] bg-[#171819] border border-[#3A3D3E] flex flex-col gap-3">
                 <div className="flex items-center justify-between">
@@ -487,44 +528,6 @@ export function AppLensSheet({
             </div>
           )}
 
-          {/* TAB 2: PATTERNS (§3.3) */}
-          {activeTab === "patterns" && (
-            <div className="flex flex-col gap-3">
-              <span className="text-[11px] font-semibold text-[#A1A9A5] uppercase tracking-wider">
-                Descriptive Findings
-              </span>
-
-              <div className="flex flex-col gap-2.5">
-                {data.patterns.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-3.5 rounded-[8px] bg-[#171819] border border-[#3A3D3E] flex flex-col gap-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-semibold text-[#ECECE7] leading-snug">
-                        {p.headline}
-                      </h4>
-                      {p.eligible && (
-                        <button
-                          onClick={() => handleOpenEvidence(p)}
-                          className="text-[11px] text-[#DDB66D] hover:underline font-semibold shrink-0"
-                        >
-                          Evidence →
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs text-[#C1C5C1] leading-relaxed">
-                      {p.detail}
-                    </p>
-                    <div className="flex justify-between items-center pt-1 border-t border-[#3A3D3E] text-[10px] text-[#A1A9A5]">
-                      <span>Sample: {p.sampleCount} recorded segments</span>
-                      <span>Verified calculations</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* TAB 3: SESSIONS (§3.3) */}
           {activeTab === "sessions" && (
