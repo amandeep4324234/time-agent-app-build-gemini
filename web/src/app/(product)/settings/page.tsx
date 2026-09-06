@@ -9,11 +9,7 @@ import {
   Shield,
   HelpCircle,
   RefreshCw,
-  Trash2,
-  Lock,
-  Moon,
-  Sparkles,
-  Sliders,
+  Info,
   CheckCircle2,
 } from "lucide-react";
 
@@ -28,7 +24,7 @@ function SettingsContent() {
     setAiEnabled,
   } = useAppStore();
 
-  // Primary Tabs: appearance (Image 2 Panel 3) | devices (Image 2 Panel 4)
+  // Primary Tabs: appearance (Screen 15) | devices (Screen 16) (§7.9)
   const activeTabParam = searchParams.get("tab") || "appearance";
   const [activeTab, setActiveTab] = useState<"appearance" | "devices">(
     activeTabParam === "devices" ? "devices" : "appearance"
@@ -41,7 +37,7 @@ function SettingsContent() {
     router.replace(`/settings?${params.toString()}`);
   };
 
-  // Appearance States
+  // Appearance & Display States
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [shareStyle, setShareStyle] = useState<"aggregate" | "named">("aggregate");
@@ -49,38 +45,38 @@ function SettingsContent() {
   const [startWeekOn, setStartWeekOn] = useState("monday");
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto select-text">
-      {/* 1. Top Section Header & Tab Switcher (Image 2 Panels 3 & 4) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#26282A] pb-4">
+    <div className="flex flex-col gap-8 max-w-[800px] mx-auto select-text pb-12">
+      {/* 1. Header & Secondary Navigation (§7.1, §7.9) */}
+      <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#ECECE7] tracking-tight">
-            Settings &rsaquo; {activeTab === "appearance" ? "Appearance and AI" : "Devices & data"}
+          <h1 className="text-[28px] font-semibold text-[#ECECE7] leading-tight m-0">
+            Settings
           </h1>
-          <p className="text-xs text-[#8E9296] mt-0.5">
+          <p className="text-[14px] text-[#A1A9A5] mt-1 m-0">
             {activeTab === "appearance"
-              ? "Customize how timeframe looks and works for you."
-              : "Manage your connected devices and data."}
+              ? "Display preferences, AI tone and data sharing controls."
+              : "Connected sources, capture status and privacy safeguards."}
           </p>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="flex bg-[#1E1F21] p-1 rounded-[8px] border border-[#2F3134] text-xs">
+        {/* Shared Secondary Navigation (§7.1) */}
+        <div className="flex items-center gap-6 border-b border-[#3A3D3E]">
           <button
             onClick={() => handleSelectTab("appearance")}
-            className={`px-3 py-1.5 rounded-[6px] font-medium transition-colors ${
+            className={`min-h-[44px] pb-2 text-[14px] font-medium transition-colors border-b-2 ${
               activeTab === "appearance"
-                ? "bg-[#DDB66D] text-[#121314] font-semibold"
-                : "text-[#8E9296] hover:text-[#ECECE7]"
+                ? "border-[#DDB66D] text-[#ECECE7]"
+                : "border-transparent text-[#A1A9A5] hover:text-[#ECECE7]"
             }`}
           >
-            Appearance &amp; AI
+            Appearance and AI
           </button>
           <button
             onClick={() => handleSelectTab("devices")}
-            className={`px-3 py-1.5 rounded-[6px] font-medium transition-colors ${
+            className={`min-h-[44px] pb-2 text-[14px] font-medium transition-colors border-b-2 ${
               activeTab === "devices"
-                ? "bg-[#DDB66D] text-[#121314] font-semibold"
-                : "text-[#8E9296] hover:text-[#ECECE7]"
+                ? "border-[#DDB66D] text-[#ECECE7]"
+                : "border-transparent text-[#A1A9A5] hover:text-[#ECECE7]"
             }`}
           >
             Devices &amp; data
@@ -89,88 +85,123 @@ function SettingsContent() {
       </div>
 
       {/* ========================================================= */}
-      {/* TAB 1: APPEARANCE AND AI (Image 2 Panel 3) */}
+      {/* TAB 1: APPEARANCE AND AI (Screen 15, START-HERE.md §7.9)  */}
       {/* ========================================================= */}
       {activeTab === "appearance" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (7/12): Display, AI observations, Sharing, Gestures */}
-          <div className="lg:col-span-7 flex flex-col gap-5">
-            {/* Display Group */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                Display
-              </h3>
-
-              <div className="flex items-center justify-between py-1">
+        <div className="flex flex-col gap-8">
+          {/* Display Group */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              Display
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] divide-y divide-[#3A3D3E]">
+              {/* Timeline Density */}
+              <div className="min-h-[64px] p-4 flex items-center justify-between gap-4">
                 <div>
-                  <span className="text-xs text-[#ECECE7] font-medium">Timeline density</span>
-                  <p className="text-[11px] text-[#8E9296]">Control how much detail to show in timelines and logs.</p>
+                  <span className="text-[16px] font-medium text-[#ECECE7] block">
+                    Timeline density
+                  </span>
+                  <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">
+                    Controls lane heights and spacing across the time canvas.
+                  </p>
                 </div>
                 <select
                   value={density}
                   onChange={(e) => setDensity(e.target.value as any)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#26282A] border border-[#3A3D3E] text-xs text-[#ECECE7] focus:outline-none"
+                  className="h-[44px] px-3.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[14px] text-[#ECECE7] focus:outline-none focus:border-[#ECECE7]"
                 >
                   <option value="comfortable">Comfortable</option>
                   <option value="compact">Compact</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-between py-1 border-t border-[#26282A] pt-3">
+              {/* Reduce Motion */}
+              <div className="min-h-[64px] p-4 flex items-center justify-between gap-4">
                 <div>
-                  <span className="text-xs text-[#ECECE7] font-medium">Reduce motion</span>
-                  <p className="text-[11px] text-[#8E9296]">Minimize animations across the app.</p>
+                  <span className="text-[16px] font-medium text-[#ECECE7] block">
+                    Reduce motion
+                  </span>
+                  <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">
+                    Minimize UI transitions and animations beyond system preferences.
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setReduceMotion(!reduceMotion)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${
-                    reduceMotion ? "bg-[#DDB66D]" : "bg-[#2A2C2E]"
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    reduceMotion ? "bg-[#DDB66D]" : "bg-[#27292A] border border-[#3A3D3E]"
                   }`}
+                  aria-label="Toggle reduce motion"
                 >
                   <span
-                    className={`w-4 h-4 rounded-full bg-[#121314] absolute top-0.5 transition-transform ${
+                    className={`w-5 h-5 rounded-full bg-[#171819] absolute top-0.5 transition-transform ${
                       reduceMotion ? "right-0.5" : "left-0.5"
                     }`}
                   />
                 </button>
               </div>
+
+              {/* Metric-help explanation */}
+              <div className="min-h-[64px] p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <HelpCircle className="w-5 h-5 text-[#DDB66D] shrink-0" />
+                  <div>
+                    <span className="text-[16px] font-medium text-[#ECECE7] block">
+                      Metric help gestures
+                    </span>
+                    <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">
+                      Tap the info button or press and hold any metric headline for 500ms to open calculation details.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            {/* AI observations Group */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                AI observations
-              </h3>
-
-              <div className="flex items-center justify-between">
+          {/* AI observations Group */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              AI observations
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] divide-y divide-[#3A3D3E]">
+              {/* Enabled toggle */}
+              <div className="min-h-[64px] p-4 flex items-center justify-between gap-4">
                 <div>
-                  <span className="text-xs text-[#ECECE7] font-medium">Enable AI observations</span>
-                  <p className="text-[11px] text-[#8E9296]">Get helpful insights about your time, automatically.</p>
+                  <span className="text-[16px] font-medium text-[#ECECE7] block">
+                    Enable AI observations
+                  </span>
+                  <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">
+                    Generate concise deterministic reflections beneath your overview header.
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setAiEnabled(!aiEnabled)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${
-                    aiEnabled ? "bg-[#DDB66D]" : "bg-[#2A2C2E]"
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    aiEnabled ? "bg-[#DDB66D]" : "bg-[#27292A] border border-[#3A3D3E]"
                   }`}
+                  aria-label="Toggle AI observations"
                 >
                   <span
-                    className={`w-4 h-4 rounded-full bg-[#121314] absolute top-0.5 transition-transform ${
+                    className={`w-5 h-5 rounded-full bg-[#171819] absolute top-0.5 transition-transform ${
                       aiEnabled ? "right-0.5" : "left-0.5"
                     }`}
                   />
                 </button>
               </div>
 
-              {/* Communication Style Selector */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#26282A]">
+              {/* Tone selection: Witty / Straight / Gentle */}
+              <div className="min-h-[64px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <span className="text-xs text-[#ECECE7] font-medium">Communication style</span>
-                  <p className="text-[11px] text-[#8E9296]">Choose how AI explains things.</p>
+                  <span className="text-[16px] font-medium text-[#ECECE7] block">
+                    Communication style
+                  </span>
+                  <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">
+                    Determines phrasing and observation angle.
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2">
                   {(
                     [
                       { key: "witty", label: "Witty" },
@@ -183,10 +214,10 @@ function SettingsContent() {
                       <button
                         key={tone.key}
                         onClick={() => setAiTone(tone.key)}
-                        className={`px-3 py-1.5 rounded-[6px] text-xs font-medium transition-all ${
+                        className={`min-h-[44px] px-3.5 py-2 rounded-[6px] text-[14px] font-medium border transition-colors ${
                           isSelected
-                            ? "bg-[#1E1F21] text-[#DDB66D] border border-[#DDB66D]/70 shadow-sm"
-                            : "bg-[#26282A] text-[#8E9296] hover:text-[#ECECE7] border border-[#3A3D3E]"
+                            ? "bg-[#27292A] text-[#ECECE7] border-[#3A3D3E] border-b-2 border-b-[#DDB66D]"
+                            : "bg-[#171819] text-[#A1A9A5] border-[#3A3D3E] hover:text-[#ECECE7]"
                         }`}
                       >
                         {tone.label}
@@ -196,116 +227,89 @@ function SettingsContent() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Sharing Group */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                Sharing
-              </h3>
-
-              <div className="flex flex-col gap-2">
-                <span className="text-xs text-[#ECECE7] font-medium">What to share</span>
-                <p className="text-[11px] text-[#8E9296]">Control what&apos;s included when you share your data.</p>
-
-                <div className="flex flex-col gap-2 pt-1 text-xs">
-                  <label className="flex items-center gap-2.5 cursor-pointer text-[#ECECE7]">
-                    <input
-                      type="radio"
-                      name="sharing"
-                      checked={shareStyle === "aggregate"}
-                      onChange={() => setShareStyle("aggregate")}
-                      className="accent-[#DDB66D]"
-                    />
-                    <span>Aggregate facts only</span>
-                  </label>
-
-                  <label className="flex items-center gap-2.5 cursor-pointer text-[#ECECE7]">
-                    <input
-                      type="radio"
-                      name="sharing"
-                      checked={shareStyle === "named"}
-                      onChange={() => setShareStyle("named")}
-                      className="accent-[#DDB66D]"
-                    />
-                    <span>Include selected app names</span>
-                  </label>
-                </div>
+          {/* Sharing Group */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              Sharing and privacy
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] p-4 flex flex-col gap-4">
+              <div>
+                <span className="text-[16px] font-medium text-[#ECECE7] block">
+                  External processing scope
+                </span>
+                <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">
+                  Default aggregate-only sharing ensures raw activity labels never leave your device.
+                </p>
               </div>
-            </div>
 
-            {/* Metric Gestures Info Card */}
-            <div className="p-3 rounded-[8px] bg-[#18191B] border border-[#26282A] flex items-center gap-3 text-xs text-[#8E9296]">
-              <HelpCircle className="w-4 h-4 text-[#DDB66D] shrink-0" />
-              <span>Hold a metric or tap its info button to see a quick explanation.</span>
+              <div className="flex flex-col gap-3 pt-1">
+                <label className="flex items-start gap-3 cursor-pointer text-[#ECECE7]">
+                  <input
+                    type="radio"
+                    name="sharing"
+                    checked={shareStyle === "aggregate"}
+                    onChange={() => setShareStyle("aggregate")}
+                    className="mt-1 accent-[#DDB66D]"
+                  />
+                  <div>
+                    <span className="text-[14px] font-medium block">Aggregate facts only (Recommended)</span>
+                    <span className="text-[13px] text-[#A1A9A5]">
+                      Only category totals and duration statistics are processed; zero URLs or window titles.
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer text-[#ECECE7]">
+                  <input
+                    type="radio"
+                    name="sharing"
+                    checked={shareStyle === "named"}
+                    onChange={() => setShareStyle("named")}
+                    className="mt-1 accent-[#DDB66D]"
+                  />
+                  <div>
+                    <span className="text-[14px] font-medium block">Include selected public app names</span>
+                    <span className="text-[13px] text-[#A1A9A5]">
+                      Permitted broad app names (e.g. Figma, VS Code) are shared with model context.
+                    </span>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* Right Column (5/12): Theme Preview & App Preferences */}
-          <div className="lg:col-span-5 flex flex-col gap-5">
-            {/* Theme Preview Card (Image 2 Panel 3) */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                Theme preview
-              </h3>
-
-              {/* Mini Window Preview */}
-              <div className="rounded-[8px] bg-[#141516] border border-[#26282A] p-3 flex flex-col gap-3 shadow-inner">
-                {/* 3 Window Dots */}
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#E5534B]" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#E5A93C]" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#57AB5A]" />
+          {/* Regional & Calendar Preferences */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              Preferences
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] divide-y divide-[#3A3D3E]">
+              <div className="min-h-[64px] p-4 flex items-center justify-between gap-4">
+                <div>
+                  <span className="text-[16px] font-medium text-[#ECECE7] block">Language</span>
+                  <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">Interface language and format conventions.</p>
                 </div>
-
-                {/* Window Inner Content */}
-                <div className="flex gap-3 items-center">
-                  <div className="flex flex-col gap-1 text-[10px] text-[#8E9296] w-20 border-r border-[#26282A] pr-2">
-                    <span className="text-[#ECECE7] font-semibold">timeframe</span>
-                    <span className="text-[#DDB66D]">Overview</span>
-                    <span>Focus blocks</span>
-                    <span>Insights</span>
-                  </div>
-
-                  {/* Mini Bars */}
-                  <div className="flex items-end gap-1 h-12 flex-1 justify-center pb-1">
-                    <div className="w-2 bg-[#DDB66D] h-6 rounded-t-[1px]" />
-                    <div className="w-2 bg-[#DDB66D] h-9 rounded-t-[1px]" />
-                    <div className="w-2 bg-[#DDB66D] h-4 rounded-t-[1px]" />
-                    <div className="w-2 bg-[#DDB66D] h-10 rounded-t-[1px]" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs font-semibold text-[#ECECE7]">Graphite theme</div>
-                <div className="text-[11px] text-[#8E9296] mt-0.5">Clean, focused and easy on the eyes.</div>
-              </div>
-            </div>
-
-            {/* App Preferences */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                App preferences
-              </h3>
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#ECECE7] font-medium">Language</span>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#26282A] border border-[#3A3D3E] text-xs text-[#ECECE7] focus:outline-none"
+                  className="h-[44px] px-3.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[14px] text-[#ECECE7] focus:outline-none focus:border-[#ECECE7]"
                 >
                   <option value="en-US">English (US)</option>
                   <option value="en-GB">English (UK)</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#26282A] pt-3">
-                <span className="text-xs text-[#ECECE7] font-medium">Start week on</span>
+              <div className="min-h-[64px] p-4 flex items-center justify-between gap-4">
+                <div>
+                  <span className="text-[16px] font-medium text-[#ECECE7] block">Start week on</span>
+                  <p className="text-[14px] text-[#A1A9A5] m-0 mt-0.5">Determines 7-day reporting cycles and calendar alignment.</p>
+                </div>
                 <select
                   value={startWeekOn}
                   onChange={(e) => setStartWeekOn(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-[6px] bg-[#26282A] border border-[#3A3D3E] text-xs text-[#ECECE7] focus:outline-none"
+                  className="h-[44px] px-3.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[14px] text-[#ECECE7] focus:outline-none focus:border-[#ECECE7]"
                 >
                   <option value="monday">Monday</option>
                   <option value="sunday">Sunday</option>
@@ -317,156 +321,124 @@ function SettingsContent() {
       )}
 
       {/* ========================================================= */}
-      {/* TAB 2: DEVICES & DATA (Image 2 Panel 4) */}
+      {/* TAB 2: DEVICES & DATA (Screen 16, START-HERE.md §7.9)     */}
       {/* ========================================================= */}
       {activeTab === "devices" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (7/12): Connected devices & Data management */}
-          <div className="lg:col-span-7 flex flex-col gap-5">
-            {/* Connected devices Card */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                Connected devices
-              </h3>
-
+        <div className="flex flex-col gap-8">
+          {/* Connected Devices Group */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              Connected devices
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] divide-y divide-[#3A3D3E]">
               {/* Device 1: Computer */}
-              <div className="p-3.5 rounded-[8px] bg-[#202122] border border-[#2E3033] flex flex-col gap-3">
+              <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Laptop className="w-5 h-5 text-[#ECECE7]" />
+                  <div className="flex items-center gap-3">
+                    <Laptop className="w-5 h-5 text-[#ECECE7] shrink-0" />
                     <div>
-                      <div className="text-xs font-bold text-[#ECECE7]">Computer · Chrome extension</div>
-                      <div className="text-[11px] text-[#8E9296]">MacBook Pro · macOS 14</div>
+                      <div className="text-[16px] font-medium text-[#ECECE7]">Computer · Chrome extension</div>
+                      <div className="text-[13px] text-[#A1A9A5]">MacBook Pro · macOS 14</div>
                     </div>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#57AB5A]/15 text-[#57AB5A] font-semibold border border-[#57AB5A]/30">
-                    ● Connected
+                  <span className="text-[13px] px-2.5 py-1 rounded-[6px] bg-[#90D2BC]/15 text-[#90D2BC] font-medium border border-[#90D2BC]/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#90D2BC]" />
+                    Connected
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-[#8E9296] pt-2 border-t border-[#2A2C2E]">
-                  <div>Last recorded: <span className="text-[#ECECE7]">Today, 10:24</span></div>
-                  <div>Last synced: <span className="text-[#ECECE7]">Today, 10:24</span></div>
-                  <div className="col-span-2">Pending items: <span className="text-[#DDB66D]">1 saved locally</span></div>
+                <div className="grid grid-cols-2 gap-2 text-[13px] text-[#A1A9A5] pt-2 border-t border-[#3A3D3E]">
+                  <div>Last recorded: <span className="text-[#ECECE7] font-mono">Today, 10:24</span></div>
+                  <div>Last synced: <span className="text-[#ECECE7] font-mono">Today, 10:24</span></div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <button className="px-3 py-1.5 rounded-[6px] bg-[#2A2C2E] hover:bg-[#34373A] text-xs text-[#ECECE7] font-medium transition-colors">
+                <div className="flex items-center gap-3 pt-1">
+                  <button className="min-h-[44px] px-4 rounded-[6px] bg-[#171819] border border-[#3A3D3E] hover:bg-[#27292A] text-[14px] text-[#ECECE7] font-medium transition-colors">
                     View sync details
                   </button>
-                  <button className="px-3 py-1.5 rounded-[6px] bg-transparent hover:bg-[#E5534B]/10 text-xs text-[#E5534B] transition-colors">
+                  <button className="min-h-[44px] px-4 rounded-[6px] bg-transparent hover:bg-[#DFA095]/10 text-[14px] text-[#DFA095] transition-colors">
                     Remove device
                   </button>
                 </div>
               </div>
 
               {/* Device 2: Phone */}
-              <div className="p-3.5 rounded-[8px] bg-[#202122] border border-[#2E3033] flex flex-col gap-3">
+              <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Smartphone className="w-5 h-5 text-[#ECECE7]" />
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="w-5 h-5 text-[#ECECE7] shrink-0" />
                     <div>
-                      <div className="text-xs font-bold text-[#ECECE7]">Phone · Android</div>
-                      <div className="text-[11px] text-[#8E9296]">Pixel 7 · Android 14</div>
+                      <div className="text-[16px] font-medium text-[#ECECE7]">Phone · Android</div>
+                      <div className="text-[13px] text-[#A1A9A5]">Pixel 7 · Android 14</div>
                     </div>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#57AB5A]/15 text-[#57AB5A] font-semibold border border-[#57AB5A]/30">
-                    ● Connected
+                  <span className="text-[13px] px-2.5 py-1 rounded-[6px] bg-[#90D2BC]/15 text-[#90D2BC] font-medium border border-[#90D2BC]/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#90D2BC]" />
+                    Connected
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-[#8E9296] pt-2 border-t border-[#2A2C2E]">
-                  <div>Last recorded: <span className="text-[#ECECE7]">Today, 08:17</span></div>
-                  <div>Last synced: <span className="text-[#ECECE7]">Today, 08:16</span></div>
-                  <div className="col-span-2">Pending items: <span className="text-[#ECECE7]">0</span></div>
+                <div className="grid grid-cols-2 gap-2 text-[13px] text-[#A1A9A5] pt-2 border-t border-[#3A3D3E]">
+                  <div>Last recorded: <span className="text-[#ECECE7] font-mono">Today, 08:17</span></div>
+                  <div>Last synced: <span className="text-[#ECECE7] font-mono">Today, 08:16</span></div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <button className="px-3 py-1.5 rounded-[6px] bg-[#2A2C2E] hover:bg-[#34373A] text-xs text-[#ECECE7] font-medium transition-colors">
+                <div className="flex items-center gap-3 pt-1">
+                  <button className="min-h-[44px] px-4 rounded-[6px] bg-[#171819] border border-[#3A3D3E] hover:bg-[#27292A] text-[14px] text-[#ECECE7] font-medium transition-colors">
                     View sync details
                   </button>
-                  <button className="px-3 py-1.5 rounded-[6px] bg-transparent hover:bg-[#E5534B]/10 text-xs text-[#E5534B] transition-colors">
+                  <button className="min-h-[44px] px-4 rounded-[6px] bg-transparent hover:bg-[#DFA095]/10 text-[14px] text-[#DFA095] transition-colors">
                     Remove device
                   </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Data Management Card */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ECECE7]">
-                Data management
-              </h3>
-
-              <div className="flex items-center justify-between py-1">
-                <div>
-                  <span className="text-xs text-[#ECECE7] font-medium">Exclude apps or websites</span>
-                  <p className="text-[11px] text-[#8E9296]">Prevent selected apps from appearing in your data.</p>
-                </div>
-                <button className="px-3 py-1.5 rounded-[6px] bg-[#26282A] border border-[#3A3D3E] hover:bg-[#303336] text-xs text-[#ECECE7] font-medium transition-colors">
-                  Manage exclusions
-                </button>
+          {/* Privacy & Data Safeguards */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              Data safeguards
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] p-5 flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-[16px] font-medium text-[#ECECE7]">
+                <Shield className="w-5 h-5 text-[#DDB66D]" />
+                <span>Zero intrusive capture</span>
               </div>
 
-              <div className="flex items-center justify-between py-1 border-t border-[#26282A] pt-3">
-                <div>
-                  <span className="text-xs text-[#ECECE7] font-medium">Delete activity data</span>
-                  <p className="text-[11px] text-[#8E9296]">Permanently remove activity from your account.</p>
+              <div className="flex flex-col gap-3 text-[14px] leading-relaxed text-[#A1A9A5]">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-[#90D2BC] font-bold text-base leading-none">✓</span>
+                  <div>
+                    <strong className="text-[#ECECE7] block font-medium">No screen content, keystrokes, or browser history</strong>
+                    Timeframe only receives window-level focus timestamps and active application identifiers.
+                  </div>
                 </div>
-                <button className="px-3 py-1.5 rounded-[6px] bg-[#E5534B]/15 border border-[#E5534B]/30 hover:bg-[#E5534B]/25 text-xs text-[#E5534B] font-semibold transition-colors">
-                  Delete data
-                </button>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="text-[#90D2BC] font-bold text-base leading-none">✓</span>
+                  <div>
+                    <strong className="text-[#ECECE7] block font-medium">Reversible analysis exclusion vs. deletion</strong>
+                    Excluding an app removes it immediately from focus metrics and AI observations without destroying raw capture timestamps needed for timeline continuity.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column (5/12): Privacy & Device Recovery */}
-          <div className="lg:col-span-5 flex flex-col gap-5">
-            {/* Privacy Card (Image 2 Panel 4) */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-3.5">
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#ECECE7]">
-                <Shield className="w-4 h-4 text-[#DDB66D]" />
-                <span>Privacy</span>
-              </div>
-
-              <div className="flex flex-col gap-3 text-xs leading-relaxed text-[#8E9296]">
-                <div className="flex items-start gap-2">
-                  <span className="text-[#57AB5A] font-bold text-sm leading-none">✓</span>
-                  <div>
-                    <strong className="text-[#ECECE7] block">No screen content or keystrokes</strong>
-                    We only collect app and window activity, never what you type or view.
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <span className="text-[#57AB5A] font-bold text-sm leading-none">✓</span>
-                  <div>
-                    <strong className="text-[#ECECE7] block">Private activity is excluded from views</strong>
-                    Content marked private will not appear in your logs, insights or exports.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Device Recovery Card */}
-            <div className="p-4 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#ECECE7]">
-                <RefreshCw className="w-4 h-4 text-[#8E9296]" />
-                <span>Device recovery</span>
-              </div>
-
-              <p className="text-xs text-[#8E9296] leading-relaxed">
-                Re-authenticate a device if you&apos;ve reinstalled the app or changed your browser.
+          {/* Device Recovery */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              Device recovery
+            </h2>
+            <div className="rounded-[10px] bg-[#202122] border border-[#3A3D3E] p-5 flex flex-col gap-4">
+              <p className="text-[14px] text-[#A1A9A5] leading-relaxed m-0">
+                Re-authenticate a collector if you&apos;ve cleared local browser storage or reinstalled the extension.
               </p>
-
-              <button className="py-2 px-3 rounded-[6px] bg-[#26282A] border border-[#3A3D3E] hover:bg-[#303336] text-xs text-[#ECECE7] font-medium transition-colors self-start">
-                Recover this device
+              <button className="min-h-[44px] px-4 rounded-[6px] bg-[#171819] border border-[#3A3D3E] hover:bg-[#27292A] text-[14px] text-[#ECECE7] font-medium transition-colors self-start flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-[#A1A9A5]" />
+                <span>Recover this device</span>
               </button>
-            </div>
-
-            {/* Footnote */}
-            <div className="text-right text-[10px] text-[#6E737A] pt-2">
-              Illustrative data &bull; v1.0.0
             </div>
           </div>
         </div>
@@ -477,7 +449,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-[#8E9296]">Loading settings…</div>}>
+    <Suspense fallback={<div className="p-8 text-[14px] text-[#A1A9A5]">Loading settings…</div>}>
       <SettingsContent />
     </Suspense>
   );

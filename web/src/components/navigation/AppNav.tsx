@@ -29,35 +29,35 @@ export function AppNav() {
     { label: "Logs", href: "/logs", icon: FileText },
   ];
 
-  const secondaryDestinations = [
-    { label: "Devices & data", href: "/settings?tab=devices", icon: HardDrive },
-    { label: "Settings", href: "/settings", icon: Settings },
-  ];
-
   return (
     <>
-      {/* 1. Desktop 192px Navigation Rail (>= 1024px, §3) */}
+      {/* 1. Primary Navigation Rail (192px desktop, 72px tablet, hidden on mobile per START-HERE.md §3) */}
       <aside
-        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[192px] bg-[#141516] border-r border-[#26282A] flex-col justify-between p-4 z-30 select-none"
+        className="tf-sidebar select-none"
         aria-label="Desktop primary rail"
       >
         {/* Top: Wordmark + Primary Destinations */}
         <div className="flex flex-col gap-6">
-          <div className="px-2 pt-1 flex items-center justify-between">
+          <div className="tf-brand">
             <Link
               href="/app"
-              className="text-base font-semibold lowercase tracking-tight text-[#ECECE7] hover:text-white transition-colors"
+              className="flex items-center gap-2.5 text-[#ECECE7] hover:text-white transition-colors"
             >
-              timeframe
+              <svg width="18" height="20" viewBox="0 0 18 20" fill="none" className="shrink-0">
+                <rect x="1" y="6" width="3" height="9" rx="1.5" fill="#DDB66D"/>
+                <rect x="7" y="1" width="3" height="18" rx="1.5" fill="#DDB66D"/>
+                <rect x="13" y="9" width="3" height="6" rx="1.5" fill="#DDB66D"/>
+              </svg>
+              <span className="tf-brand-text font-medium text-[19px] tracking-tight">timeframe</span>
             </Link>
             {isPro && (
-              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-[4px] bg-[#DDB66D]/20 text-[#DDB66D] border border-[#DDB66D]/30">
+              <span className="tf-nav-text text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-[4px] bg-[#DDB66D]/20 text-[#DDB66D] border border-[#DDB66D]/30 ml-auto">
                 Pro
               </span>
             )}
           </div>
 
-          <nav className="flex flex-col gap-1.5" aria-label="Primary navigation">
+          <nav className="tf-nav" aria-label="Primary navigation">
             {primaryDestinations.map((dest) => {
               const isActive =
                 pathname === dest.href ||
@@ -67,129 +67,77 @@ export function AppNav() {
                 <Link
                   key={dest.href}
                   href={dest.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-xs font-medium transition-all ${
-                    isActive
-                      ? "bg-[#1E1F21] text-[#ECECE7] border border-[#DDB66D]/50 shadow-sm"
-                      : "text-[#9B9FA4] border border-transparent hover:bg-[#1E1F21]/40 hover:text-[#ECECE7]"
-                  }`}
+                  aria-current={isActive ? "page" : undefined}
+                  className="tf-nav-link"
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-[#DDB66D]" : "text-[#8E9296]"}`} />
-                  <span>{dest.label}</span>
+                  <Icon />
+                  <span className="tf-nav-text">{dest.label}</span>
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        {/* Bottom: Secondary Settings & Pro Status */}
-        <div className="flex flex-col gap-2 pt-4 border-t border-[#26282A]">
-          <nav className="flex flex-col gap-1" aria-label="Secondary navigation">
+        {/* Bottom: Settings & Illustrative Data */}
+        <div className="tf-nav-bottom flex flex-col gap-2 pt-4 border-t border-[#3A3D3E]">
+          <nav className="tf-nav" aria-label="Secondary navigation">
             <Link
               href="/settings"
-              className={`flex items-center gap-3 px-3 py-2 rounded-[8px] text-xs font-medium transition-all ${
-                pathname.startsWith("/settings")
-                  ? "bg-[#1E1F21] text-[#ECECE7] border border-[#DDB66D]/50 shadow-sm"
-                  : "text-[#9B9FA4] border border-transparent hover:text-[#ECECE7] hover:bg-[#1E1F21]/40"
-              }`}
+              aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+              className="tf-nav-link"
             >
-              <Settings className={`w-4 h-4 ${pathname.startsWith("/settings") ? "text-[#DDB66D]" : "text-[#8E9296]"}`} />
-              <span>Settings</span>
+              <Settings />
+              <span className="tf-nav-text">Settings</span>
             </Link>
           </nav>
 
-          <div className="flex items-center justify-between px-3 pt-2 text-[11px] text-[#8E9296]">
-            <Link
-              href="/checkout"
-              className="hover:text-[#ECECE7] transition-colors flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3 h-3 text-[#DDB66D]" />
-              <span>{isPro ? "Entitlement" : "Pro Details"}</span>
-            </Link>
+          <div className="tf-nav-text flex items-center justify-between px-3 pt-1 text-[13px] text-[#A1A9A5]">
+            <span className="text-[12px] text-[#737978]">Illustrative data</span>
             {process.env.NODE_ENV !== "production" && <DevAccessControl />}
           </div>
         </div>
       </aside>
 
-      {/* 2. Tablet Top Bar (768px - 1023px, §3) */}
-      <header className="hidden md:flex lg:hidden sticky top-0 z-40 h-14 w-full border-b border-[#26282A] bg-[#141516] px-6 items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/app" className="text-base font-semibold lowercase tracking-tight text-[#ECECE7]">
-            timeframe
-          </Link>
-          <nav className="flex items-center gap-2" aria-label="Tablet primary navigation">
-            {primaryDestinations.map((dest) => {
-              const isActive = pathname === dest.href;
-              return (
-                <Link
-                  key={dest.href}
-                  href={dest.href}
-                  className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-colors ${
-                    isActive
-                      ? "bg-[#1E1F21] text-[#DDB66D] border border-[#DDB66D]/50"
-                      : "text-[#9B9FA4] hover:text-[#ECECE7]"
-                  }`}
-                >
-                  {dest.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Link
-            href="/settings"
-            className="text-xs text-[#9B9FA4] hover:text-[#ECECE7] transition-colors"
-          >
-            Settings
-          </Link>
-          <Link
-            href="/checkout"
-            className="text-xs text-[#DDB66D] hover:underline"
-          >
-            Pro
-          </Link>
-          {process.env.NODE_ENV !== "production" && <DevAccessControl />}
-        </div>
-      </header>
-
-      {/* 3. Mobile Header (< 768px, §3) */}
-      <header className="flex md:hidden sticky top-0 z-40 h-12 w-full border-b border-[#26282A] bg-[#141516] px-4 items-center justify-between">
-        <Link href="/app" className="text-base font-semibold lowercase tracking-tight text-[#ECECE7]">
-          timeframe
+      {/* 2. Mobile Top Header (< 768px, §3) */}
+      <header className="flex md:hidden sticky top-0 z-40 h-12 w-full border-b border-[#3A3D3E] bg-[#141516] px-4 items-center justify-between">
+        <Link href="/app" className="text-[17px] font-medium lowercase tracking-tight text-[#ECECE7] flex items-center gap-2">
+          <svg width="15" height="17" viewBox="0 0 18 20" fill="none" className="shrink-0">
+            <rect x="1" y="6" width="3" height="9" rx="1.5" fill="#DDB66D"/>
+            <rect x="7" y="1" width="3" height="18" rx="1.5" fill="#DDB66D"/>
+            <rect x="13" y="9" width="3" height="6" rx="1.5" fill="#DDB66D"/>
+          </svg>
+          <span>timeframe</span>
         </Link>
         <div className="flex items-center gap-3">
           {process.env.NODE_ENV !== "production" && <DevAccessControl />}
           <Link
             href="/settings"
             aria-label="Settings"
-            className="p-2 text-[#9B9FA4] hover:text-[#ECECE7] transition-colors"
+            className="p-1.5 text-[#A1A9A5] hover:text-[#ECECE7] transition-colors"
           >
             <Settings className="w-4 h-4" />
           </Link>
         </div>
       </header>
 
-      {/* 4. Mobile Bottom Navigation (4 items, < 768px, §3) */}
+      {/* 3. Mobile Bottom Navigation (4 items, < 768px, START-HERE.md §2.2, §3) */}
       <nav
-        className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[#171819] border-t border-[#3A3D3E] items-center justify-around px-2 pb-[max(env(safe-area-inset-bottom),4px)]"
+        className="tf-bottom-nav"
         aria-label="Mobile bottom navigation"
       >
         {primaryDestinations.map((dest) => {
-          const isActive = pathname === dest.href;
+          const isActive =
+            pathname === dest.href ||
+            (dest.href === "/patterns" && pathname === "/compare");
           const Icon = dest.icon;
           return (
             <Link
               key={dest.href}
               href={dest.href}
-              className={`flex flex-col items-center justify-center flex-1 min-h-[48px] py-1 transition-colors ${
-                isActive ? "text-[#DDB66D]" : "text-[#A1A9A5] hover:text-[#ECECE7]"
-              }`}
+              aria-current={isActive ? "page" : undefined}
             >
               <Icon className="w-5 h-5" />
-              <span className={`text-[11px] mt-1 ${isActive ? "font-bold" : "font-normal"}`}>
-                {dest.label.split(" ")[0]}
-              </span>
+              <span>{dest.label}</span>
             </Link>
           );
         })}

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, PieChart, ChevronRight, Layers } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { X, Layers } from "lucide-react";
 import { formatDurationSeconds } from "@/lib/format";
 
 export interface TimeMixCategoryItem {
@@ -13,9 +13,20 @@ export interface TimeMixCategoryItem {
   color: string;
 }
 
+export interface TimeMixAppItem {
+  key: string;
+  label: string;
+  category: string;
+  seconds: number;
+  hours: number;
+  sessionCount?: number;
+  isExcluded?: boolean;
+}
+
 interface TimeMixStripProps {
   categories: TimeMixCategoryItem[];
   totalTrackedSeconds: number;
+  apps?: TimeMixAppItem[];
   onShowMatchingActivity?: (category: string) => void;
   className?: string;
 }
@@ -23,6 +34,7 @@ interface TimeMixStripProps {
 export function TimeMixStrip({
   categories,
   totalTrackedSeconds,
+  apps = [],
   onShowMatchingActivity,
   className = "",
 }: TimeMixStripProps) {
@@ -31,76 +43,60 @@ export function TimeMixStrip({
   // Filter out categories with 0% to keep legend compact
   const activeCategories = categories.filter((c) => c.seconds > 0);
 
-  // Check if categories sum to ~100% (within 5% margin due to rounding or non-overlap)
-  const percentSum = activeCategories.reduce((acc, c) => acc + c.percent, 0);
-  const isMutuallyExclusive = percentSum >= 90 && percentSum <= 105;
-
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>("sink");
 
-  const sampleAppsByCategory: Record<string, Array<{ name: string; time: string }>> = {
-    sink: [
-      { name: "Instagram", time: "24m" },
-      { name: "YouTube", time: "12m" },
-      { name: "Reddit", time: "4m" },
-      { name: "TikTok", time: "2m" },
-    ],
-    work: [
-      { name: "Visual Studio Code", time: "2h 10m" },
-      { name: "Figma", time: "52m" },
-      { name: "Notion", time: "22m" },
-    ],
-    games: [
-      { name: "Steam", time: "20m" },
-    ],
-    other: [
-      { name: "System Preferences", time: "26m" },
-      { name: "Finder", time: "20m" },
-    ],
-    unclassified: [
-      { name: "Terminal", time: "16m" },
-    ],
-  };
+  const selectedCategoryObj =
+    categories.find((c) => c.category === selectedCategoryKey) || categories[1] || categories[0];
 
-  const selectedCategoryObj = categories.find((c) => c.category === selectedCategoryKey) || categories[1] || categories[0];
+  // Derived apps in selected category from truthful data
+  const appsInSelectedCategory = useMemo(() => {
+    if (!apps || apps.length === 0) return [];
+    return apps
+      .filter((a) => {
+        if (selectedCategoryKey === "other") {
+          return a.category === "other" || a.category === "other-known";
+        }
+        return a.category === selectedCategoryKey;
+      })
+      .filter((a) => a.seconds > 0)
+      .sort((a, b) => b.seconds - a.seconds);
+  }, [apps, selectedCategoryKey]);
 
   return (
     <>
-      {/* Slim Composition Strip Row (Image 4 Panel 1) */}
+      {/* Slim Composition Strip Row (§2.1, §6, globals.css) */}
       <div
-        className={`w-full bg-[#1C1D1F] border border-[#2A2C2E] rounded-[10px] px-4 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 select-text ${className}`}
+        className={`tf-mix-row select-text ${className}`}
         aria-label="Time mix composition"
       >
-        {/* Left: Time mix label & segmented bar */}
-        <div className="w-full md:w-auto flex-1 flex items-center gap-3">
-          <span
-            onClick={() => setIsSheetOpen(true)}
-            className="text-xs text-[#8E9296] font-medium shrink-0 cursor-pointer hover:text-[#ECECE7] transition-colors"
-          >
-            Time mix
-          </span>
+        <span
+          onClick={() => setIsSheetOpen(true)}
+          className="tf-mix-label text-[#C1C5C1] hover:text-[#ECECE7] font-medium shrink-0 cursor-pointer transition-colors"
+        >
+          Time mix
+        </span>
 
-          {/* Segmented bar */}
-          <div
-            onClick={() => setIsSheetOpen(true)}
-            className="flex-1 h-2 rounded-full overflow-hidden flex bg-[#2A2C2E] cursor-pointer"
-            title="Click to view full category breakdown"
-          >
-            {activeCategories.map((cat) => (
-              <div
-                key={cat.category}
-                style={{
-                  width: `${Math.max(1, cat.percent)}%`,
-                  backgroundColor: cat.color,
-                }}
-                className="h-full hover:brightness-110 transition-all"
-                title={`${cat.label}: ${formatDurationSeconds(cat.seconds)} (${cat.percent}%)`}
-              />
-            ))}
-          </div>
+        {/* Segmented bar */}
+        <div
+          onClick={() => setIsSheetOpen(true)}
+          className="tf-mix-bar cursor-pointer"
+          title="Click to view full category breakdown"
+        >
+          {activeCategories.map((cat) => (
+            <div
+              key={cat.category}
+              style={{
+                width: `${Math.max(1, cat.percent)}%`,
+                backgroundColor: cat.color,
+              }}
+              className="h-full hover:brightness-110 transition-all"
+              title={`${cat.label}: ${formatDurationSeconds(cat.seconds)} (${cat.percent}%)`}
+            />
+          ))}
         </div>
 
-        {/* Right: Inline Legend */}
-        <div className="w-full md:w-auto flex items-center justify-start md:justify-end gap-3 text-xs overflow-x-auto shrink-0">
+        {/* Inline Legend */}
+        <div className="tf-mix-legend flex items-center gap-3 overflow-x-auto shrink-0">
           {activeCategories.map((cat) => (
             <div
               key={cat.category}
@@ -108,14 +104,14 @@ export function TimeMixStrip({
                 setSelectedCategoryKey(cat.category);
                 setIsSheetOpen(true);
               }}
-              className="flex items-center gap-1.5 cursor-pointer hover:text-[#ECECE7] text-[#8E9296] transition-colors shrink-0"
+              className="flex items-center gap-1.5 cursor-pointer hover:text-[#ECECE7] text-[#C1C5C1] transition-colors shrink-0 text-[13px]"
             >
               <span
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: cat.color }}
               />
-              <span className="text-[11px] text-[#ECECE7] font-medium">{cat.label}</span>
-              <span className="font-mono text-[11px] text-[#8E9296]">
+              <span className="text-[#ECECE7] font-medium">{cat.label}</span>
+              <span className="font-mono text-[#A1A9A5]">
                 {cat.percent}%
               </span>
             </div>
@@ -123,28 +119,28 @@ export function TimeMixStrip({
         </div>
       </div>
 
-      {/* Time Mix Detail Slide-over Drawer (Image 4 Panel 4) */}
+      {/* Time Mix Detail Sheet (§7.1, 480px desktop, off-white button, truthful app listing) */}
       {isSheetOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 flex justify-end select-text animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-[#141516]/70 backdrop-blur-sm flex justify-end select-text animate-in fade-in duration-200"
           onClick={() => setIsSheetOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Time mix detail"
         >
           <div
-            className="w-full max-w-md bg-[#161718] border-l border-[#2B2D30] shadow-2xl p-6 flex flex-col justify-between overflow-y-auto"
+            className="w-full max-w-[480px] bg-[#202122] border-l border-[#3A3D3E] shadow-2xl p-6 flex flex-col justify-between overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col gap-6">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between border-b border-[#2A2C2E] pb-4">
-                <h2 className="text-base font-semibold text-[#ECECE7]">
+              <div className="flex items-center justify-between border-b border-[#3A3D3E] pb-4">
+                <h2 className="text-[18px] font-semibold text-[#ECECE7]">
                   Time mix detail
                 </h2>
                 <button
                   onClick={() => setIsSheetOpen(false)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full text-[#8E9296] hover:text-[#ECECE7] hover:bg-[#202122] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-[6px] text-[#A1A9A5] hover:text-[#ECECE7] hover:bg-[#27292A] transition-colors"
                   aria-label="Close"
                 >
                   <X className="w-4 h-4" />
@@ -152,13 +148,13 @@ export function TimeMixStrip({
               </div>
 
               {/* Donut Chart & Legend Row */}
-              <div className="flex items-center gap-5 bg-[#1C1D1F] p-4 rounded-[10px] border border-[#2A2C2E]">
+              <div className="flex items-center gap-5 bg-[#171819] p-4 rounded-[10px] border border-[#3A3D3E]">
                 {/* SVG Donut Chart */}
                 <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                     {/* Background circle */}
                     <path
-                      className="text-[#2A2C2E]"
+                      className="text-[#27292A]"
                       strokeWidth="4"
                       stroke="currentColor"
                       fill="none"
@@ -192,7 +188,7 @@ export function TimeMixStrip({
                     <span className="text-sm font-semibold text-[#ECECE7] leading-tight">
                       {formatDurationSeconds(totalTrackedSeconds)}
                     </span>
-                    <span className="text-[9px] text-[#8E9296] leading-none mt-0.5">
+                    <span className="text-[10px] text-[#A1A9A5] leading-none mt-0.5">
                       Total tracked
                     </span>
                   </div>
@@ -207,7 +203,9 @@ export function TimeMixStrip({
                         key={cat.category}
                         onClick={() => setSelectedCategoryKey(cat.category)}
                         className={`flex items-center justify-between p-1.5 rounded-[6px] cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#2A2C2E] text-[#ECECE7]" : "text-[#8E9296] hover:bg-[#202122] hover:text-[#ECECE7]"
+                          isSelected
+                            ? "bg-[#27292A] text-[#ECECE7]"
+                            : "text-[#A1A9A5] hover:bg-[#27292A]/50 hover:text-[#ECECE7]"
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -219,7 +217,7 @@ export function TimeMixStrip({
                         </div>
                         <div className="flex items-center gap-2 font-mono text-xs">
                           <span>{formatDurationSeconds(cat.seconds)}</span>
-                          <span className="text-[#8E9296] w-7 text-right">{cat.percent}%</span>
+                          <span className="text-[#A1A9A5] w-7 text-right">{cat.percent}%</span>
                         </div>
                       </div>
                     );
@@ -231,16 +229,18 @@ export function TimeMixStrip({
               {selectedCategoryObj && (
                 <div className="flex flex-col gap-3">
                   <div className="flex items-baseline justify-between">
-                    <h3 className="text-base font-semibold text-[#ECECE7]">
+                    <h3 className="text-[16px] font-semibold text-[#ECECE7]">
                       {selectedCategoryObj.label}
                     </h3>
-                    <div className="flex items-center gap-2 font-mono text-xs">
-                      <span className="text-[#ECECE7] font-semibold">{formatDurationSeconds(selectedCategoryObj.seconds)}</span>
-                      <span className="text-[#8E9296]">{selectedCategoryObj.percent}%</span>
+                    <div className="flex items-center gap-2 font-mono text-[13px]">
+                      <span className="text-[#ECECE7] font-semibold">
+                        {formatDurationSeconds(selectedCategoryObj.seconds)}
+                      </span>
+                      <span className="text-[#A1A9A5]">{selectedCategoryObj.percent}%</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-[#8E9296] leading-relaxed">
+                  <p className="text-[13px] text-[#A1A9A5] leading-relaxed m-0">
                     {selectedCategoryObj.category === "sink"
                       ? "Time in entertainment and other potentially distracting apps."
                       : selectedCategoryObj.category === "work"
@@ -248,14 +248,14 @@ export function TimeMixStrip({
                       : "Activity categorised under this classification."}
                   </p>
 
-                  {/* Show matching activity Button */}
+                  {/* Show matching activity Button (off-white primary) */}
                   {onShowMatchingActivity && (
                     <button
                       onClick={() => {
                         setIsSheetOpen(false);
                         onShowMatchingActivity(selectedCategoryObj.category);
                       }}
-                      className="w-full py-2.5 rounded-[8px] bg-[#DDB66D] text-[#121314] hover:bg-[#E5C27C] text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      className="tf-button tf-button-primary w-full min-h-[44px] rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white text-[14px] font-medium flex items-center justify-center gap-2 transition-colors shadow-none"
                     >
                       <Layers className="w-4 h-4" />
                       <span>Show matching activity</span>
@@ -263,23 +263,29 @@ export function TimeMixStrip({
                   )}
 
                   {/* Apps in this category list */}
-                  <div className="flex flex-col gap-2 pt-3 border-t border-[#2A2C2E]">
-                    <span className="text-xs font-medium text-[#ECECE7]">
+                  <div className="flex flex-col gap-2 pt-3 border-t border-[#3A3D3E]">
+                    <span className="text-[14px] font-medium text-[#ECECE7]">
                       Apps in this category
                     </span>
 
                     <div className="flex flex-col gap-1.5">
-                      {(sampleAppsByCategory[selectedCategoryObj.category] || [
-                        { name: selectedCategoryObj.label, time: formatDurationSeconds(selectedCategoryObj.seconds) },
-                      ]).map((app) => (
-                        <div
-                          key={app.name}
-                          className="flex items-center justify-between p-2 rounded-[6px] bg-[#1C1D1F] border border-[#2A2C2E] text-xs"
-                        >
-                          <span className="text-[#ECECE7] font-medium">{app.name}</span>
-                          <span className="text-[#8E9296] font-mono">{app.time}</span>
+                      {appsInSelectedCategory.length > 0 ? (
+                        appsInSelectedCategory.map((app) => (
+                          <div
+                            key={app.key}
+                            className="flex items-center justify-between p-2.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[13px]"
+                          >
+                            <span className="text-[#ECECE7] font-medium">{app.label}</span>
+                            <span className="text-[#A1A9A5] font-mono">
+                              {formatDurationSeconds(app.seconds)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[13px] text-[#A1A9A5] py-2">
+                          No tracked activity in this category.
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
@@ -287,11 +293,11 @@ export function TimeMixStrip({
             </div>
 
             {/* Footer */}
-            <div className="pt-4 border-t border-[#2A2C2E] flex items-center justify-between text-[11px] text-[#6E737A]">
-              <span>Illustrative data</span>
+            <div className="pt-4 border-t border-[#3A3D3E] flex items-center justify-between text-[12px] text-[#A1A9A5]">
+              <span>Effective category distribution</span>
               <button
                 onClick={() => setIsSheetOpen(false)}
-                className="text-[#8E9296] hover:text-[#ECECE7]"
+                className="text-[#A1A9A5] hover:text-[#ECECE7]"
               >
                 Close
               </button>
@@ -302,4 +308,3 @@ export function TimeMixStrip({
     </>
   );
 }
-

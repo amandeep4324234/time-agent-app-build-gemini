@@ -53,19 +53,24 @@ function LogsContent() {
 
   // Search and Tab State
   const initialApp = searchParams.get("app") || "";
+  const initialCategory = searchParams.get("category") || "all";
+  const initialDay = searchParams.get("day");
   const [activeTab, setActiveTab] = useState<"activity" | "blocks" | "changes">("activity");
   const [searchQuery, setSearchQuery] = useState(initialApp);
   const [debouncedQuery, setDebouncedQuery] = useState(initialApp);
 
   // Date range and Sort State (§12.1, §12.2)
-  const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("7d");
+  const [dateRange, setDateRange] = useState<"day" | "7d" | "14d" | "30d" | "all">(
+    initialDay ? "day" : "7d"
+  );
+  const [selectedDay, setSelectedDay] = useState<string | null>(initialDay);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   // Tab Filter States (§12.2, update.md §3.6)
   const initialThreshold = searchParams.get("threshold") ? parseInt(searchParams.get("threshold")!, 10) : null;
   const initialAppraisal = searchParams.get("appraisal") || "all";
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedDevice, setSelectedDevice] = useState<string>("all");
   const [selectedInclusion, setSelectedInclusion] = useState<string>("all");
   const [selectedAppraisal, setSelectedAppraisal] = useState<string>(initialAppraisal);
@@ -122,6 +127,15 @@ function LogsContent() {
     if (availableDays.length === 0) {
       return { rangeStartMs: 0, rangeEndMs: Infinity, dateRangeLabel: "All data" };
     }
+    if (dateRange === "day" && selectedDay) {
+      const startMs = DateTime.fromISO(`${selectedDay}T04:00:00`, { zone: TIMEZONE }).toMillis();
+      const endMs = DateTime.fromISO(`${selectedDay}T04:00:00`, { zone: TIMEZONE }).plus({ days: 1 }).toMillis();
+      return {
+        rangeStartMs: startMs,
+        rangeEndMs: endMs,
+        dateRangeLabel: selectedDay,
+      };
+    }
     const endMs = DateTime.fromISO(`${latestDay}T04:00:00`, { zone: TIMEZONE }).plus({ days: 1 }).toMillis();
     if (dateRange === "all") {
       const startDay = availableDays[0];
@@ -140,7 +154,7 @@ function LogsContent() {
       rangeEndMs: endMs,
       dateRangeLabel: `${startDay} – ${latestDay}`,
     };
-  }, [availableDays, latestDay, dateRange]);
+  }, [availableDays, latestDay, dateRange, selectedDay]);
 
   // Extract unique tags from focus blocks
   const allUniqueTags = useMemo(() => {
@@ -318,7 +332,7 @@ function LogsContent() {
     setSelectedBatchStatus("all");
   };
 
-  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set(["sl-1"]));
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [selectedChange, setSelectedChange] = useState<{
     id: string;
     time: string;
@@ -331,19 +345,7 @@ function LogsContent() {
     beforeCategory: string;
     afterCategory: string;
     interval: string;
-  } | null>({
-    id: "chg-1",
-    time: "19:27",
-    date: "Today, Apr 16, 2025 at 19:27",
-    title: "Category changed to Work",
-    target: "Instagram",
-    duration: "22m",
-    scope: "This interval only",
-    sync: "Synced",
-    beforeCategory: "Social",
-    afterCategory: "Work",
-    interval: "19:05 – 19:27 (22m)",
-  });
+  } | null>(null);
 
   const toggleRowSelect = (id: string) => {
     setSelectedRowIds((prev) => {
@@ -354,130 +356,19 @@ function LogsContent() {
     });
   };
 
-  const sampleActivityRows = [
-    {
-      group: "Today  Wed, Apr 16, 2025",
-      items: [
-        { id: "sl-1", time: "09:14 – 09:28", app: "Instagram", duration: "14m", device: "Mac", isPhone: false, category: "Social", reviewed: true },
-        { id: "sl-2", time: "12:03 – 12:21", app: "Instagram", duration: "18m", device: "Mac", isPhone: false, category: "Social", reviewed: false },
-        { id: "sl-3", time: "15:42 – 16:10", app: "Instagram", duration: "28m", device: "Android", isPhone: true, category: "Social", reviewed: false },
-        { id: "sl-4", time: "19:05 – 19:27", app: "Instagram", duration: "22m", device: "Android", isPhone: true, category: "Social", reviewed: false },
-      ],
-    },
-    {
-      group: "Yesterday  Tue, Apr 15, 2025",
-      items: [
-        { id: "sl-5", time: "10:11 – 10:36", app: "Instagram", duration: "25m", device: "Mac", isPhone: false, category: "Social", reviewed: false },
-        { id: "sl-6", time: "13:20 – 13:48", app: "Instagram", duration: "28m", device: "Android", isPhone: true, category: "Social", reviewed: false },
-        { id: "sl-7", time: "21:03 – 21:16", app: "Instagram", duration: "13m", device: "Android", isPhone: true, category: "Social", reviewed: false },
-      ],
-    },
-  ];
-
-  const sampleChangesRows = [
-    {
-      group: "Today  Wed, Apr 16, 2025",
-      items: [
-        {
-          id: "c-1",
-          time: "19:27",
-          date: "Today, Apr 16, 2025 at 19:27",
-          title: "Category changed to Work",
-          target: "Instagram",
-          duration: "22m",
-          scope: "This interval only",
-          sync: "Synced" as const,
-          beforeCategory: "Social",
-          afterCategory: "Work",
-          interval: "19:05 – 19:27 (22m)",
-        },
-        {
-          id: "c-2",
-          time: "15:10",
-          date: "Today, Apr 16, 2025 at 15:10",
-          title: "Marked intentional",
-          target: "Instagram",
-          duration: "18m",
-          scope: "This interval only",
-          sync: "Saved locally" as const,
-          beforeCategory: "Social",
-          afterCategory: "Intentional Social",
-          interval: "12:03 – 12:21 (18m)",
-        },
-        {
-          id: "c-3",
-          time: "11:42",
-          date: "Today, Apr 16, 2025 at 11:42",
-          title: "Excluded selected interval",
-          target: "Instagram",
-          duration: "12m",
-          scope: "This interval only",
-          sync: "Synced" as const,
-          beforeCategory: "Included",
-          afterCategory: "Excluded",
-          interval: "09:14 – 09:26 (12m)",
-        },
-      ],
-    },
-    {
-      group: "Yesterday  Tue, Apr 15, 2025",
-      items: [
-        {
-          id: "c-4",
-          time: "17:36",
-          date: "Yesterday, Apr 15, 2025 at 17:36",
-          title: "Category changed to Personal",
-          target: "Instagram",
-          duration: "21m",
-          scope: "This interval only",
-          sync: "Synced" as const,
-          beforeCategory: "Social",
-          afterCategory: "Personal",
-          interval: "10:11 – 10:32 (21m)",
-        },
-        {
-          id: "c-5",
-          time: "13:48",
-          date: "Yesterday, Apr 15, 2025 at 13:48",
-          title: "Marked intentional",
-          target: "Instagram",
-          duration: "28m",
-          scope: "This interval only",
-          sync: "Synced" as const,
-          beforeCategory: "Social",
-          afterCategory: "Intentional Social",
-          interval: "13:20 – 13:48 (28m)",
-        },
-        {
-          id: "c-6",
-          time: "10:59",
-          date: "Yesterday, Apr 15, 2025 at 10:59",
-          title: "Excluded selected interval",
-          target: "Instagram",
-          duration: "8m",
-          scope: "This interval only",
-          sync: "Saved locally" as const,
-          beforeCategory: "Included",
-          afterCategory: "Excluded",
-          interval: "21:03 – 21:11 (8m)",
-        },
-      ],
-    },
-  ];
-
   return (
     <div className="flex flex-col gap-5 max-w-6xl mx-auto select-text">
-      <div className="flex items-start justify-between border-b border-[#26282A] pb-4">
+      <div className="flex items-start justify-between border-b border-[#3A3D3E] pb-4">
         <div>
-          <h1 className="text-xl font-bold text-[#ECECE7] tracking-tight">
-            Logs <span className="text-[#8E9296] font-normal">&rsaquo;</span>{" "}
+          <h1 className="text-[28px] font-semibold text-[#ECECE7] tracking-tight leading-tight m-0">
+            Logs <span className="text-[#A1A9A5] font-normal">&rsaquo;</span>{" "}
             {activeTab === "activity"
               ? "Activity"
               : activeTab === "changes"
               ? "Changes"
               : "Focus blocks"}
           </h1>
-          <p className="text-xs text-[#8E9296] mt-0.5">
+          <p className="text-[14px] text-[#A1A9A5] mt-1 m-0">
             {activeTab === "activity"
               ? "Search and review your activity. Correct, categorize or exclude time."
               : activeTab === "changes"
@@ -486,77 +377,107 @@ function LogsContent() {
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7] cursor-pointer hover:border-[#3E4145]">
-          <Calendar className="w-3.5 h-3.5 text-[#8E9296]" />
-          <span>Last 7 days</span>
-          <ChevronDown className="w-3 h-3 text-[#8E9296]" />
+        <div className="flex items-center gap-2 min-h-[44px] px-3.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[14px] text-[#ECECE7]">
+          <Calendar className="w-4 h-4 text-[#A1A9A5]" />
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value as any)}
+            className="bg-transparent text-[14px] text-[#ECECE7] border-none outline-none cursor-pointer"
+          >
+            {selectedDay && <option value="day" className="bg-[#171819]">Day: {selectedDay}</option>}
+            <option value="7d" className="bg-[#171819]">Last 7 days</option>
+            <option value="14d" className="bg-[#171819]">Last 14 days</option>
+            <option value="30d" className="bg-[#171819]">Last 30 days</option>
+            <option value="all" className="bg-[#171819]">All data</option>
+          </select>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7]">
-          <Search className="w-3.5 h-3.5 text-[#8E9296]" />
+        <div className="flex items-center gap-2 min-h-[44px] px-3.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[14px] text-[#ECECE7]">
+          <Search className="w-4 h-4 text-[#A1A9A5]" />
           <input
             type="text"
-            value={searchQuery || "Instagram"}
+            placeholder="Search app or tag…"
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-[#ECECE7] w-24 placeholder-[#8E9296]"
+            className="bg-transparent border-none outline-none text-[14px] text-[#ECECE7] w-40 placeholder-[#737978]"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="text-[#A1A9A5] hover:text-[#ECECE7]"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+
+        {selectedCategory !== "all" && (
+          <div className="flex items-center gap-1.5 min-h-[44px] px-3 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[13px] text-[#ECECE7]">
+            <span>Category: {selectedCategory}</span>
+            <button onClick={() => setSelectedCategory("all")} className="text-[#A1A9A5] hover:text-[#ECECE7] text-base leading-none">&times;</button>
+          </div>
+        )}
+
+        {selectedDevice !== "all" && (
+          <div className="flex items-center gap-1.5 min-h-[44px] px-3 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[13px] text-[#ECECE7]">
+            <span>Device: {selectedDevice}</span>
+            <button onClick={() => setSelectedDevice("all")} className="text-[#A1A9A5] hover:text-[#ECECE7] text-base leading-none">&times;</button>
+          </div>
+        )}
+
+        {selectedThreshold !== null && (
+          <div className="flex items-center gap-1.5 min-h-[44px] px-3 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[13px] text-[#ECECE7]">
+            <span>&gt; {selectedThreshold}s</span>
+            <button onClick={() => setSelectedThreshold(null)} className="text-[#A1A9A5] hover:text-[#ECECE7] text-base leading-none">&times;</button>
+          </div>
+        )}
+
+        {dateRange === "day" && selectedDay && (
+          <div className="flex items-center gap-1.5 min-h-[44px] px-3 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[13px] text-[#ECECE7]">
+            <span>Day: {selectedDay}</span>
+            <button onClick={() => setDateRange("7d")} className="text-[#A1A9A5] hover:text-[#ECECE7] text-base leading-none">&times;</button>
+          </div>
+        )}
+
+        {hasActiveFilters && (
           <button
-            onClick={() => setSearchQuery("")}
-            className="text-[#8E9296] hover:text-[#ECECE7]"
+            onClick={handleClearAllFilters}
+            className="min-h-[44px] px-3.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[13px] text-[#DFA095] hover:text-[#ECECE7] transition-colors"
           >
-            &times;
+            Clear filters
           </button>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7]">
-          <span>App: Instagram</span>
-          <button className="text-[#8E9296] hover:text-[#ECECE7]">&times;</button>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7]">
-          <span>Device: All</span>
-          <button className="text-[#8E9296] hover:text-[#ECECE7]">&times;</button>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#ECECE7]">
-          <span>Included</span>
-          <button className="text-[#8E9296] hover:text-[#ECECE7]">&times;</button>
-        </div>
-
-        <button className="px-2.5 py-1.5 rounded-[8px] bg-[#1E1F21] border border-[#2F3134] text-xs text-[#8E9296] hover:text-[#ECECE7] transition-colors">
-          + Add filter
-        </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-6 border-b border-[#26282A] text-xs font-semibold">
+      <div className="flex items-center gap-6 border-b border-[#3A3D3E] text-[14px]">
         <button
           onClick={() => setActiveTab("activity")}
-          className={`pb-2.5 transition-colors ${
+          className={`min-h-[44px] pb-2 transition-colors font-medium border-b-2 ${
             activeTab === "activity"
-              ? "text-[#ECECE7] border-b-2 border-[#DDB66D]"
-              : "text-[#8E9296] hover:text-[#ECECE7]"
+              ? "text-[#ECECE7] border-[#DDB66D]"
+              : "text-[#A1A9A5] border-transparent hover:text-[#ECECE7]"
           }`}
         >
           Activity
         </button>
         <button
           onClick={() => setActiveTab("blocks")}
-          className={`pb-2.5 transition-colors ${
+          className={`min-h-[44px] pb-2 transition-colors font-medium border-b-2 ${
             activeTab === "blocks"
-              ? "text-[#ECECE7] border-b-2 border-[#DDB66D]"
-              : "text-[#8E9296] hover:text-[#ECECE7]"
+              ? "text-[#ECECE7] border-[#DDB66D]"
+              : "text-[#A1A9A5] border-transparent hover:text-[#ECECE7]"
           }`}
         >
           Focus blocks
         </button>
         <button
           onClick={() => setActiveTab("changes")}
-          className={`pb-2.5 transition-colors ${
+          className={`min-h-[44px] pb-2 transition-colors font-medium border-b-2 ${
             activeTab === "changes"
-              ? "text-[#ECECE7] border-b-2 border-[#DDB66D]"
-              : "text-[#8E9296] hover:text-[#ECECE7]"
+              ? "text-[#ECECE7] border-[#DDB66D]"
+              : "text-[#A1A9A5] border-transparent hover:text-[#ECECE7]"
           }`}
         >
           Changes
@@ -570,6 +491,14 @@ function LogsContent() {
               <div className="col-span-1 flex items-center">
                 <input
                   type="checkbox"
+                  checked={selectedRowIds.size > 0 && selectedRowIds.size === filteredActivity.length}
+                  onChange={() => {
+                    if (selectedRowIds.size === filteredActivity.length) {
+                      setSelectedRowIds(new Set());
+                    } else {
+                      setSelectedRowIds(new Set(filteredActivity.map(s => `${s.originalSessionId}-${s.sliceStartMs}`)));
+                    }
+                  }}
                   className="rounded border-[#2F3134] bg-[#141516] text-[#DDB66D] focus:ring-0"
                 />
               </div>
@@ -582,82 +511,87 @@ function LogsContent() {
             </div>
 
             <div className="flex flex-col divide-y divide-[#26282A]">
-              {sampleActivityRows.map((grp) => (
-                <div key={grp.group} className="flex flex-col">
-                  <div className="px-4 py-2 bg-[#1A1B1D]/60 text-xs font-semibold text-[#ECECE7]">
-                    {grp.group}
-                  </div>
-
-                  {grp.items.map((row) => {
-                    const isChecked = selectedRowIds.has(row.id);
-                    return (
-                      <div
-                        key={row.id}
-                        onClick={() => toggleRowSelect(row.id)}
-                        className={`grid grid-cols-12 gap-2 px-4 py-3 items-center text-xs cursor-pointer transition-colors ${
-                          isChecked ? "bg-[#1E1F21]" : "hover:bg-[#1C1D1F]"
-                        }`}
-                      >
-                        <div className="col-span-1 flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleRowSelect(row.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="rounded border-[#2F3134] bg-[#141516] text-[#DDB66D] focus:ring-0"
-                          />
-                        </div>
-                        <div className="col-span-2 font-mono text-[#8E9296]">
-                          {row.time}
-                        </div>
-                        <div className="col-span-3 flex items-center gap-2.5">
-                          <div className="w-5 h-5 rounded-[5px] bg-gradient-to-tr from-[#FF543E] via-[#D12B89] to-[#8031A7] flex items-center justify-center text-[10px] text-white">
-                            📷
-                          </div>
-                          <span className="font-medium text-[#ECECE7]">{row.app}</span>
-                        </div>
-                        <div className="col-span-2 font-mono text-[#ECECE7]">
-                          {row.duration}
-                        </div>
-                        <div className="col-span-2 flex items-center gap-1.5 text-[#8E9296]">
-                          <span>{row.isPhone ? "📱" : "💻"}</span>
-                          <span>{row.device}</span>
-                        </div>
-                        <div className="col-span-1 text-[#8E9296]">{row.category}</div>
-                        <div className="col-span-1 flex items-center justify-between">
-                          <div className="w-full text-center">
-                            {row.reviewed ? (
-                              <span className="text-[#90D2BC]">✓</span>
-                            ) : (
-                              <span className="text-[#8E9296]">&ndash;</span>
-                            )}
-                          </div>
-                          <button className="text-[#8E9296] hover:text-[#ECECE7] px-1">
-                            •••
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {activityByDate.length === 0 ? (
+                <div className="p-8 text-center text-xs text-[#8E9296]">
+                  No activities recorded for the selected period and filters.
                 </div>
-              ))}
+              ) : (
+                activityByDate.map(([day, slices]) => (
+                  <div key={day} className="flex flex-col">
+                    <div className="px-4 py-2 bg-[#1A1B1D]/60 text-xs font-semibold text-[#ECECE7]">
+                      {DateTime.fromISO(`${day}T04:00:00`, { zone: TIMEZONE }).toFormat("cccc · LLL d, yyyy")}
+                    </div>
+
+                    {slices.map((sl) => {
+                      const rowId = `${sl.originalSessionId}-${sl.sliceStartMs}`;
+                      const isChecked = selectedRowIds.has(rowId);
+                      const startTime = DateTime.fromMillis(sl.sliceStartMs, { zone: TIMEZONE }).toFormat("HH:mm");
+                      const endTime = DateTime.fromMillis(sl.sliceEndMs, { zone: TIMEZONE }).toFormat("HH:mm");
+                      const friendlyName = getFriendlyAppName(sl.label);
+                      const initials = getAppInitials(friendlyName);
+                      const isPhone = sl.device === "phone";
+                      const isReviewed = sl.appraisal && sl.appraisal !== "unreviewed";
+
+                      return (
+                        <div
+                          key={rowId}
+                          onClick={() => toggleRowSelect(rowId)}
+                          className={`grid grid-cols-12 gap-2 px-4 py-3 items-center text-xs cursor-pointer transition-colors ${
+                            isChecked ? "bg-[#1E1F21]" : "hover:bg-[#1C1D1F]"
+                          }`}
+                        >
+                          <div className="col-span-1 flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleRowSelect(rowId)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="rounded border-[#2F3134] bg-[#141516] text-[#DDB66D] focus:ring-0"
+                            />
+                          </div>
+                          <div className="col-span-2 font-mono text-[#8E9296]">
+                            {startTime} – {endTime}
+                          </div>
+                          <div className="col-span-3 flex items-center gap-2.5">
+                            <div className="w-5 h-5 rounded-[5px] bg-[#27292A] border border-[#3A3D3E] flex items-center justify-center text-[10px] font-bold text-[#ECECE7]">
+                              {initials}
+                            </div>
+                            <span className="font-medium text-[#ECECE7] truncate">{friendlyName}</span>
+                          </div>
+                          <div className="col-span-2 font-mono text-[#ECECE7]">
+                            {formatDurationSeconds(sl.sliceSeconds)}
+                          </div>
+                          <div className="col-span-2 flex items-center gap-1.5 text-[#8E9296]">
+                            <span>{isPhone ? "📱" : "💻"}</span>
+                            <span>{isPhone ? "Phone" : "Computer"}</span>
+                          </div>
+                          <div className="col-span-1 text-[#8E9296] truncate">{sl.effectiveCategory}</div>
+                          <div className="col-span-1 flex items-center justify-between">
+                            <div className="w-full text-center">
+                              {isReviewed ? (
+                                <span className="text-[#90D2BC]">✓</span>
+                              ) : (
+                                <span className="text-[#8E9296]">&ndash;</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           <div className="flex items-center justify-between p-3 rounded-[8px] bg-[#1A1B1D] border border-[#26282A]">
-            <span className="text-xs text-[#8E9296]">6 activities</span>
+            <span className="text-xs text-[#8E9296]">{filteredActivity.length} activities</span>
             <div className="flex items-center gap-2.5">
               <button
-                onClick={() => alert("Open details for selected activity")}
-                className="px-4 py-2 rounded-[8px] bg-[#26282A] hover:bg-[#2F3134] text-xs font-semibold text-[#ECECE7] transition-colors"
+                onClick={() => alert(`Selected ${selectedRowIds.size} activities`)}
+                className="tf-button tf-button-primary px-4 py-2 text-xs font-semibold"
               >
-                Open detail
-              </button>
-              <button
-                onClick={() => alert("Correct activity")}
-                className="px-5 py-2 rounded-[8px] bg-[#DDB66D] hover:bg-[#E5C27C] text-xs font-bold text-[#121314] transition-colors shadow-sm"
-              >
-                Correct activity
+                Inspect selection
               </button>
             </div>
           </div>
@@ -675,55 +609,77 @@ function LogsContent() {
             </div>
 
             <div className="flex flex-col divide-y divide-[#26282A]">
-              {sampleChangesRows.map((grp) => (
-                <div key={grp.group} className="flex flex-col">
-                  <div className="px-4 py-2 bg-[#1A1B1D]/60 text-xs font-semibold text-[#ECECE7]">
-                    {grp.group}
-                  </div>
-
-                  {grp.items.map((row) => {
-                    const isSelected = selectedChange?.id === row.id;
-                    return (
-                      <div
-                        key={row.id}
-                        onClick={() => setSelectedChange(row)}
-                        className={`grid grid-cols-12 gap-2 px-4 py-3 items-center text-xs cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#1E1F21]" : "hover:bg-[#1C1D1F]"
-                        }`}
-                      >
-                        <div className="col-span-2 font-mono text-[#8E9296]">
-                          {row.time}
-                        </div>
-                        <div className="col-span-4 font-medium text-[#ECECE7]">
-                          {row.title}
-                        </div>
-                        <div className="col-span-3 flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-[4px] bg-gradient-to-tr from-[#FF543E] to-[#8031A7] flex items-center justify-center text-[8px] text-white">
-                            📷
-                          </div>
-                          <span className="text-[#ECECE7]">{row.target}</span>
-                          <span className="text-[#8E9296] font-mono">{row.duration}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                row.sync === "Synced" ? "bg-[#90D2BC]" : "bg-[#DDB66D]"
-                              }`}
-                            />
-                            <span className="text-[#8E9296]">{row.sync}</span>
-                          </div>
-                          <span className="text-[#8E9296]">•••</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {filteredBatches.length === 0 ? (
+                <div className="p-8 text-center text-xs text-[#8E9296]">
+                  No revision batches recorded yet for the selected period.
                 </div>
-              ))}
+              ) : (
+                filteredBatches.map((b) => {
+                  const isSelected = selectedChange?.id === b.id;
+                  const appliedTime = DateTime.fromISO(b.appliedAtUtc, { zone: TIMEZONE }).toFormat("HH:mm");
+                  const appliedDate = DateTime.fromISO(b.appliedAtUtc, { zone: TIMEZONE }).toFormat("LLL d, yyyy");
+                  const title = b.summary || (b.operations.length > 0 ? `${b.operations[0].operation} operation` : "Batch edit");
+                  const target = b.operations.length > 0 ? (b.operations[0].targetSessionId ? `Session ${b.operations[0].targetSessionId.slice(0, 8)}` : "All records") : "Batch";
+                  const syncStatus = b.status === "synced" ? "Synced" : "Saved locally";
+
+                  return (
+                    <div
+                      key={b.id}
+                      onClick={() => setSelectedChange({
+                        id: b.id,
+                        time: appliedTime,
+                        date: appliedDate,
+                        title,
+                        target,
+                        duration: `${b.operations.length} ops`,
+                        scope: "This batch",
+                        sync: syncStatus as "Synced" | "Saved locally",
+                        beforeCategory: "Original",
+                        afterCategory: "Updated",
+                        interval: b.operations.length > 0 && b.operations[0].intervalStartUtc ? DateTime.fromISO(b.operations[0].intervalStartUtc, { zone: TIMEZONE }).toFormat("HH:mm") : "All day",
+                      })}
+                      className={`grid grid-cols-12 gap-2 px-4 py-3 items-center text-xs cursor-pointer transition-colors ${
+                        isSelected ? "bg-[#1E1F21]" : "hover:bg-[#1C1D1F]"
+                      }`}
+                    >
+                      <div className="col-span-2 font-mono text-[#8E9296]">
+                        {appliedTime}
+                      </div>
+                      <div className="col-span-4 font-medium text-[#ECECE7] truncate">
+                        {title}
+                      </div>
+                      <div className="col-span-3 text-[#C1C5C1] truncate">
+                        {target}
+                      </div>
+                      <div className="col-span-3 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              syncStatus === "Synced" ? "bg-[#90D2BC]" : "bg-[#DDB66D]"
+                            }`}
+                          />
+                          <span className="text-[#8E9296]">{syncStatus}</span>
+                        </div>
+                        {b.status !== "conflict" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              undoRevisionBatch(b.id);
+                            }}
+                            className="text-[11px] text-[#DDB66D] hover:underline"
+                          >
+                            Undo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             <div className="p-3 border-t border-[#26282A] text-xs text-[#8E9296] bg-[#1A1B1D]">
-              6 changes
+              {filteredBatches.length} changes
             </div>
           </div>
 
@@ -749,65 +705,13 @@ function LogsContent() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-[#8E9296]">Before</span>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-[#8E9296]">Category</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#DFA095]" />
-                    <span className="text-[#ECECE7]">{selectedChange.beforeCategory}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-[#8E9296]">After</span>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-[#8E9296]">Category</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#DDB66D]" />
-                    <span className="text-[#ECECE7]">{selectedChange.afterCategory}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1 border-t border-[#26282A] pt-3">
                 <span className="text-[11px] font-semibold text-[#8E9296]">Target</span>
-                <div className="flex items-center gap-2 text-xs text-[#ECECE7]">
-                  <div className="w-4 h-4 rounded-[4px] bg-gradient-to-tr from-[#FF543E] to-[#8031A7] flex items-center justify-center text-[8px] text-white">
-                    📷
-                  </div>
-                  <span>{selectedChange.target}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-[#8E9296]">Time interval</span>
-                <span className="text-xs font-mono text-[#ECECE7]">
-                  {selectedChange.interval}
-                </span>
+                <div className="text-xs text-[#ECECE7]">{selectedChange.target}</div>
               </div>
 
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-semibold text-[#8E9296]">Scope</span>
                 <span className="text-xs text-[#ECECE7]">{selectedChange.scope}</span>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#26282A]">
-                <button
-                  onClick={() => alert("Open detail")}
-                  className="px-3 py-1.5 rounded-[6px] bg-[#26282A] hover:bg-[#2F3134] text-xs font-semibold text-[#ECECE7] transition-colors"
-                >
-                  View detail
-                </button>
-                <button
-                  onClick={() => {
-                    alert("Revision undone successfully");
-                    setSelectedChange(null);
-                  }}
-                  className="px-4 py-1.5 rounded-[6px] border border-[#DDB66D]/50 text-[#DDB66D] hover:bg-[#DDB66D]/10 text-xs font-bold transition-colors"
-                >
-                  Undo
-                </button>
               </div>
             </div>
           )}

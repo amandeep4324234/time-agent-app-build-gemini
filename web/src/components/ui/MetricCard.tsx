@@ -105,16 +105,17 @@ export function MetricCard({
         role={onClickCard ? "group" : "region"}
         tabIndex={onClickCard ? 0 : undefined}
         aria-label={`${title} metric`}
-        className={`p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer bg-[#1C1D1F] border border-[#2A2C2E] hover:border-[#3E4145] transition-colors rounded-[10px] select-text relative ${className}`}
+        className={`tf-card tf-metric p-4 min-h-[128px] flex flex-col justify-between cursor-pointer bg-[#202122] border border-[#3A3D3E] hover:border-[#737978] transition-colors rounded-[10px] select-text relative ${className}`}
       >
-        {/* Top Label Row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-[#8E9296] font-medium">
-              {title}
-            </span>
+        {/* 1. Top Heading Row: Title & Accessible Info Icon */}
+        <div className="tf-metric-heading flex items-center justify-between gap-2">
+          <h2 className="m-0 text-[14px] font-medium text-[#C1C5C1]">
+            {title}
+          </h2>
 
-            {/* Accessible Info Action Button */}
+          <div className="flex items-center gap-1.5">
+            {badge && <div>{badge}</div>}
+
             {definition && (
               <button
                 type="button"
@@ -128,32 +129,30 @@ export function MetricCard({
                     setShowHelp(true);
                   }
                 }}
-                className="w-4 h-4 flex items-center justify-center rounded-full text-[#6E737A] hover:text-[#DDB66D] transition-colors focus:outline-none"
+                className="w-6 h-6 -mr-1 flex items-center justify-center rounded-full text-[#A1A9A5] hover:text-[#DDB66D] transition-colors focus:outline-none"
                 aria-label={definition.accessibleLabel}
                 title={definition.accessibleLabel}
               >
-                <HelpCircle className="w-3 h-3 pointer-events-none" />
+                <HelpCircle className="w-3.5 h-3.5 pointer-events-none" />
               </button>
             )}
           </div>
-
-          {badge && <div>{badge}</div>}
         </div>
 
-        {/* Value Row */}
-        <div className="my-1">
-          <div className="text-2xl sm:text-[28px] font-semibold text-[#ECECE7] tracking-tight">
+        {/* 2. Middle Row: Metric Value on Left, Microchart on Right */}
+        <div className="tf-metric-value-row flex items-center justify-between gap-3 min-w-0 my-1">
+          <div className="tf-metric-value font-medium leading-tight whitespace-nowrap text-[#ECECE7]">
             {value}
           </div>
-          {subtitle && (
-            <div className="text-[11px] text-[#8E9296] mt-0.5 leading-snug">
-              {subtitle}
-            </div>
-          )}
+          {miniChart && <div className="tf-microchart shrink-0">{miniChart}</div>}
         </div>
 
-        {/* Mini chart row */}
-        {miniChart && <div className="mt-1">{miniChart}</div>}
+        {/* 3. Bottom Meta Scope Line */}
+        {subtitle && (
+          <div className="tf-meta text-[13px] text-[#A1A9A5] leading-normal m-0 mt-1">
+            {subtitle}
+          </div>
+        )}
       </div>
 
       {/* Metric Help Popover */}

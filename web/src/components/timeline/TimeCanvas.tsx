@@ -351,122 +351,93 @@ export function TimeCanvas({
 
   const numSubrows = Math.max(1, blockSubrows.length);
 
-  // Lane height mapping (§5.1 table)
+  // Lane height mapping (§5.1 table, 64px intentional, 48px detected, 56px per device)
   const laneHeights = {
-    blocks: (density === "compact" ? 40 : density === "comfortable" ? 56 : 72) * numSubrows,
-    singleBlock: density === "compact" ? 40 : density === "comfortable" ? 56 : 72,
-    runs: density === "compact" ? 24 : density === "comfortable" ? 36 : 48,
-    computer: density === "compact" ? 36 : density === "comfortable" ? 48 : 64,
-    phone: density === "compact" ? 36 : density === "comfortable" ? 48 : 64,
+    blocks: (density === "compact" ? 48 : density === "comfortable" ? 64 : 80) * numSubrows,
+    singleBlock: density === "compact" ? 48 : density === "comfortable" ? 64 : 80,
+    runs: density === "compact" ? 36 : density === "comfortable" ? 48 : 60,
+    computer: density === "compact" ? 44 : density === "comfortable" ? 56 : 68,
+    phone: density === "compact" ? 44 : density === "comfortable" ? 56 : 68,
   };
 
   return (
     <div
-      className="card-midnight p-4 sm:p-5 flex flex-col gap-4 bg-[#202122] border border-[#3A3D3E] select-text"
+      className="tf-card tf-timeline p-4 sm:p-5 flex flex-col gap-4 bg-[#202122] border border-[#3A3D3E] rounded-[10px] select-text min-h-[440px]"
       role="region"
       aria-label="Interactive time canvas"
     >
-      {/* Header & Controls Toolbar */}
+      {/* Header & Controls Toolbar (matching approved-overview.png) */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#3A3D3E] pb-3">
-        <div>
-          <h2 className="text-base font-semibold text-[#ECECE7] flex items-center gap-2">
-            <span>Your time, mapped</span>
-            <span className="text-xs font-normal text-[#A1A9A5]">
-              &bull; 04:00–04:00 ({timezone.replace("_", " ")})
-            </span>
-          </h2>
-        </div>
+        <h2 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+          Your day
+        </h2>
 
-        {/* Toolbar Controls (§5.1) */}
+        {/* Toolbar Controls */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* Zoom Presets (§5.1, §5.3) */}
-          <div className="flex items-center bg-[#282A2C] rounded-[6px] p-0.5 border border-[#3A3D3E]">
+          {/* Zoom Presets: Full day / 6h / 1h */}
+          <div className="flex items-center bg-[#171819] rounded-[6px] p-0.5 border border-[#3A3D3E]">
             <button
               onClick={() => applyPresetHours(24)}
-              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
+              className={`px-2.5 py-1 rounded-[4px] font-medium transition-colors ${
+                viewWindow.start === 0 && viewWindow.end === 100
+                  ? "bg-[#282A2C] text-[#ECECE7]"
+                  : "text-[#A1A9A5] hover:text-[#ECECE7]"
+              }`}
             >
               Full day
             </button>
             <button
-              onClick={() => applyPresetHours(12)}
-              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
-            >
-              12h
-            </button>
-            <button
               onClick={() => applyPresetHours(6)}
-              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
+              className="px-2.5 py-1 rounded-[4px] text-[#A1A9A5] hover:text-[#ECECE7] transition-colors"
             >
               6h
             </button>
             <button
-              onClick={() => applyPresetHours(3)}
-              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
-            >
-              3h
-            </button>
-            <button
               onClick={() => applyPresetHours(1)}
-              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
+              className="px-2.5 py-1 rounded-[4px] text-[#A1A9A5] hover:text-[#ECECE7] transition-colors"
             >
               1h
-            </button>
-            <button
-              onClick={() => applyPresetHours(0.25)}
-              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133] transition-colors"
-            >
-              15m
-            </button>
-            <button
-              onClick={handleFitSelection}
-              className="px-2 py-1 rounded-[4px] text-[#DDB66D] hover:text-[#E8C888] hover:bg-[#2F3133] transition-colors font-medium border-l border-[#3A3D3E]/50 ml-0.5"
-              title="Fit zoom to selected or latest block"
-            >
-              Fit
             </button>
           </div>
 
           {/* Plus / Minus Zoom */}
-          <div className="flex items-center bg-[#282A2C] rounded-[6px] p-0.5 border border-[#3A3D3E]">
+          <div className="flex items-center bg-[#171819] rounded-[6px] p-0.5 border border-[#3A3D3E]">
             <button
               onClick={() => handleZoomStep(1.25)}
-              className="p-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133]"
-              title="Zoom out"
+              className="p-1 px-1.5 rounded-[4px] text-[#A1A9A5] hover:text-[#ECECE7]"
+              title="Zoom out (-)"
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <span className="text-sm font-semibold leading-none">&minus;</span>
             </button>
             <button
               onClick={() => handleZoomStep(0.75)}
-              className="p-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133]"
-              title="Zoom in"
+              className="p-1 px-1.5 rounded-[4px] text-[#A1A9A5] hover:text-[#ECECE7]"
+              title="Zoom in (+)"
             >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewWindow({ start: 0, end: 100 })}
-              className="p-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] hover:bg-[#2F3133]"
-              title="Reset zoom"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="text-sm font-semibold leading-none">+</span>
             </button>
           </div>
 
-          {/* Density Control (Compact / Comfortable / Expanded) */}
-          <div className="hidden sm:flex items-center bg-[#282A2C] rounded-[6px] p-0.5 border border-[#3A3D3E]">
-            {(["compact", "comfortable", "expanded"] as Density[]).map((d) => (
-              <button
-                key={d}
-                onClick={() => setDensity(d)}
-                className={`px-2 py-1 rounded-[4px] capitalize transition-colors ${
-                  density === d
-                    ? "bg-[#DDB66D] text-[#171819] font-semibold"
-                    : "text-[#C1C5C1] hover:text-[#ECECE7]"
-                }`}
-              >
-                {d.slice(0, 4)}
-              </button>
-            ))}
+          {/* Fit / Maximize */}
+          <button
+            onClick={handleFitSelection}
+            className="p-1.5 rounded-[6px] bg-[#171819] border border-[#3A3D3E] text-[#A1A9A5] hover:text-[#ECECE7] transition-colors"
+            title="Fit zoom to active selection"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Density Dropdown */}
+          <div className="flex items-center bg-[#171819] rounded-[6px] p-0.5 border border-[#3A3D3E]">
+            <button
+              onClick={() => setDensity(density === "comfortable" ? "compact" : "comfortable")}
+              className="px-2 py-1 rounded-[4px] text-[#C1C5C1] hover:text-[#ECECE7] flex items-center gap-1.5 capitalize"
+              title="Toggle timeline density"
+            >
+              <span>☼ {density}</span>
+            </button>
           </div>
+
 
           {/* Show Unwanted Activity Outline (§3.4) */}
           <button
@@ -526,41 +497,52 @@ export function TimeCanvas({
             );
           })
         )}
+        {/* Timeline Body with 132px Lane Titles and Unified X-Scale (§3, §5, approved-overview.png) */}
+        <div className="tf-timeline-body flex flex-col gap-2 p-3">
+          {/* Row 0: Time Ruler */}
+          <div className="tf-time-row">
+            <div />
+            <div className="relative h-6">
+              {hourTicks.map((tick) => {
+                const posV = mapToViewport(tick.pct);
+                if (posV < 0 || posV > 100) return null;
+                return (
+                  <div
+                    key={`tick-${tick.hour}-${tick.pct}`}
+                    className="absolute top-0 bottom-0 border-l border-[#3A3D3E] flex items-center"
+                    style={{ left: `${posV}%` }}
+                  >
+                    <span className="text-[11px] font-mono text-[#A1A9A5] pl-1 select-none">
+                      {tick.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-        {/* Time Ruler (Hour Tick Lines) */}
-        <div className="absolute inset-0 pointer-events-none">
-          {hourTicks.map((tick) => {
-            const posV = mapToViewport(tick.pct);
-            if (posV < 0 || posV > 100) return null;
-            return (
-              <div
-                key={`tick-${tick.hour}-${tick.pct}`}
-                className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 flex flex-col justify-between"
-                style={{ left: `${posV}%` }}
-              >
-                <span className="text-[10px] font-mono text-[#A1A9A5]/70 pl-1 pt-1">
-                  {tick.label}
-                </span>
-                <span className="text-[9px] font-mono text-[#A1A9A5]/40 pl-1 pb-1">
-                  {tick.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Lanes Stack */}
-        <div className="relative z-10 flex flex-col gap-2 p-3">
-          {/* LANE 1: Intentional Focus Blocks (§5.2) */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[11px] font-medium text-[#DDB66D] px-1">
-              <span>Focus Blocks (Intentional)</span>
-              <span>{segments.focusBlocks.length} recorded</span>
+          {/* Lane 1: Intentional Focus Blocks (row 64px, ribbon 48px, y=8) */}
+          <div className="tf-time-row">
+            <div className="tf-lane-title select-none">
+              Focus blocks
             </div>
             <div
-              className="relative w-full rounded-[8px] bg-[#202122]/80 border border-[#3A3D3E]/60 overflow-hidden"
+              className="tf-lane tf-lane-blocks relative rounded-[6px] bg-[#171819] border border-[#3A3D3E] overflow-hidden"
               style={{ height: `${laneHeights.blocks}px` }}
             >
+              {/* Background hour grid lines */}
+              {hourTicks.map((tick) => {
+                const posV = mapToViewport(tick.pct);
+                if (posV < 0 || posV > 100) return null;
+                return (
+                  <div
+                    key={`grid-b-${tick.pct}`}
+                    className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 pointer-events-none"
+                    style={{ left: `${posV}%` }}
+                  />
+                );
+              })}
+
               {blockSubrows.map((row, rowIndex) =>
                 row.map((b) => {
                   const leftV = mapToViewport(b.overallLeftPercent);
@@ -568,8 +550,8 @@ export function TimeCanvas({
                   if (leftV + widthV < 0 || leftV > 100) return null;
 
                   const isSelected = selectedBlockId === b.id;
-                  const topPx = rowIndex * laneHeights.singleBlock + 2;
-                  const heightPx = Math.max(24, laneHeights.singleBlock - 4);
+                  const topPx = rowIndex * laneHeights.singleBlock + 8;
+                  const heightPx = Math.max(32, laneHeights.singleBlock - 16);
 
                   return (
                     <div
@@ -579,43 +561,36 @@ export function TimeCanvas({
                         setInspectedBlock(b);
                         onSelectBlock?.(b.id);
                       }}
-                      className={`focus-ribbon absolute rounded-[8px] flex items-center justify-between px-2.5 cursor-pointer transition-all ${
-                        isSelected ? "border-[#E8C888] shadow-[0_0_16px_rgba(170,169,255,0.4)]" : ""
+                      className={`focus-ribbon absolute rounded-[6px] flex items-center justify-between px-3 cursor-pointer transition-all ${
+                        isSelected ? "border-[#ECECE7] ring-2 ring-[#ECECE7]" : ""
                       } ${b.state === "running" ? "border-r-2 border-r-[#DDB66D]" : ""}`}
                       style={{
                         top: `${topPx}px`,
                         height: `${heightPx}px`,
                         left: `${leftV}%`,
-                        width: `${Math.max(2, widthV)}%`,
+                        width: `${Math.max(3, widthV)}%`,
                       }}
                     >
                       <div className="flex items-center gap-1.5 truncate mr-2">
-                        {b.isReviewed ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#90D2BC] shrink-0" />
-                        ) : (
-                          <div className="w-2 h-2 rounded-full border border-[#DDB66D] shrink-0" />
-                        )}
-                        <span className="text-xs font-semibold text-[#ECECE7] truncate">
-                          {b.title}
+                        <span className="text-[14px] font-normal text-[#ECECE7] truncate">
+                          {b.title} &middot; {formatDurationSeconds(b.elapsedSeconds)}
                         </span>
+                        {b.isReviewed && (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#DDB66D] shrink-0 ml-1" />
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] font-mono text-[#E8C888]">
-                          {formatDurationSeconds(b.elapsedSeconds)}
-                        </span>
-                        {!b.isReviewed && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStartReviewForBlock?.(b.id);
-                            }}
-                            className="px-2 py-0.5 rounded-[4px] bg-[#DDB66D] text-[#171819] text-[10px] font-semibold hover:bg-[#E8C888] transition-colors"
-                          >
-                            Review
-                          </button>
-                        )}
-                      </div>
+                      {!b.isReviewed && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStartReviewForBlock?.(b.id);
+                          }}
+                          className="px-2 py-0.5 rounded-[4px] bg-[#ECECE7] text-[#171819] text-[11px] font-medium hover:bg-white transition-colors shrink-0"
+                        >
+                          Review
+                        </button>
+                      )}
                     </div>
                   );
                 })
@@ -623,16 +598,28 @@ export function TimeCanvas({
             </div>
           </div>
 
-          {/* LANE 2: Automatically Detected Deep Blocks (§5.2) */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[11px] font-medium text-[#C1C5C1] px-1">
-              <span>Auto-Detected Deep Runs</span>
-              <span>{segments.focusRuns.length} qualified runs</span>
+          {/* Lane 2: Automatically Detected Deep Runs (row 48px, run 24px, y=12) */}
+          <div className="tf-time-row">
+            <div className="tf-lane-title select-none">
+              Deep blocks
             </div>
             <div
-              className="relative w-full rounded-[6px] bg-[#202122]/60 border border-[#3A3D3E]/40"
+              className="tf-lane tf-lane-runs relative rounded-[6px] bg-[#171819] border border-[#3A3D3E] overflow-hidden"
               style={{ height: `${laneHeights.runs}px` }}
             >
+              {/* Background hour grid lines */}
+              {hourTicks.map((tick) => {
+                const posV = mapToViewport(tick.pct);
+                if (posV < 0 || posV > 100) return null;
+                return (
+                  <div
+                    key={`grid-r-${tick.pct}`}
+                    className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 pointer-events-none"
+                    style={{ left: `${posV}%` }}
+                  />
+                );
+              })}
+
               {segments.focusRuns.map((r) => {
                 const leftV = mapToViewport(r.leftPercent);
                 const widthV = (r.widthPercent / viewSpan) * 100;
@@ -641,33 +628,49 @@ export function TimeCanvas({
                 return (
                   <div
                     key={r.id}
-                    className="absolute top-1 bottom-1 rounded-[4px] bg-[#DDB66D]/60 border-l-2 border-[#ECECE7] flex items-center px-1.5 text-[10px] font-mono text-[#171819] font-medium truncate"
+                    className="absolute top-3 h-6 rounded-[4px] bg-[#DDB66D]/40 border border-[#DDB66D]/60 flex items-center px-2 text-[11px] font-mono text-[#ECECE7] truncate"
                     style={{
                       left: `${leftV}%`,
-                      width: `${Math.max(1, widthV)}%`,
+                      width: `${Math.max(1.5, widthV)}%`,
                     }}
                     title={`Deep Run: ${formatDurationSeconds(r.durationSeconds)}`}
                   >
-                    {widthV > 4 && formatDurationSeconds(r.durationSeconds)}
+                    {widthV > 6 && formatDurationSeconds(r.durationSeconds)}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* LANE 3: Computer Activity */}
-          <div className="flex flex-col gap-1">
-            <div className="text-[11px] font-medium text-[#A1A9A5] px-1">Computer Activity</div>
+          {/* Lane 3: Computer Activity (row 56px, event 36px, y=10) */}
+          <div className="tf-time-row">
+            <div className="tf-lane-title select-none">
+              Computer
+            </div>
             <div
-              className="relative w-full rounded-[6px] bg-[#202122]/40 border border-[#3A3D3E]/30 overflow-hidden"
+              className="tf-lane tf-lane-device relative rounded-[6px] bg-[#171819] border border-[#3A3D3E] overflow-hidden"
               style={{ height: `${laneHeights.computer}px` }}
             >
+              {/* Background hour grid lines */}
+              {hourTicks.map((tick) => {
+                const posV = mapToViewport(tick.pct);
+                if (posV < 0 || posV > 100) return null;
+                return (
+                  <div
+                    key={`grid-c-${tick.pct}`}
+                    className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 pointer-events-none"
+                    style={{ left: `${posV}%` }}
+                  />
+                );
+              })}
+
               {segments.computer.map((seg) => {
                 const leftV = mapToViewport(seg.leftPercent);
                 const widthV = (seg.widthPercent / viewSpan) * 100;
                 if (leftV + widthV < 0 || leftV > 100) return null;
 
-                const bg = CATEGORY_COLORS[seg.category] || "var(--other)";
+                const bg = seg.category === "sink" ? "#DFA095" : "#3A3D3E";
+                const textColor = seg.category === "sink" ? "#171819" : "#ECECE7";
                 const isUnwanted = seg.appraisal === "unwanted";
                 const unwantedOutline = showUnwantedOutline && isUnwanted ? "ring-2 ring-[#DFA095] z-10" : "";
 
@@ -679,36 +682,53 @@ export function TimeCanvas({
                       setInspectedSegment(seg);
                       onSelectSegment?.(seg);
                     }}
-                    className={`absolute top-1 bottom-1 rounded-[3px] cursor-pointer hover:brightness-125 transition-all ${
+                    className={`absolute top-2.5 h-9 rounded-[4px] cursor-pointer hover:brightness-125 transition-all flex items-center px-2 text-[12px] font-normal truncate ${
                       seg.isExcluded ? "opacity-30 border border-dashed border-[#DFA095]" : ""
                     } ${seg.isAdjusted ? "border-t border-[#DDB66D]" : ""} ${unwantedOutline}`}
                     style={{
                       left: `${leftV}%`,
-                      width: `${Math.max(0.2, widthV)}%`,
+                      width: `${Math.max(0.6, widthV)}%`,
                       backgroundColor: bg,
+                      color: textColor,
                     }}
-                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}${
-                      seg.appraisal && seg.appraisal !== "unreviewed" ? ` · ${seg.appraisal}` : ""
-                    }`}
-                  />
+                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}`}
+                  >
+                    {widthV > 4 && <span className="truncate">{seg.app}</span>}
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* LANE 4: Phone Activity */}
-          <div className="flex flex-col gap-1">
-            <div className="text-[11px] font-medium text-[#A1A9A5] px-1">Phone Activity</div>
+          {/* Lane 4: Phone Activity (row 56px, event 36px, y=10) */}
+          <div className="tf-time-row">
+            <div className="tf-lane-title select-none">
+              Phone
+            </div>
             <div
-              className="relative w-full rounded-[6px] bg-[#202122]/40 border border-[#3A3D3E]/30 overflow-hidden"
+              className="tf-lane tf-lane-device relative rounded-[6px] bg-[#171819] border border-[#3A3D3E] overflow-hidden"
               style={{ height: `${laneHeights.phone}px` }}
             >
+              {/* Background hour grid lines */}
+              {hourTicks.map((tick) => {
+                const posV = mapToViewport(tick.pct);
+                if (posV < 0 || posV > 100) return null;
+                return (
+                  <div
+                    key={`grid-p-${tick.pct}`}
+                    className="absolute top-0 bottom-0 border-l border-[#3A3D3E]/40 pointer-events-none"
+                    style={{ left: `${posV}%` }}
+                  />
+                );
+              })}
+
               {segments.phone.map((seg) => {
                 const leftV = mapToViewport(seg.leftPercent);
                 const widthV = (seg.widthPercent / viewSpan) * 100;
                 if (leftV + widthV < 0 || leftV > 100) return null;
 
-                const bg = CATEGORY_COLORS[seg.category] || "var(--other)";
+                const bg = seg.category === "sink" ? "#DFA095" : "#3A3D3E";
+                const textColor = seg.category === "sink" ? "#171819" : "#ECECE7";
                 const isUnwanted = seg.appraisal === "unwanted";
                 const unwantedOutline = showUnwantedOutline && isUnwanted ? "ring-2 ring-[#DFA095] z-10" : "";
 
@@ -720,18 +740,19 @@ export function TimeCanvas({
                       setInspectedSegment(seg);
                       onSelectSegment?.(seg);
                     }}
-                    className={`absolute top-1 bottom-1 rounded-[3px] cursor-pointer hover:brightness-125 transition-all ${
+                    className={`absolute top-2.5 h-9 rounded-[4px] cursor-pointer hover:brightness-125 transition-all flex items-center px-2 text-[12px] font-normal truncate ${
                       seg.isExcluded ? "opacity-30 border border-dashed border-[#DFA095]" : ""
                     } ${unwantedOutline}`}
                     style={{
                       left: `${leftV}%`,
-                      width: `${Math.max(0.2, widthV)}%`,
+                      width: `${Math.max(0.6, widthV)}%`,
                       backgroundColor: bg,
+                      color: textColor,
                     }}
-                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}${
-                      seg.appraisal && seg.appraisal !== "unreviewed" ? ` · ${seg.appraisal}` : ""
-                    }`}
-                  />
+                    title={`${seg.app} (${seg.category}) · ${formatDurationSeconds(seg.durationSeconds)}`}
+                  >
+                    {widthV > 4 && <span className="truncate">{seg.app}</span>}
+                  </div>
                 );
               })}
             </div>
@@ -739,54 +760,70 @@ export function TimeCanvas({
         </div>
       </div>
 
-      {/* Full-Day Navigator Brush below Canvas (§5.1) */}
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-[11px] text-[#A1A9A5]">
-          <span>Full Day Navigator</span>
-          <span>Drag window or handles to explore timeline</span>
-        </div>
+      {/* Full-Day Navigator (44px height, §3, §5.1, approved-overview.png) */}
+      <div className="flex flex-col gap-1.5">
         <div
           ref={navTrackRef}
           onClick={handleNavTrackClick}
-          className="relative h-6 w-full rounded-[6px] bg-[#171819] border border-[#3A3D3E] overflow-hidden cursor-pointer"
+          className="tf-navigator relative h-[44px] w-full rounded-[6px] bg-[#171819] border border-[#737978] overflow-hidden cursor-pointer"
+          aria-label="Full-day timeline navigator"
         >
           {/* Background mini bars across day */}
           {segments.focusBlocks.map((b) => (
             <div
               key={`nav-b-${b.id}`}
-              className="absolute top-0 bottom-0 bg-[#DDB66D]/30 pointer-events-none"
+              className="absolute top-2 bottom-2 bg-[#DDB66D]/40 rounded-[2px] pointer-events-none"
               style={{
                 left: `${b.overallLeftPercent}%`,
-                width: `${Math.max(0.5, b.overallWidthPercent)}%`,
+                width: `${Math.max(0.8, b.overallWidthPercent)}%`,
               }}
             />
           ))}
 
-          {/* Viewport Brush Window */}
+          {segments.computer.concat(segments.phone).map((s, idx) => (
+            <div
+              key={`nav-s-${s.id}-${idx}`}
+              className="absolute top-3 bottom-3 rounded-[1px] pointer-events-none opacity-40"
+              style={{
+                left: `${s.leftPercent}%`,
+                width: `${Math.max(0.3, s.widthPercent)}%`,
+                backgroundColor: s.category === "sink" ? "#DFA095" : "#ECECE7",
+              }}
+            />
+          ))}
+
+          {/* Viewport Brush Window with 44px Hit Targets */}
           <div
-            className="absolute top-0 bottom-0 border-2 border-[#DDB66D] bg-[#DDB66D]/15 rounded-[4px] cursor-grab active:cursor-grabbing"
+            className="absolute top-0 bottom-0 border-2 border-[#ECECE7] bg-white/[0.08] rounded-[4px] cursor-grab active:cursor-grabbing"
             style={{
               left: `${viewWindow.start}%`,
               width: `${Math.max(2, viewWindow.end - viewWindow.start)}%`,
             }}
             onMouseDown={(e) => handleNavMouseDown("window", e)}
             onTouchStart={(e) => handleNavTouchStart("window", e)}
+            tabIndex={0}
+            aria-label="Timeline visible window"
           >
             {/* Left handle */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-2 bg-[#DDB66D] cursor-ew-resize opacity-70 hover:opacity-100"
+              className="absolute -left-1 top-0 bottom-0 w-3 bg-[#ECECE7] cursor-ew-resize opacity-80 hover:opacity-100 rounded-l-[2px]"
               onMouseDown={(e) => handleNavMouseDown("left", e)}
               onTouchStart={(e) => handleNavTouchStart("left", e)}
-              aria-label="Drag left handle to adjust start time"
+              aria-label="Drag left handle"
             />
             {/* Right handle */}
             <div
-              className="absolute right-0 top-0 bottom-0 w-2 bg-[#DDB66D] cursor-ew-resize opacity-70 hover:opacity-100"
+              className="absolute -right-1 top-0 bottom-0 w-3 bg-[#ECECE7] cursor-ew-resize opacity-80 hover:opacity-100 rounded-r-[2px]"
               onMouseDown={(e) => handleNavMouseDown("right", e)}
               onTouchStart={(e) => handleNavTouchStart("right", e)}
-              aria-label="Drag right handle to adjust end time"
+              aria-label="Drag right handle"
             />
           </div>
+        </div>
+
+        {/* Hint underneath navigator */}
+        <div className="tf-timeline-hint text-center text-[13px] text-[#A1A9A5]">
+          Drag to pan &middot; + / - to zoom
         </div>
       </div>
 

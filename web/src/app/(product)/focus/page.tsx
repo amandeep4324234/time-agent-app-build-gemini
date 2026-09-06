@@ -46,6 +46,9 @@ export default function FocusBlocksPage() {
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [reviewingBlockId, setReviewingBlockId] = useState<string | null>(null);
 
+  // Search and date filtering
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Raw ledger sessions for review slicing
   const ledger = useMemo(() => {
     return buildLedger(demoEnvelope, seedPins, overrides);
@@ -67,65 +70,80 @@ export default function FocusBlocksPage() {
     return correctionBatches.flatMap((b) => b.operations);
   }, [correctionBatches]);
 
+  // Filter blocks by search
+  const filteredBlocks = useMemo(() => {
+    if (!searchQuery.trim()) return focusBlocks;
+    const q = searchQuery.toLowerCase().trim();
+    return focusBlocks.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        b.tags.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [focusBlocks, searchQuery]);
+
   // Group focus blocks by day
   const blocksByDay = useMemo(() => {
     const map = new Map<string, typeof focusBlocks>();
-    for (const b of focusBlocks) {
+    for (const b of filteredBlocks) {
       const dateStr = DateTime.fromISO(b.createdAtUtc, { zone: "Asia/Kolkata" }).isValid
-        ? DateTime.fromISO(b.createdAtUtc, { zone: "Asia/Kolkata" }).toFormat("ccc, LLL d, yyyy")
+        ? DateTime.fromISO(b.createdAtUtc, { zone: "Asia/Kolkata" }).toFormat("cccc, d LLLL yyyy")
         : b.createdAtUtc.slice(0, 10);
       const list = map.get(dateStr) || [];
       list.push(b);
       map.set(dateStr, list);
     }
     return Array.from(map.entries());
-  }, [focusBlocks]);
+  }, [filteredBlocks]);
 
   return (
     <div className="flex flex-col gap-6 select-text max-w-5xl mx-auto">
-      {/* 1. Header (Image 3 Panel 1) */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#26282A] pb-4">
+      {/* 1. Shared Header (START-HERE.md §7.3) */}
+      <div className="tf-header flex flex-wrap items-center justify-between gap-4 border-b border-[#3A3D3E] pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#ECECE7] tracking-tight">
+          <h1 className="tf-title text-[28px] font-semibold text-[#ECECE7] leading-tight m-0 mb-1">
             Focus blocks
           </h1>
-          <p className="text-xs text-[#8E9296] mt-0.5">
+          <p className="text-[14px] text-[#C1C5C1] m-0">
             Plan, track and review your focused work.
           </p>
         </div>
 
-        {/* Center: Date picker pill */}
-        <div className="flex items-center bg-[#1E1F21] rounded-[8px] border border-[#2F3134] px-2 py-1 gap-2 text-xs">
-          <button className="text-[#8E9296] hover:text-[#ECECE7]">‹</button>
-          <span className="text-[#ECECE7] font-medium">May 14, 2025</span>
-          <button className="text-[#8E9296] hover:text-[#ECECE7]">›</button>
-        </div>
-
-        {/* Right: + Start focus */}
+        {/* Right: + Start focus (Primary off-white action) */}
         <button
           onClick={() => setIsStartOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] bg-[#DDB66D] text-[#121314] hover:bg-[#E5C27C] transition-colors text-xs sm:text-sm font-semibold shadow-sm"
+          className="tf-button tf-button-primary min-h-[44px] px-5 py-2.5 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white text-[14px] font-medium flex items-center gap-2 transition-colors border-0"
         >
-          <span className="text-base font-bold leading-none">+</span>
+          <Play className="w-3.5 h-3.5 fill-current" />
           <span>Start focus</span>
         </button>
       </div>
 
+      {/* Optional Search Input (44px high, §7.3) */}
+      <div className="w-full">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search focus blocks by title or tag…"
+          className="w-full h-[44px] px-4 rounded-[6px] bg-[#141516] border border-[#3A3D3E] text-[14px] text-[#ECECE7] placeholder-[#A1A9A5] focus:outline-none focus:border-[#737978]"
+        />
+      </div>
+
       {/* Active Running Block Banner */}
       {activeBlock && (
-        <div className="p-4 rounded-[10px] bg-[#1E1F21] border border-[#DDB66D]/60 shadow-[0_0_16px_rgba(221,182,109,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="tf-card p-4 rounded-[10px] bg-[#202122] border border-[#737978] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-3 h-3 rounded-full bg-[#DDB66D] animate-ping shrink-0" />
+            <div className="w-3 h-3 rounded-full bg-[#DDB66D] shrink-0" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#DDB66D]">
+                <span className="text-[13px] font-medium uppercase tracking-wider text-[#DDB66D]">
                   {activeBlock.state === "running" ? "Currently Active" : "Paused"}
                 </span>
-                <span className="text-xs text-[#8E9296]">
+                <span className="text-[13px] text-[#A1A9A5]">
                   &bull; {formatDurationSeconds(calculateBlockElapsedSeconds(activeBlock))} elapsed
                 </span>
               </div>
-              <h3 className="text-base font-bold text-[#ECECE7] mt-0.5">
+              <h3 className="text-[16px] font-medium text-[#ECECE7] mt-0.5 m-0">
                 {activeBlock.title || "Untitled focus block"}
               </h3>
             </div>
@@ -134,7 +152,7 @@ export default function FocusBlocksPage() {
           <div className="flex items-center gap-2.5 self-end sm:self-center">
             <button
               onClick={() => setIsShowingActiveView(true)}
-              className="px-4 py-2 rounded-[8px] bg-[#DDB66D] text-[#121314] text-xs font-bold hover:bg-[#E5C27C] transition-colors"
+              className="tf-button tf-button-primary min-h-[40px] px-4 rounded-[6px] bg-[#ECECE7] text-[#171819] text-[14px] font-medium hover:bg-white transition-colors"
             >
               Open Active Surface
             </button>
@@ -143,7 +161,7 @@ export default function FocusBlocksPage() {
                 const finished = finishCurrentBlock();
                 if (finished) setReviewingBlockId(finished.id);
               }}
-              className="px-3.5 py-2 rounded-[8px] bg-[#2A2C2E] border border-[#3A3D3E] text-xs font-semibold text-[#DFA095] hover:bg-[#DFA095]/10 transition-colors"
+              className="tf-button min-h-[40px] px-3.5 rounded-[6px] bg-transparent border border-[#737978] text-[14px] font-medium text-[#ECECE7] hover:bg-[#2D3031] transition-colors"
             >
               Finish & Review
             </button>
@@ -151,172 +169,153 @@ export default function FocusBlocksPage() {
         </div>
       )}
 
-      {/* Grouped Block History (Image 3 Panel 1) */}
+      {/* Date-Grouped Full-Width Focus Block Rows (START-HERE.md §7.3) */}
       <div className="flex flex-col gap-6">
-        {/* Today Group */}
-        <div className="flex flex-col gap-2.5">
-          <div className="text-xs font-semibold text-[#ECECE7]">
-            Today <span className="text-[#8E9296] font-normal">Wed, May 14, 2025</span>
-          </div>
-
-          {[
-            {
-              id: "b-1",
-              title: "Design system",
-              time: "10:14 – 10:59",
-              duration: "45m",
-              tag: "Design",
-              reviewed: true,
-              icon: "✏️",
-            },
-            {
-              id: "b-2",
-              title: "Reading",
-              time: "13:02 – 13:58",
-              duration: "56m",
-              tag: "Study",
-              reviewed: true,
-              icon: "📖",
-            },
-            {
-              id: "b-3",
-              title: "Build session",
-              time: "15:21 – 16:06",
-              duration: "45m",
-              tag: "Code",
-              reviewed: false,
-              icon: "💻",
-            },
-          ].map((item) => (
-            <div
-              key={item.id}
-              onClick={() => {
-                const existing = focusBlocks.find((b) => b.id === item.id);
-                if (existing) setReviewingBlockId(existing.id);
-                else if (focusBlocks.length > 0) setReviewingBlockId(focusBlocks[0].id);
-              }}
-              className="p-3.5 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] hover:border-[#3E4145] transition-all flex items-center justify-between gap-3 cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[8px] bg-[#26282A] flex items-center justify-center text-sm shrink-0">
-                  {item.icon}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-[#ECECE7]">{item.title}</div>
-                  <div className="text-[10px] text-[#8E9296] mt-0.5">{item.time}</div>
-                </div>
+        {blocksByDay.length > 0 ? (
+          blocksByDay.map(([dayLabel, dayBlocks]) => (
+            <div key={dayLabel} className="flex flex-col gap-2.5">
+              <div className="text-[14px] font-semibold text-[#ECECE7] mt-2 mb-1">
+                {dayLabel}
               </div>
 
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-mono font-medium text-[#ECECE7]">{item.duration}</span>
+              {dayBlocks.map((b) => {
+                const isReviewed = b.state === "reviewed";
+                const elapsedSec = calculateBlockElapsedSeconds(b);
+                const formattedDuration = formatDurationSeconds(elapsedSec);
 
-                {/* Mini Sparkline Bar Chart */}
-                <div className="flex items-end gap-0.5 h-4 w-12">
-                  <div className="w-2 bg-[#DDB66D] h-3 rounded-t-[1px]" />
-                  <div className="w-2 bg-[#DDB66D] h-4 rounded-t-[1px]" />
-                  <div className="w-2 bg-[#DDB66D] h-2 rounded-t-[1px]" />
-                  <div className="w-2 bg-[#DDB66D] h-3.5 rounded-t-[1px]" />
-                </div>
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => setReviewingBlockId(b.id)}
+                    className="tf-card min-h-[64px] p-3.5 px-4 rounded-[10px] bg-[#202122] border border-[#3A3D3E] hover:border-[#737978] transition-all flex items-center justify-between gap-4 cursor-pointer"
+                  >
+                    {/* Title + Tags flexible left */}
+                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      <div className="text-[16px] font-medium text-[#ECECE7] truncate">
+                        {b.title || "Focus block"}
+                      </div>
 
-                <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-[#26282A] text-[#C1C5C1] border border-[#3A3D3E]">
-                  {item.tag}
-                </span>
+                      {b.tags.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {b.tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 rounded-[4px] bg-[#141516] border border-[#3A3D3E] text-[13px] text-[#C1C5C1]"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {b.tags.length > 2 && (
+                            <span className="text-[12px] text-[#A1A9A5]">
+                              +{b.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-[4px] font-medium ${
-                    item.reviewed
-                      ? "text-[#8E9296] bg-[#26282A]"
-                      : "text-[#DDB66D] bg-[#DDB66D]/15 border border-[#DDB66D]/30"
-                  }`}
-                >
-                  {item.reviewed ? "Reviewed" : "Needs review"}
-                </span>
+                    {/* Timeline Thumbnail (90x24 centered, §7.3) */}
+                    <div className="w-[90px] h-[24px] rounded-[4px] bg-[#171819] border border-[#3A3D3E] relative overflow-hidden hidden md:block shrink-0">
+                      {b.activeIntervals && b.activeIntervals.length > 0 ? (
+                        (() => {
+                          const firstStart = Date.parse(b.activeIntervals[0].startUtc);
+                          const lastInv = b.activeIntervals[b.activeIntervals.length - 1];
+                          const lastEnd = lastInv.endUtc
+                            ? Date.parse(lastInv.endUtc)
+                            : firstStart + (b.plannedSeconds ? b.plannedSeconds * 1000 : 3600000);
+                          const totalSpan = Math.max(1, lastEnd - firstStart);
 
-                <button className="text-[#8E9296] hover:text-[#ECECE7] px-1 text-sm leading-none">
-                  •••
-                </button>
-              </div>
+                          return b.activeIntervals.map((inv, idx) => {
+                            const start = Date.parse(inv.startUtc);
+                            const end = inv.endUtc ? Date.parse(inv.endUtc) : lastEnd;
+                            const leftPct = Math.max(0, Math.min(95, ((start - firstStart) / totalSpan) * 100));
+                            const widthPct = Math.max(5, Math.min(100 - leftPct, ((end - start) / totalSpan) * 100));
+
+                            return (
+                              <div
+                                key={idx}
+                                className="absolute top-1 bottom-1 bg-[#DDB66D]/70 rounded-[2px]"
+                                style={{
+                                  left: `${leftPct}%`,
+                                  width: `${widthPct}%`,
+                                }}
+                              />
+                            );
+                          });
+                        })()
+                      ) : (
+                        <div className="absolute top-1 bottom-1 left-2 right-2 bg-[#DDB66D]/50 rounded-[2px]" />
+                      )}
+                    </div>
+
+                    {/* Active Duration: 88px right-aligned mono */}
+                    <div className="w-[88px] text-right font-mono text-[14px] text-[#ECECE7] shrink-0">
+                      {formattedDuration}
+                    </div>
+
+                    {/* Review Status: 112px */}
+                    <div className="w-[112px] flex items-center gap-1.5 text-[13px] shrink-0">
+                      {isReviewed ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-[#A1A9A5]" />
+                          <span className="text-[#A1A9A5]">Reviewed</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2.5 h-2.5 rounded-full border border-[#DDB66D] bg-transparent" />
+                          <span className="text-[#DDB66D]">Needs review</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Action: 44px hit target */}
+                    <div className="w-[44px] flex justify-end shrink-0">
+                      {!isReviewed ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReviewingBlockId(b.id);
+                          }}
+                          className="tf-button tf-button-primary min-h-[36px] px-3 rounded-[6px] text-[13px] font-medium bg-[#ECECE7] text-[#171819] hover:bg-white"
+                        >
+                          Review
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReviewingBlockId(b.id);
+                          }}
+                          className="w-[44px] h-[44px] flex items-center justify-center text-[#A1A9A5] hover:text-[#ECECE7]"
+                          aria-label="View block detail"
+                        >
+                          &rsaquo;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-
-        {/* Yesterday Group */}
-        <div className="flex flex-col gap-2.5">
-          <div className="text-xs font-semibold text-[#ECECE7]">
-            Yesterday <span className="text-[#8E9296] font-normal">Tue, May 13, 2025</span>
-          </div>
-
-          {[
-            {
-              id: "b-4",
-              title: "Project planning",
-              time: "09:12 – 09:54",
-              duration: "42m",
-              tag: "Work",
-              reviewed: true,
-              icon: "✏️",
-            },
-            {
-              id: "b-5",
-              title: "Reading",
-              time: "11:03 – 11:37",
-              duration: "34m",
-              tag: "Study",
-              reviewed: true,
-              icon: "📖",
-            },
-            {
-              id: "b-6",
-              title: "Design system",
-              time: "14:20 – 15:05",
-              duration: "45m",
-              tag: "Design",
-              reviewed: true,
-              icon: "✏️",
-            },
-          ].map((item) => (
-            <div
-              key={item.id}
-              onClick={() => {
-                if (focusBlocks.length > 0) setReviewingBlockId(focusBlocks[0].id);
-              }}
-              className="p-3.5 rounded-[10px] bg-[#1C1D1F] border border-[#2A2C2E] hover:border-[#3E4145] transition-all flex items-center justify-between gap-3 cursor-pointer"
+          ))
+        ) : (
+          <div className="tf-card p-12 text-center flex flex-col items-center gap-3 bg-[#202122] border border-[#3A3D3E] rounded-[10px]">
+            <h3 className="text-[18px] font-semibold text-[#ECECE7] m-0">
+              No focus blocks yet
+            </h3>
+            <p className="text-[14px] text-[#A1A9A5] max-w-sm m-0">
+              Focus blocks help you track and review intentional, uninterrupted work periods across your devices.
+            </p>
+            <button
+              onClick={() => setIsStartOpen(true)}
+              className="tf-button tf-button-primary min-h-[44px] px-5 py-2.5 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white text-[14px] font-medium mt-2"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[8px] bg-[#26282A] flex items-center justify-center text-sm shrink-0">
-                  {item.icon}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-[#ECECE7]">{item.title}</div>
-                  <div className="text-[10px] text-[#8E9296] mt-0.5">{item.time}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-mono font-medium text-[#ECECE7]">{item.duration}</span>
-
-                <div className="flex items-end gap-0.5 h-4 w-12">
-                  <div className="w-2 bg-[#DDB66D] h-2 rounded-t-[1px]" />
-                  <div className="w-2 bg-[#DDB66D] h-3.5 rounded-t-[1px]" />
-                  <div className="w-2 bg-[#DDB66D] h-1.5 rounded-t-[1px]" />
-                  <div className="w-2 bg-[#DDB66D] h-4 rounded-t-[1px]" />
-                </div>
-
-                <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-[#26282A] text-[#C1C5C1] border border-[#3A3D3E]">
-                  {item.tag}
-                </span>
-
-                <span className="text-[10px] px-2 py-0.5 rounded-[4px] font-medium text-[#8E9296] bg-[#26282A]">
-                  Reviewed
-                </span>
-
-                <button className="text-[#8E9296] hover:text-[#ECECE7] px-1 text-sm leading-none">
-                  •••
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              Start focus
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Start Focus Modal */}

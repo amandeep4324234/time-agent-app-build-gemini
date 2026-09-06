@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Clock, TrendingUp, HelpCircle, X, ChevronRight, Sparkles } from "lucide-react";
 import { DateTime } from "luxon";
 import { SafeEffectiveDayResult } from "@/lib/effective-adapter";
@@ -166,44 +166,113 @@ export function MetricCards({
     else setActiveEvidence(model);
   };
 
+  // Derive dynamic 7-day weekday labels and series ending at current logical date
+  const { dayLetters, focusDaysData, sinkDaysData, sinkPath, hasSinkActivity } = useMemo(() => {
+    const currentDt = DateTime.fromISO(date, { zone: timezone }).isValid
+      ? DateTime.fromISO(date, { zone: timezone })
+      : DateTime.now();
+
+    const letters: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const dt = currentDt.minus({ days: 6 - i });
+      // Single-letter weekday (e.g. M, T, W, T, F, S, S)
+      letters.push(dt.toFormat("ccccc"));
+    }
+
+    const maxFocusHours = Math.max(
+      1,
+      ...metrics.focus.sparklineDays.filter((v): v is number => typeof v === "number")
+    );
+
+    const focusData = Array.from({ length: 7 }).map((_, idx) => {
+      const rawVal = metrics.focus.sparklineDays[idx];
+      if (rawVal === undefined || rawVal === null) return null;
+      return {
+        hours: rawVal,
+        heightPct: rawVal > 0 ? Math.min(100, (rawVal / maxFocusHours) * 100) : 0,
+      };
+    });
+
+    const sinkData = Array.from({ length: 7 }).map((_, idx) => {
+      const rawVal = metrics.sink.miniSeries[idx];
+      if (rawVal === undefined || rawVal === null) return null;
+      return rawVal;
+    });
+
+    const validSinkValues = sinkData.filter((v): v is number => typeof v === "number");
+    const maxSink = Math.max(0.1, ...validSinkValues);
+    const hasSink = validSinkValues.some((v) => v > 0);
+
+    // Build SVG path segments respecting gaps for null days
+    let pathStr = "";
+    let inSegment = false;
+    sinkData.forEach((val, i) => {
+      if (val === null || val === undefined) {
+        inSegment = false;
+        return;
+      }
+      const x = 4 + (i / 6) * 80;
+      const y = val > 0 ? 20 - (val / maxSink) * 16 : 20;
+      if (!inSegment) {
+        pathStr += `M ${x.toFixed(1)} ${y.toFixed(1)}`;
+        inSegment = true;
+      } else {
+        pathStr += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+      }
+    });
+
+    return { dayLetters: letters, focusDaysData: focusData, sinkDaysData: sinkData, sinkPath: pathStr, hasSinkActivity: hasSink };
+  }, [date, timezone, metrics.focus.sparklineDays, metrics.sink.miniSeries]);
+
   return (
     <>
-      {/* 4 Central Metric Cards with 7-Day Weekday Mini-Charts (Image 4 Panel 1) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 select-text">
+      {/* 4 Central Metric Cards with 1.35fr : 1fr : 1fr : 1fr Desktop Grid (§3, approved-overview.png) */}
+      <div className="tf-metrics grid grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,1fr))] gap-4 select-text">
         {/* 1. Focus Time */}
         <MetricCard
           metricId="focus_time"
           title="Focus time"
           value={focusFormatted}
+          subtitle="Across both devices"
           miniChart={
-            <div className="flex flex-col gap-1 pt-1">
+            <div className="flex flex-col gap-1 pt-0.5 w-[88px]">
               <div
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsTrendOpen(true);
                 }}
-                className="flex items-end gap-1 h-6 cursor-pointer"
+                className="flex items-end gap-1 h-7 cursor-pointer"
                 title="Click to view 28-day trend"
               >
-                {Array.from({ length: 7 }).map((_, idx) => {
-                  const val = metrics.focus.sparklineDays[idx] ?? (idx === 6 ? (focusSec ?? 0) / 3600 : 1.5);
-                  const heightPct = Math.min(100, Math.max(15, (val / 5) * 100));
+                {focusDaysData.map((item, idx) => {
                   const isCurrent = idx === 6;
+                  if (item === null) {
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col justify-end h-full items-center">
+                        <div className="w-full h-0.5 bg-[#3A3D3E] rounded-full" />
+                      </div>
+                    );
+                  }
                   return (
                     <div key={idx} className="flex-1 flex flex-col justify-end h-full items-center">
-                      <div
-                        className={`w-full rounded-t-[2px] transition-all hover:brightness-125 ${
-                          isCurrent ? "bg-[#DDB66D]" : "bg-[#665432]"
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                      />
+                      {item.hours === 0 ? (
+                        <div className="w-full h-[2px] bg-[#665432] rounded-full" title="0h recorded" />
+                      ) : (
+                        <div
+                          className={`w-full rounded-t-[2px] transition-all hover:brightness-125 ${
+                            isCurrent ? "bg-[#DDB66D]" : "bg-[#665432]"
+                          }`}
+                          style={{ height: `${item.heightPct}%` }}
+                          title={`${item.hours.toFixed(1)}h`}
+                        />
+                      )}
                     </div>
                   );
                 })}
               </div>
-              <div className="flex items-center justify-between text-[9px] font-mono text-[#8E9296] px-0.5">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <span key={i} className={`text-center flex-1 ${i === 6 ? "text-[#ECECE7] font-semibold" : ""}`}>
+              <div className="flex items-center justify-between text-[10px] font-mono text-[#A1A9A5] px-0.5">
+                {dayLetters.map((d, i) => (
+                  <span key={i} className={`text-center flex-1 ${i === 6 ? "text-[#ECECE7] font-bold" : ""}`}>
                     {d}
                   </span>
                 ))}
@@ -218,32 +287,27 @@ export function MetricCards({
         <MetricCard
           metricId="focus_blocks"
           title="Focus blocks"
-          value={metrics.focusBlocks.completedCount > 0 ? metrics.focusBlocks.completedCount : "4"}
+          value={metrics.focusBlocks.completedCount}
+          subtitle={`${metrics.focusBlocks.reviewedCount} reviewed`}
           miniChart={
-            <div className="flex flex-col gap-1 pt-1">
-              <div className="flex items-end gap-1 h-6">
-                {[1, 2, 4, 3, 5, 2, 4].map((count, idx) => {
-                  const heightPct = Math.min(100, (count / 5) * 100);
-                  const isCurrent = idx === 6;
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col justify-end h-full items-center">
-                      <div
-                        className={`w-full rounded-t-[2px] transition-all ${
-                          isCurrent ? "bg-[#DDB66D]" : "bg-[#665432]"
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex items-center justify-between text-[9px] font-mono text-[#8E9296] px-0.5">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <span key={i} className={`text-center flex-1 ${i === 6 ? "text-[#ECECE7] font-semibold" : ""}`}>
-                    {d}
-                  </span>
-                ))}
-              </div>
+            <div className="flex items-center justify-end gap-1.5 h-7">
+              {metrics.focusBlocks.blocks.length > 0 ? (
+                metrics.focusBlocks.blocks.slice(0, 4).map((b, idx) => (
+                  <div
+                    key={b.id || idx}
+                    className={`w-5 h-5 rounded-[4px] flex items-center justify-center text-[10px] font-bold transition-all ${
+                      b.isReviewed
+                        ? "bg-[#DDB66D] text-[#171819]"
+                        : "bg-[#282A2C] border border-[#3A3D3E] text-[#A1A9A5]"
+                    }`}
+                    title={`${b.title}: ${b.isReviewed ? "Reviewed" : "Needs review"}`}
+                  >
+                    {b.isReviewed ? "✓" : ""}
+                  </div>
+                ))
+              ) : (
+                <span className="text-[12px] text-[#737978] font-mono">—</span>
+              )}
             </div>
           }
           onClickCard={onOpenBlocksList}
@@ -255,31 +319,23 @@ export function MetricCards({
           metricId="sink_time"
           title="Sink time"
           value={sinkFormatted}
+          subtitle="Apps marked as sinks"
           miniChart={
-            <div className="flex flex-col gap-1 pt-1">
-              <div className="flex items-end gap-1 h-6">
-                {[30, 20, 45, 60, 25, 15, 42].map((mins, idx) => {
-                  const heightPct = Math.min(100, Math.max(15, (mins / 60) * 100));
-                  const isCurrent = idx === 6;
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col justify-end h-full items-center">
-                      <div
-                        className={`w-full rounded-t-[2px] transition-all ${
-                          isCurrent ? "bg-[#DFA095]" : "bg-[#5A3833]"
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex items-center justify-between text-[9px] font-mono text-[#8E9296] px-0.5">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <span key={i} className={`text-center flex-1 ${i === 6 ? "text-[#ECECE7] font-semibold" : ""}`}>
-                    {d}
-                  </span>
-                ))}
-              </div>
+            <div className="flex items-center justify-end h-7 w-[88px]">
+              {/* Dynamic Truthful Sparkline in coral #DFA095 matching START-HERE.md §6 */}
+              <svg className="w-full h-6 overflow-visible" viewBox="0 0 88 24" fill="none">
+                {hasSinkActivity && sinkPath ? (
+                  <path
+                    d={sinkPath}
+                    stroke="#DFA095"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : (
+                  <line x1="4" y1="20" x2="84" y2="20" stroke="#3A3D3E" strokeWidth="1.5" strokeDasharray="2 2" />
+                )}
+              </svg>
             </div>
           }
           onClickCard={openSinkEvidence}
@@ -291,33 +347,7 @@ export function MetricCards({
           metricId="longest_deep_block"
           title="Longest deep block"
           value={longestFormatted}
-          miniChart={
-            <div className="flex flex-col gap-1 pt-1">
-              <div className="flex items-end gap-1 h-6">
-                {[40, 50, 45, 65, 30, 25, 56].map((mins, idx) => {
-                  const heightPct = Math.min(100, Math.max(15, (mins / 70) * 100));
-                  const isCurrent = idx === 6;
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col justify-end h-full items-center">
-                      <div
-                        className={`w-full rounded-t-[2px] transition-all ${
-                          isCurrent ? "bg-[#B0A288]" : "bg-[#4D4536]"
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex items-center justify-between text-[9px] font-mono text-[#8E9296] px-0.5">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <span key={i} className={`text-center flex-1 ${i === 6 ? "text-[#ECECE7] font-semibold" : ""}`}>
-                    {d}
-                  </span>
-                ))}
-              </div>
-            </div>
-          }
+          subtitle="Automatically detected"
           onClickCard={openLongestRunEvidence}
           onOpenEvidence={openLongestRunEvidence}
         />

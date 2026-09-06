@@ -31,6 +31,7 @@ import { EnrichedSession } from "@/lib/types";
 import { FocusBlock } from "@/lib/focus-blocks";
 import { CorrectionEvent, ClassificationRule } from "@/lib/corrections";
 import { formatDurationSeconds } from "@/lib/format";
+import { DateTime } from "luxon";
 import { EvidenceSheet, EvidenceModel } from "../ui/EvidenceSheet";
 
 interface AnalyzerWorkspaceProps {
@@ -50,15 +51,31 @@ export function AnalyzerWorkspace({
   goalHours,
   timezone = "Asia/Kolkata",
 }: AnalyzerWorkspaceProps) {
-  const todayStr = "2025-08-31";
+  const latestDate = useMemo(() => {
+    if (!sessions || sessions.length === 0) return "2026-09-02";
+    const maxTs = Math.max(...sessions.map((s) => s.started_at_ms));
+    return DateTime.fromMillis(maxTs, { zone: timezone }).toISODate() || "2026-09-02";
+  }, [sessions, timezone]);
 
-  // Query Form State matching Image 4 Panel 3
+  const defaultStartDate = useMemo(() => {
+    return DateTime.fromISO(latestDate, { zone: timezone }).minus({ days: 13 }).toISODate() || "2026-08-20";
+  }, [latestDate, timezone]);
+
+  const defaultBaselineStart = useMemo(() => {
+    return DateTime.fromISO(latestDate, { zone: timezone }).minus({ days: 27 }).toISODate() || "2026-08-06";
+  }, [latestDate, timezone]);
+
+  const defaultBaselineEnd = useMemo(() => {
+    return DateTime.fromISO(latestDate, { zone: timezone }).minus({ days: 14 }).toISODate() || "2026-08-19";
+  }, [latestDate, timezone]);
+
+  // Query Form State matching START-HERE.md §7.7
   const [rangeType, setRangeType] = useState<"7d" | "14d" | "30d" | "custom">("14d");
-  const [startDate, setStartDate] = useState("2025-08-18");
-  const [endDate, setEndDate] = useState("2025-08-31");
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(latestDate);
   const [compareWith, setCompareWith] = useState<"previous_period" | "custom_baseline" | "none">("previous_period");
-  const [baselineStartDate, setBaselineStartDate] = useState("2025-08-04");
-  const [baselineEndDate, setBaselineEndDate] = useState("2025-08-17");
+  const [baselineStartDate, setBaselineStartDate] = useState(defaultBaselineStart);
+  const [baselineEndDate, setBaselineEndDate] = useState(defaultBaselineEnd);
   const [filterKind, setFilterKind] = useState<"all" | "apps" | "tags" | "category">("all");
   const [userIntention, setUserIntention] = useState("Longer study blocks");
   const [selectedFindingType, setSelectedFindingType] = useState<"aligned" | "review" | "experiment">("aligned");
@@ -69,29 +86,10 @@ export function AnalyzerWorkspace({
     return validateBaselineRange(startDate, endDate, baselineStartDate, baselineEndDate);
   }, [compareWith, startDate, endDate, baselineStartDate, baselineEndDate]);
 
-  // Execution & Progress State
+  // Execution & Progress State: Result is absent until requested per START-HERE.md §7.7
   const [isLoading, setIsLoading] = useState(false);
   const [progressStage, setProgressStage] = useState<"preparing" | "patterns" | "writing" | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<AnalyzerResult | null>(() => {
-    // Initial pre-computed analysis
-    return runPeriodAnalysis({
-      query: {
-        rangeType: "14d",
-        startDate: "2025-08-18",
-        endDate: "2025-08-31",
-        compareWith: "previous_period",
-        filterKind: "all",
-        filterValues: [],
-        userIntention: "Longer study blocks",
-      },
-      rawSessions: sessions,
-      corrections,
-      rules,
-      blocks: focusBlocks,
-      timezone,
-      goalHours,
-    });
-  });
+  const [analysisResult, setAnalysisResult] = useState<AnalyzerResult | null>(null);
 
   const [activeTab, setActiveTab] = useState<"summary" | "progress" | "evidence">("summary");
   const [selectedMetric, setSelectedMetric] = useState<
@@ -255,7 +253,7 @@ export function AnalyzerWorkspace({
           <button
             onClick={handleRunAnalysis}
             disabled={isLoading || !baselineValidation.isValid}
-            className="flex items-center justify-center gap-2 px-5 py-2 rounded-[8px] bg-[#DDB66D] text-[#171819] hover:bg-[#E8C888] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-sm whitespace-nowrap h-[38px]"
+            className="tf-button tf-button-primary flex items-center justify-center gap-2 px-5 py-2 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-[14px] font-medium shadow-none whitespace-nowrap min-h-[44px]"
           >
             <Sparkles className="w-3.5 h-3.5 fill-[#171819]" />
             <span>{isLoading ? "Running..." : "Analyze period"}</span>
@@ -264,10 +262,10 @@ export function AnalyzerWorkspace({
 
         {/* Loading / Progress State */}
         {isLoading && (
-          <div className="p-3 rounded-[8px] bg-[#1E1F21] border border-[#DDB66D]/30 flex items-center justify-between text-xs text-[#DDB66D]">
+          <div className="p-3.5 rounded-[8px] bg-[#202122] border border-[#DDB66D]/40 flex items-center justify-between text-[13px] text-[#DDB66D]">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 animate-spin" />
-              <span className="capitalize font-semibold">
+              <span className="capitalize font-medium">
                 {progressStage === "preparing" && "Preparing corrected data…"}
                 {progressStage === "patterns" && "Calculating progression & patterns…"}
                 {progressStage === "writing" && "Writing evidence-backed summary…"}
@@ -275,10 +273,16 @@ export function AnalyzerWorkspace({
             </div>
             <button
               onClick={() => setIsLoading(false)}
-              className="text-[#E58376] hover:underline"
+              className="text-[#DFA095] hover:underline font-medium"
             >
               Cancel
             </button>
+          </div>
+        )}
+
+        {!analysisResult && !isLoading && (
+          <div className="text-center py-8 text-[14px] text-[#A1A9A5] border-t border-[#3A3D3E] mt-2">
+            Configure your analysis window and intention above, then select <strong className="text-[#ECECE7]">Analyze period</strong> to run on-demand analysis.
           </div>
         )}
       </div>

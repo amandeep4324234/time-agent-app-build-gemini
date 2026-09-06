@@ -158,6 +158,9 @@ function DashboardContent() {
   const [isShowingActiveView, setIsShowingActiveView] = useState(false);
   const [reviewingBlockId, setReviewingBlockId] = useState<string | null>(null);
 
+  // Mobile workspace switch view state (< 1200px) (§2.1, §4)
+  const [workspaceView, setWorkspaceView] = useState<"timeline" | "apps">("timeline");
+
   // App Lens state
   const [selectedLensAppKey, setSelectedLensAppKey] = useState<string | null>(null);
   const appLensData = useMemo(() => {
@@ -200,7 +203,7 @@ function DashboardContent() {
       {/* 2. Four Metric Cards with Integrated Rhythm (§3.2, §3.4, §4.1) */}
       <MetricCards
         dayResult={effectiveDayResult}
-        onOpenBlocksList={() => router.push("/focus")}
+        onOpenBlocksList={() => router.push(`/focus?day=${selectedDay}`)}
         onOpenEvidenceModel={setActiveEvidenceModel}
       />
 
@@ -208,15 +211,36 @@ function DashboardContent() {
       <TimeMixStrip
         categories={effectiveDayResult.categories}
         totalTrackedSeconds={effectiveDayResult.metrics.unionTrackedSeconds}
+        apps={effectiveDayResult.apps}
         onShowMatchingActivity={(category) => {
-          router.push(`/logs?category=${encodeURIComponent(category)}`);
+          router.push(`/logs?category=${encodeURIComponent(category)}&day=${selectedDay}`);
         }}
       />
 
-      {/* 4. Main Analytical Visual Grid (§3.2): Left 8/12 Time Canvas, Right 4/12 App Constellation */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
-        {/* Left 8/12: Large Zoomable Time Canvas */}
-        <div className="lg:col-span-8 min-w-0 flex flex-col">
+      {/* Mobile/Tablet Workspace Selector (< 1200px) (§2.1, §4) */}
+      <div className="tf-workspace-switch">
+        <button
+          type="button"
+          className={`tf-button ${workspaceView === "timeline" ? "tf-button-primary" : "bg-[#202122] text-[#C1C5C1]"}`}
+          onClick={() => setWorkspaceView("timeline")}
+          aria-pressed={workspaceView === "timeline"}
+        >
+          Timeline
+        </button>
+        <button
+          type="button"
+          className={`tf-button ${workspaceView === "apps" ? "tf-button-primary" : "bg-[#202122] text-[#C1C5C1]"}`}
+          onClick={() => setWorkspaceView("apps")}
+          aria-pressed={workspaceView === "apps"}
+        >
+          Apps
+        </button>
+      </div>
+
+      {/* 4. Main Workbench: Timeline (minmax(0,1fr)) and Apps (304px) (§2.1, §3) */}
+      <div className="tf-workbench" data-view={workspaceView}>
+        {/* Left: Large Zoomable Time Canvas */}
+        <div className="tf-timeline min-w-0 flex flex-col">
           <TimeCanvas
             dayResult={effectiveDayResult}
             selectedBlockId={selectedTimelineBlockId}
@@ -231,8 +255,8 @@ function DashboardContent() {
           />
         </div>
 
-        {/* Right 4/12: App Constellation (3x3 Icon Grid) */}
-        <div className="lg:col-span-4 min-w-0 flex flex-col">
+        {/* Right: App Constellation (3x3 Icon Grid) */}
+        <div className="tf-apps min-w-0 flex flex-col">
           <AppIconGrid
             apps={effectiveDayResult.apps}
             selectedAppKey={selectedLensAppKey}
@@ -275,8 +299,8 @@ function DashboardContent() {
         }}
         onOpenLogsPrefiltered={(appKey, thresholdSec) => {
           const query = thresholdSec
-            ? `/logs?app=${encodeURIComponent(appKey)}&threshold=${thresholdSec}`
-            : `/logs?app=${encodeURIComponent(appKey)}`;
+            ? `/logs?app=${encodeURIComponent(appKey)}&threshold=${thresholdSec}&day=${selectedDay}`
+            : `/logs?app=${encodeURIComponent(appKey)}&day=${selectedDay}`;
           router.push(query);
         }}
       />

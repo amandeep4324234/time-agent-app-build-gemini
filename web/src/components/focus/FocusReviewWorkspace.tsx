@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { DateTime } from "luxon";
 import {
   X,
   Check,
@@ -62,6 +63,25 @@ export function FocusReviewWorkspace({
   const [draftTitle, setDraftTitle] = useState(block.title);
   const [draftTags, setDraftTags] = useState<string[]>(block.tags);
   const [newTagInput, setNewTagInput] = useState("");
+  const [isAddingTag, setIsAddingTag] = useState(false);
+
+  // Dynamic formatted block time range (§7.6)
+  const blockTimeRangeStr = useMemo(() => {
+    const firstInv = block.activeIntervals[0];
+    const lastInv = block.activeIntervals[block.activeIntervals.length - 1];
+    if (firstInv?.startUtc) {
+      const startDt = DateTime.fromISO(firstInv.startUtc);
+      const endDt = lastInv?.endUtc
+        ? DateTime.fromISO(lastInv.endUtc)
+        : DateTime.fromISO(block.updatedAtUtc || firstInv.startUtc);
+      return `${startDt.toFormat("ccc, LLL d, yyyy · HH:mm")} – ${endDt.toFormat("HH:mm")}`;
+    }
+    if (block.createdAtUtc) {
+      const dt = DateTime.fromISO(block.createdAtUtc);
+      return dt.toFormat("ccc, LLL d, yyyy · HH:mm");
+    }
+    return "Focus block";
+  }, [block]);
 
   // Appraisal State (§7: Was this how you wanted to spend the time?)
   const [draftAppraisal, setDraftAppraisal] = useState<UserAppraisal>("unreviewed");
@@ -443,8 +463,8 @@ export function FocusReviewWorkspace({
             </div>
             <div>
               <div className="text-base font-bold text-[#ECECE7]">{draftTitle}</div>
-              <div className="text-xs text-[#8E9296] mt-0.5">
-                Wed, May 14, 2025 &middot; 10:14 &ndash; 10:59 &middot;{" "}
+              <div className="text-[13px] text-[#A1A9A5] mt-0.5">
+                {blockTimeRangeStr} &middot;{" "}
                 {formatDurationSeconds(calculateBlockElapsedSeconds(block))}
               </div>
             </div>
@@ -465,17 +485,58 @@ export function FocusReviewWorkspace({
                 </button>
               </span>
             ))}
-            <button
-              onClick={() => {
-                const tag = prompt("Enter tag name:");
-                if (tag && tag.trim() && !draftTags.includes(tag.trim())) {
-                  setDraftTags([...draftTags, tag.trim()]);
-                }
-              }}
-              className="px-2.5 py-1 rounded-[6px] bg-[#222426] border border-[#2F3134] text-xs text-[#8E9296] hover:text-[#ECECE7] transition-colors"
-            >
-              + Add tag
-            </button>
+            {isAddingTag ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  maxLength={32}
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const tag = newTagInput.trim();
+                      if (tag && !draftTags.includes(tag)) {
+                        setDraftTags([...draftTags, tag]);
+                      }
+                      setNewTagInput("");
+                      setIsAddingTag(false);
+                    } else if (e.key === "Escape") {
+                      setIsAddingTag(false);
+                    }
+                  }}
+                  placeholder="Tag name"
+                  className="h-[30px] px-2 rounded-[6px] bg-[#171819] border border-[#737978] text-xs text-[#ECECE7] w-24 focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    const tag = newTagInput.trim();
+                    if (tag && !draftTags.includes(tag)) {
+                      setDraftTags([...draftTags, tag]);
+                    }
+                    setNewTagInput("");
+                    setIsAddingTag(false);
+                  }}
+                  className="h-[30px] px-2 rounded-[6px] bg-[#27292A] text-[#ECECE7] text-xs font-medium hover:bg-[#2D3031]"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => setIsAddingTag(false)}
+                  className="h-[30px] px-1 text-[#A1A9A5] hover:text-[#ECECE7] text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAddingTag(true)}
+                className="px-2.5 py-1 rounded-[6px] bg-[#222426] border border-[#2F3134] text-xs text-[#8E9296] hover:text-[#ECECE7] transition-colors"
+              >
+                + Add tag
+              </button>
+            )}
             <span className="text-[#8E9296] text-sm px-1 cursor-pointer">•••</span>
           </div>
         </div>
@@ -699,13 +760,13 @@ export function FocusReviewWorkspace({
                 setStagedCorrections([]);
                 onClose();
               }}
-              className="px-4 py-2 rounded-[8px] bg-[#26282A] hover:bg-[#2F3134] text-xs font-semibold text-[#ECECE7] transition-colors"
+              className="tf-button px-4 py-2 rounded-[6px] bg-transparent border border-[#737978] text-[13px] font-medium text-[#ECECE7] hover:bg-[#27292A] transition-colors"
             >
               Discard
             </button>
             <button
               onClick={handleCommitSave}
-              className="px-5 py-2 rounded-[8px] bg-[#DDB66D] hover:bg-[#E5C27C] text-xs font-bold text-[#121314] transition-colors shadow-sm"
+              className="tf-button tf-button-primary px-5 py-2 rounded-[6px] bg-[#ECECE7] text-[#171819] hover:bg-white text-[13px] font-medium transition-colors"
             >
               Save changes
             </button>
